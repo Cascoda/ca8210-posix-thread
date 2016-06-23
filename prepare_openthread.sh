@@ -1,0 +1,2 @@
+./openthread/bootstrap
+./configure
