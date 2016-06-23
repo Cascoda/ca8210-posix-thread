@@ -12,13 +12,13 @@ OBJECTS = source/$(patsubst %.c, %.o, $(wildcard *.c))
 HEADERS = include/$(wildcard *.h)
 
 %.o: %.c $(HEADERS)
-    $(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 .PRECIOUS: $(TARGET) $(OBJECTS)
 
 $(TARGET): $(OBJECTS)
-    ar rcs $(TARGET) $^
+	ar rcs $(TARGET) $^
 
 clean:
-    -rm -f *.o
-    -rm -f $(TARGET)
+	-rm -f *.o
+	-rm -f $(TARGET)
