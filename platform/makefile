@@ -1,9 +1,14 @@
-TARGET = libcascoda.a
+TARGET = libraspcascoda.a
 LIBS = -lm
 CC = gcc
 CFLAGS = -g -Wall
-INCLUDEDIR = include/
-SOURCEDIR = source/
+INCLUDEDIRS = ./ \
+			../openthread/include/platform/ \
+			../openthread/include/cli/ \
+			../openthread/include/crypto/ \
+			../openthread/include/ \
+			../cascoda/include/
+SOURCEDIR = ./
 
 .PHONY: default all clean
 
@@ -11,7 +16,7 @@ default: $(TARGET)
 all: default
 
 OBJECTS = $(patsubst %.c, %.o, $(wildcard $(addprefix $(SOURCEDIR),*.c)))
-HEADERS = $(wildcard $(addprefix $(INCLUDEDIR),*.h))
+HEADERS = foreach(DIR,$(SOURCEDIR),$(wildcard $(addprefix $(DIR),*.h)))
 
 %.o: %.c $(HEADERS)
 	$(CC) $(CFLAGS) -c $< -o $@

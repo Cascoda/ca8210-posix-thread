@@ -7,6 +7,4 @@ subdirs: $(SUBDIRS)
 $(SUBDIRS):
         $(MAKE) -C $@
 
-app: cascoda openthread
-
-platform: cascoda openthread
+app: cascoda openthread platform
