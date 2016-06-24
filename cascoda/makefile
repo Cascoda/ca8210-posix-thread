@@ -2,14 +2,16 @@ TARGET = cascoda.a
 LIBS = -lm
 CC = gcc
 CFLAGS = -g -Wall
+INCLUDEDIR = include/
+SOURCEDIR = source/
 
 .PHONY: default all clean
 
 default: $(TARGET)
 all: default
 
-OBJECTS = source/$(patsubst %.c, %.o, $(wildcard *.c))
-HEADERS = include/$(wildcard *.h)
+OBJECTS = $(addprefix $(SOURCEDIR), $(patsubst %.c, %.o, $(wildcard *.c))
+HEADERS = $(addprefix $(INCLUDEDIR), $(wildcard *.h))
 
 %.o: %.c $(HEADERS)
 	$(CC) $(CFLAGS) -c $< -o $@
