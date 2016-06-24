@@ -5,6 +5,6 @@ SUBDIRS = app cascoda openthread platform
 subdirs: $(SUBDIRS)
 
 $(SUBDIRS):
-        $(MAKE) -C $@
+	$(MAKE) -C $@
 
 app: cascoda openthread platform
