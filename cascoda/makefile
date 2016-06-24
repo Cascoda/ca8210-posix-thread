@@ -10,7 +10,7 @@ SOURCEDIR = source/
 default: $(TARGET)
 all: default
 
-OBJECTS = $(addprefix $(SOURCEDIR), $(patsubst %.c, %.o, $(wildcard *.c))
+OBJECTS = $(addprefix $(SOURCEDIR), $(patsubst %.c, %.o, $(wildcard *.c)))
 HEADERS = $(addprefix $(INCLUDEDIR), $(wildcard *.h))
 
 %.o: %.c $(HEADERS)
