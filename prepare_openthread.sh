@@ -1,2 +1,4 @@
-./openthread/bootstrap
+cd openthread/
+./bootstrap
 ./configure --enable-cli
+cd ../

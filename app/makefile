@@ -17,13 +17,13 @@ HEADERS = $(wildcard include/*.h) \
 			$(wildcard ../platform/*.h)
 
 %.o: %.c $(HEADERS)
-    $(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 .PRECIOUS: $(TARGET) $(OBJECTS)
 
 $(TARGET): $(OBJECTS)
-    $(CC) $(OBJECTS) -Wall $(LIBSEARCH) $(LIBS) -o $@
+	$(CC) $(OBJECTS) -Wall $(LIBSEARCH) $(LIBS) -o $@
 
 clean:
-    -rm -f *.o
-    -rm -f $(TARGET)
+	-rm -f *.o
+	-rm -f $(TARGET)
