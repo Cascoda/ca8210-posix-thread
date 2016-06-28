@@ -42,7 +42,6 @@
 #include <platform/alarm.h>
 #include <platform/serial.h>
 #include <posix-platform.h>
-#include <platform.h>
 
 uint32_t NODE_ID = 1;
 uint32_t WELLKNOWN_NODE_ID = 34;
@@ -77,7 +76,6 @@ void posixPlatformProcessDrivers(void)
     }
 
     posixPlatformSerialProcess();
-    PlatformRadioProcess();
     posixPlatformAlarmProcess();
 }
 

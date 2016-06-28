@@ -54,6 +54,7 @@ enum
 };
 
 void readFrame(struct MCPS_DATA_indication_pset *params);
+void PlatformRadioProcess(void);
 
 static struct MAC_Message response;
 static RadioPacket sTransmitFrame;
@@ -338,6 +339,8 @@ void readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 		sReceiveFrame.mChannel = sChannel;
 		//sReceiveFrame.mPower = -20;
     pthread_mutex_unlock(&receiveFrame_mutex);
+
+    PlatformRadioProcess();
 
 exit:
     return;
