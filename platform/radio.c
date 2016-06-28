@@ -91,11 +91,14 @@ void setChannel(uint8_t channel)
 
 ThreadError otPlatRadioSetPanId(uint16_t panid)
 {
+	uint8_t LEarray[2];
+	LEarray[0] = LS0_BYTE(panid);
+	LEarray[1] = LS1_BYTE(panid);
     if ( MLME_SET_request_sync(
         macPANId,
         0,
         sizeof(panid),
-        &panid,
+        LEarray,
         pDeviceRef) == MAC_SUCCESS)
             return kThreadError_None;
 
@@ -117,11 +120,14 @@ ThreadError otPlatRadioSetExtendedAddress(uint8_t *address)
 
 ThreadError otPlatRadioSetShortAddress(uint16_t address)
 {
+	uint8_t LEarray[2];
+		LEarray[0] = LS0_BYTE(address);
+		LEarray[1] = LS1_BYTE(address);
     if ( MLME_SET_request_sync(
         macShortAddress,
         0,
         sizeof(address),
-        &address,
+        LEarray,
         pDeviceRef) == MAC_SUCCESS)
             return kThreadError_None;
 
@@ -296,11 +302,12 @@ bool otPlatRadioGetPromiscuous(void)
 
 void otPlatRadioSetPromiscuous(bool aEnable)
 {
+	uint8_t enable = aEnable ? 1 : 0;	//Just to be sure we match spec
     MLME_SET_request_sync(
         macPromiscuousMode,
         0,
-        sizeof(aEnable),
-        &aEnable,
+        sizeof(enable),
+        &enable,
         pDeviceRef);
 
 }
