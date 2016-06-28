@@ -39,6 +39,7 @@
 #include <cascoda_api.h>
 #include <mac_messages.h>
 #include <ieee_802_15_4.h>
+#include <pthread.h>
 
 enum
 {
@@ -52,6 +53,9 @@ enum
     IEEE802154_DSN_OFFSET = 2,
 };
 
+void readFrame(struct MCPS_DATA_indication_pset *params);
+
+static struct MAC_Message response;
 static RadioPacket sTransmitFrame;
 static RadioPacket sReceiveFrame;
 static ThreadError sTransmitError;
@@ -59,8 +63,13 @@ static ThreadError sReceiveError;
 
 static void* pDeviceRef = NULL;
 
+static uint8_t sChannel = 0;
+
 static uint8_t sTransmitPsdu[IEEE802154_MAX_LENGTH];
 static uint8_t sReceivePsdu[IEEE802154_MAX_LENGTH];
+
+pthread_mutex_t receiveFrame_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t receiveFrame_cond = PTHREAD_COND_INITIALIZER;
 
 typedef enum PhyState
 {
@@ -77,6 +86,7 @@ static PhyState sState;
 void setChannel(uint8_t channel)
 {
     TDME_ChannelInit(channel, pDeviceRef);
+    sChannel = channel;
 }
 
 ThreadError otPlatRadioSetPanId(uint16_t panid)
@@ -89,7 +99,7 @@ ThreadError otPlatRadioSetPanId(uint16_t panid)
         pDeviceRef) == MAC_SUCCESS)
             return kThreadError_None;
 
-    else return kThreadError_Fail;
+    else return kThreadError_Failed;
 }
 
 ThreadError otPlatRadioSetExtendedAddress(uint8_t *address)
@@ -102,7 +112,7 @@ ThreadError otPlatRadioSetExtendedAddress(uint8_t *address)
         pDeviceRef) == MAC_SUCCESS)
             return kThreadError_None;
 
-    else return kThreadError_Fail;
+    else return kThreadError_Failed;
 }
 
 ThreadError otPlatRadioSetShortAddress(uint16_t address)
@@ -115,15 +125,24 @@ ThreadError otPlatRadioSetShortAddress(uint16_t address)
         pDeviceRef) == MAC_SUCCESS)
             return kThreadError_None;
 
-    else return kThreadError_Fail;
+    else return kThreadError_Failed;
 }
 
 void PlatformRadioInit(void)
 {
     sTransmitFrame.mLength = 0;
     sTransmitFrame.mPsdu = sTransmitPsdu;
-    sReceiveFrame.mLength = 0;
-    sReceiveFrame.mPsdu = sReceivePsdu;
+
+    pthread_mutex_lock(&receiveFrame_mutex);
+		sReceiveFrame.mLength = 0;
+		sReceiveFrame.mPsdu = sReceivePsdu;
+	pthread_mutex_unlock(&receiveFrame_mutex);
+
+    kernel_exchange_init();
+
+    struct cascoda_api_callbacks callbacks;
+    callbacks.MCPS_DATA_indication = &readFrame;
+    cascoda_register_callbacks(&callbacks);
 
     TDME_ChipInit(pDeviceRef);
 }
@@ -190,7 +209,7 @@ exit:
     return error;
 }
 
-ThreadError otPlatRadioReceive(uint8_t aChannel)    //TODO: port
+ThreadError otPlatRadioReceive(uint8_t aChannel)
 {
     ThreadError error = kThreadError_None;
 
@@ -198,7 +217,13 @@ ThreadError otPlatRadioReceive(uint8_t aChannel)    //TODO: port
     sState = kStateListen;
 
     setChannel(aChannel);
-    sReceiveFrame.mChannel = aChannel;
+
+    pthread_mutex_lock(&receiveFrame_mutex);
+    	sReceiveFrame.mLength = 0;
+    	sReceiveFrame.mChannel = aChannel;
+    	pthread_cond_signal(&receiveFrame_cond);
+    pthread_mutex_unlock(&receiveFrame_mutex);
+
     enableReceiver();
 
 exit:
@@ -210,7 +235,7 @@ RadioPacket *otPlatRadioGetTransmitBuffer(void)
     return &sTransmitFrame;
 }
 
-ThreadError otPlatRadioTransmit(void)    //TODO: port
+ThreadError otPlatRadioTransmit(void)
 {
     ThreadError error = kThreadError_None;
     int i;
@@ -225,7 +250,7 @@ ThreadError otPlatRadioTransmit(void)    //TODO: port
     //transmit
     struct MCPS_DATA_request_pset * curPacket = &sTransmitFrame;
 
-    uint8_t MCPS_DATA_request(
+    MCPS_DATA_request(
         curPacket->SrcAddrMode,
         curPacket->Dst.AddressMode,
         GETLE16(curPacket->Dst.PANId),
@@ -280,50 +305,30 @@ void otPlatRadioSetPromiscuous(bool aEnable)
 
 }
 
-void readFrame(void)    //TODO: port
+void readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 {
-    uint8_t length;
-    uint8_t crcCorr;
-    int i;
+
 
     VerifyOrExit(sState == kStateListen || sState == kStateTransmit, ;);
-    VerifyOrExit((HWREG(RFCORE_XREG_FSMSTAT1) & RFCORE_XREG_FSMSTAT1_FIFOP) != 0, ;);
 
-    // read length
-    length = HWREG(RFCORE_SFR_RFDATA);
-    VerifyOrExit(IEEE802154_MIN_LENGTH <= length && length <= IEEE802154_MAX_LENGTH, ;);
+    pthread_mutex_lock(&receiveFrame_mutex);
+    	//wait until the main thread is free to process the frame
+    	while(sReceiveFrame.mLength != 0) {pthread_cond_wait(&receiveFrame_cond, &receiveFrame_mutex);}
 
-    // read psdu
-    for (i = 0; i < length - 2; i++)
-    {
-        sReceiveFrame.mPsdu[i] = HWREG(RFCORE_SFR_RFDATA);
-    }
-
-    sReceiveFrame.mPower = (int8_t)HWREG(RFCORE_SFR_RFDATA) - CC2538_RSSI_OFFSET;
-    crcCorr = HWREG(RFCORE_SFR_RFDATA);
-
-    if (crcCorr & CC2538_CRC_BIT_MASK)
-    {
-        sReceiveFrame.mLength = length;
-        sReceiveFrame.mLqi = crcCorr & CC2538_LQI_BIT_MASK;
-    }
-
-    // check for rxfifo overflow
-    if ((HWREG(RFCORE_XREG_FSMSTAT1) & RFCORE_XREG_FSMSTAT1_FIFOP) != 0 &&
-        (HWREG(RFCORE_XREG_FSMSTAT1) & RFCORE_XREG_FSMSTAT1_FIFO) != 0)
-    {
-        HWREG(RFCORE_SFR_RFST) = CC2538_RF_CSP_OP_ISFLUSHRX;
-        HWREG(RFCORE_SFR_RFST) = CC2538_RF_CSP_OP_ISFLUSHRX;
-    }
+		sReceiveFrame.mPsdu = params;
+		sReceiveFrame.mLength = params->MsduLength + 40;
+		sReceiveFrame.mLqi = params->MpduLinkQuality;
+		sReceiveFrame.mChannel = sChannel;
+		//sReceiveFrame.mPower = -20;
+    pthread_mutex_unlock(&receiveFrame_mutex);
 
 exit:
     return;
 }
 
-int PlatformRadioProcess(void)    //TODO: port
+int PlatformRadioProcess(void)    //TODO: port - This should be the callback in future for data receive
 {
-    readFrame();
-
+	pthread_mutex_lock(&receiveFrame_mutex);
     switch (sState)
     {
     case kStateDisabled:
@@ -337,12 +342,12 @@ int PlatformRadioProcess(void)    //TODO: port
 
     case kStateListen:
     case kStateReceive:
+
         if (sReceiveFrame.mLength > 0)
         {
             sState = kStateIdle;
             otPlatRadioReceiveDone(&sReceiveFrame, sReceiveError);
         }
-
         break;
 
     case kStateTransmit:
@@ -364,20 +369,13 @@ int PlatformRadioProcess(void)    //TODO: port
 
     sReceiveFrame.mLength = 0;
 
+    pthread_cond_signal(&receiveFrame_cond);
+    pthread_mutex_unlock(&receiveFrame_mutex);
+
     if (sState == kStateIdle)
     {
         disableReceiver();
     }
 
     return 0;
-}
-
-void RFCoreRxTxIntHandler(void)    //TODO: port
-{
-    HWREG(RFCORE_SFR_RFIRQF0) = 0;
-}
-
-void RFCoreErrIntHandler(void)    //TODO: port
-{
-    HWREG(RFCORE_SFR_RFERRF) = 0;
 }

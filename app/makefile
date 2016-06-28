@@ -9,7 +9,7 @@ INCLUDEDIRS := ./\
 	./include/\
 	../platform/
 INCLUDEDIRCMD := $(addprefix -I,$(INCLUDEDIRS)) 
-CFLAGS := $(INCLUDEDIRCMD) -g -Wall
+CFLAGS := $(INCLUDEDIRCMD) -g -Wall -pthread
 
 .PHONY: default all clean
 

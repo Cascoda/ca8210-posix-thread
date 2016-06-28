@@ -76,7 +76,7 @@ void posixPlatformProcessDrivers(void)
     }
 
     posixPlatformSerialProcess();
-    posixPlatformRadioProcess();
+    PlatformRadioProcess();
     posixPlatformAlarmProcess();
 }
 
