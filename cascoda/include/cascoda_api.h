@@ -33,6 +33,7 @@
 #define CASCODA_API_H
 
 #include <stdint.h>
+#include <stddef.h>
 
 #include "mac_messages.h"
 

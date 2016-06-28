@@ -89,6 +89,16 @@ void setChannel(uint8_t channel)
     sChannel = channel;
 }
 
+void enableReceiver(void)
+{
+    // nothing
+}
+
+void disableReceiver(void)
+{
+    //nothing
+}
+
 ThreadError otPlatRadioSetPanId(uint16_t panid)
 {
 	uint8_t LEarray[2];
