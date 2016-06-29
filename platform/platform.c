@@ -66,7 +66,6 @@ void posixPlatformProcessDrivers(void)
     FD_ZERO(&write_fds);
 
     posixPlatformSerialUpdateFdSet(&read_fds, &write_fds, &max_fd);
-    posixPlatformRadioUpdateFdSet(&read_fds, &write_fds, &max_fd);
     posixPlatformAlarmUpdateTimeout(&timeout);
 
     if (!otAreTaskletsPending())

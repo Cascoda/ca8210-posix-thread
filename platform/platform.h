@@ -28,64 +28,42 @@
 
 /**
  * @file
- * @brief
- *   This file includes the posix platform-specific initializers.
+ *   This file includes the platform-specific initializers.
+ *
  */
 
-#ifndef POSIX_PLATFORM_H_
-#define POSIX_PLATFORM_H_
+#ifndef PLATFORM_H_
+#define PLATFORM_H_
 
 #include <stdint.h>
-#include <sys/select.h>
-#include <sys/time.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /**
- * Unique node ID.
- *
- */
-extern uint32_t NODE_ID;
-
-/**
- * Well-known Unique ID used by a simulated radio that supports promiscuous mode.
- *
- */
-extern uint32_t WELLKNOWN_NODE_ID;
-
-/**
  * This method performs all platform-specific initialization.
  *
  */
-void posixPlatformInit(void);
+void PlatformInit(void);
 
 /**
  * This method performs all platform-specific processing.
  *
  */
-void posixPlatformProcessDrivers(void);
+void PlatformProcessDrivers(void);
 
 /**
  * This method initializes the alarm service used by OpenThread.
  *
  */
-void posixPlatformAlarmInit(void);
-
-/**
- * This method retrieves the time remaining until the alarm fires.
- *
- * @param[out]  aTimeval  A pointer to the timeval struct.
- *
- */
-void posixPlatformAlarmUpdateTimeout(struct timeval *tv);
+void PlatformAlarmInit(void);
 
 /**
  * This method performs alarm driver processing.
  *
  */
-void posixPlatformAlarmProcess(void);
+void PlatformAlarmProcess(void);
 
 /**
  * This method initializes the radio service used by OpenThread.
@@ -103,26 +81,16 @@ void PlatformRadioProcess(void);
  * This method initializes the random number service used by OpenThread.
  *
  */
-void posixPlatformRandomInit(void);
-
-/**
- * This method updates the file descriptor sets with file descriptors used by the serial driver.
- *
- * @param[inout]  aReadFdSet   A pointer to the read file descriptors.
- * @param[inout]  aWriteFdSet  A pointer to the write file descriptors.
- * @param[inout]  aMaxFd       A pointer to the max file descriptor.
- *
- */
-void posixPlatformSerialUpdateFdSet(fd_set *aReadFdSet, fd_set *aWriteFdSet, int *aMaxFd);
+void PlatformRandomInit(void);
 
 /**
  * This method performs radio driver processing.
  *
  */
-void posixPlatformSerialProcess(void);
+void PlatformSerialProcess(void);
 
 #ifdef __cplusplus
 }  // extern "C"
 #endif
 
-#endif  // POSIX_PLATFORM_H_
+#endif  // PLATFORM_H_

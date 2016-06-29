@@ -38,6 +38,7 @@
 #include <platform/radio.h>
 #include <cascoda_api.h>
 #include <mac_messages.h>
+#include "posix-platform.h"
 #include <ieee_802_15_4.h>
 #include <pthread.h>
 
@@ -54,7 +55,6 @@ enum
 };
 
 void readFrame(struct MCPS_DATA_indication_pset *params);
-int PlatformRadioProcess(void);
 
 static struct MAC_Message response;
 static RadioPacket sTransmitFrame;
