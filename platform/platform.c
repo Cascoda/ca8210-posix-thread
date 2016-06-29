@@ -49,7 +49,7 @@ uint32_t WELLKNOWN_NODE_ID = 34;
 void posixPlatformInit(void)
 {
     posixPlatformAlarmInit();
-    posixPlatformRadioInit();
+    PlatformRadioInit();
     posixPlatformRandomInit();
     otPlatSerialEnable();
 }

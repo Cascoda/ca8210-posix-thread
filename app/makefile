@@ -7,7 +7,8 @@ INCLUDEDIRS := ./\
 	../openthread/include/cli/\
 	../openthread/include/\
 	./include/\
-	../platform/
+	../platform/\
+	../cascoda/include/
 INCLUDEDIRCMD := $(addprefix -I,$(INCLUDEDIRS)) 
 CFLAGS := $(INCLUDEDIRCMD) -g -Wall -pthread
 
