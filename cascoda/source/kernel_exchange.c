@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "../include/cascoda_api.h"
+#include <cascoda_api.h>
 
 /******************************************************************************/
 
