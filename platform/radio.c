@@ -159,6 +159,7 @@ void PlatformRadioInit(void)
 
     struct cascoda_api_callbacks callbacks;
     callbacks.MCPS_DATA_indication = &readFrame;
+    callbacks.MCPS_DATA_confirm = &readConfirmFrame;
     cascoda_register_callbacks(&callbacks);
 
     TDME_ChipInit(pDeviceRef);
@@ -327,7 +328,7 @@ void readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 {
 
 
-    VerifyOrExit(sState == kStateListen || sState == kStateTransmit, ;);
+    VerifyOrExit(sState == kStateListen, ;);
 
     pthread_mutex_lock(&receiveFrame_mutex);
     	//wait until the main thread is free to process the frame
@@ -336,6 +337,28 @@ void readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 		sReceiveFrame.mPsdu = params;
 		sReceiveFrame.mLength = params->MsduLength + 40;
 		sReceiveFrame.mLqi = params->MpduLinkQuality;
+		sReceiveFrame.mChannel = sChannel;
+		//sReceiveFrame.mPower = -20;
+    pthread_mutex_unlock(&receiveFrame_mutex);
+
+    PlatformRadioProcess();
+
+exit:
+    return;
+}
+
+void readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
+{
+
+
+    VerifyOrExit(sState == kStateTransmit, ;);
+
+    pthread_mutex_lock(&receiveFrame_mutex);
+    	//wait until the main thread is free to process the frame
+    	while(sReceiveFrame.mLength != 0) {pthread_cond_wait(&receiveFrame_cond, &receiveFrame_mutex);}
+
+		sReceiveFrame.mPsdu = params;
+		sReceiveFrame.mLength = 6;
 		sReceiveFrame.mChannel = sChannel;
 		//sReceiveFrame.mPower = -20;
     pthread_mutex_unlock(&receiveFrame_mutex);
