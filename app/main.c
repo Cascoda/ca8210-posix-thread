@@ -50,10 +50,18 @@ int main(int argc, char *argv[])
     printf("%s\n",array);
 
     posixPlatformInit();
+    
+    printf("%s\n",array);
+
     otInit();
+
+    printf("%s\n",array);
+
     otCliSerialInit();
 
     printf("%s\n",array);
+
+
 
     while (1)
     {
