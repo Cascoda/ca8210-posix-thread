@@ -280,6 +280,8 @@ ThreadError otPlatRadioTransmit(void)
         0,
         pDeviceRef);
 
+    PlatformRadioProcess();
+
 exit:
 
     if (sTransmitError != kThreadError_None || (sTransmitFrame.mPsdu[0] & IEEE802154_ACK_REQUEST) == 0)
