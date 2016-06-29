@@ -97,7 +97,7 @@ void PlatformRadioInit(void);
  * This method performs radio driver processing.
  *
  */
-void PlatformRadioProcess(void);
+int PlatformRadioProcess(void);
 
 /**
  * This method initializes the random number service used by OpenThread.
