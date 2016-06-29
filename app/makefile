@@ -1,7 +1,7 @@
 TARGET = cliapp
 LIBDIRS = ../openthread/src/cli/ ../openthread/src/core/ ../cascoda/ ../platform/ ../openthread/third_party/mbedtls/
 LIBSEARCH := $(addprefix -L,$(LIBDIRS))
-LIBS = -lm -lopenthread -lopenthread-cli -lraspcascoda -lcascoda -lmbedcrypto -lstdc++
+LIBS = -lm -lopenthread -lopenthread-cli -lraspcascoda -lcascoda -lmbedcrypto -lstdc++ -lpthread
 CC = gcc
 INCLUDEDIRS := ./\
 	../openthread/include/cli/\
