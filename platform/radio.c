@@ -387,7 +387,9 @@ exit:
 
 int PlatformRadioProcess(void)    //TODO: port - This should be the callback in future for data receive
 {
+	fputs("Grabbing receiveFrame mutex...", stderr);
 	pthread_mutex_lock(&receiveFrame_mutex);
+	fputs("Got it!", stderr);
     switch (sState)
     {
     case kStateDisabled:
