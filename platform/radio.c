@@ -279,6 +279,12 @@ ThreadError otPlatRadioTransmit(void)
     setChannel(sTransmitFrame.mChannel);
     enableReceiver();
 
+    fprintf(stderr, "\n\n\nPacket Sending: ");
+    for(int i = 0; i < sTransmitFrame.mLength; i++){
+	fprintf(stderr, "%#04x ", sTransmitFrame.mPsdu[i]);
+    
+    }
+
     //transmit
     struct MCPS_DATA_request_pset * curPacket = &sTransmitFrame;
 
@@ -294,7 +300,7 @@ ThreadError otPlatRadioTransmit(void)
         0,
         pDeviceRef);
 
-    PlatformRadioProcess();
+    //PlatformRadioProcess();
 
 exit:
 

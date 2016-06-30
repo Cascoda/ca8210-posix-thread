@@ -37,6 +37,7 @@ static void *ca8210_test_int_read_worker(void *arg)
 		rx_len = read(DriverFileDescriptor, rx_buf, 0);
 		pthread_mutex_unlock(&rx_mutex);
 		if (rx_len > 0) {
+			fputs("ASYNC READ SOMETHING!", stderr);
 			cascoda_downstream_dispatch(rx_buf, rx_len);
 		}
 	}

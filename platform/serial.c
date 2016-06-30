@@ -26,6 +26,8 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
+#define _XOPEN_SOURCE 1
+
 #include <assert.h>
 #include <fcntl.h>
 #include <poll.h>
