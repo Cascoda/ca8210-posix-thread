@@ -71,7 +71,7 @@ ThreadError otPlatSerialEnable(void)
 
     s_in_fd = dup(STDIN_FILENO);
     s_out_fd = dup(STDOUT_FILENO);
-    dup2(STDERR_FILENO, STDOUT_FILENO);
+//    dup2(STDERR_FILENO, STDOUT_FILENO);
 
     if (isatty(s_in_fd))
     {

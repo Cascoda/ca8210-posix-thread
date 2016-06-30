@@ -34,6 +34,8 @@
 
 #include <openthread-types.h>
 
+#include <stdio.h>
+
 #include <common/code_utils.hpp>
 #include <platform/radio.h>
 #include <cascoda_api.h>
@@ -148,22 +150,30 @@ ThreadError otPlatRadioSetShortAddress(uint16_t address)
 
 void PlatformRadioInit(void)
 {
+    fputs("Initialising radio...", stderr);
     sTransmitFrame.mLength = 0;
     sTransmitFrame.mPsdu = sTransmitPsdu;
-
+    
+    fputs("attempting to aquire mutex...", stderr);
     pthread_mutex_lock(&receiveFrame_mutex);
 		sReceiveFrame.mLength = 0;
 		sReceiveFrame.mPsdu = sReceivePsdu;
 	pthread_mutex_unlock(&receiveFrame_mutex);
+    
+    fputs("Initiating kernal exchange...", stderr);
 
     kernel_exchange_init();
+
+    fputs("Initialising callbacks", stderr);
 
     struct cascoda_api_callbacks callbacks;
     callbacks.MCPS_DATA_indication = &readFrame;
     callbacks.MCPS_DATA_confirm = &readConfirmFrame;
     cascoda_register_callbacks(&callbacks);
-
+    
+    fputs("Initialising Chip...", stderr);
     TDME_ChipInit(pDeviceRef);
+    fputs("Radio Done!", stderr);
 }
 
 ThreadError otPlatRadioEnable(void)    //TODO:(lowpriority) port 

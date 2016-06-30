@@ -27,6 +27,7 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
 
 #include <openthread.h>
 #include <cli/cli-serial.h>
@@ -44,11 +45,13 @@ int main(int argc, char *argv[])
     }
 
     NODE_ID = atoi(argv[1]);
-
+    fputs("Begin!", stderr);    
     posixPlatformInit();
+    fputs("Platform initialised!", stderr);
     otInit();
+    fputs("openthread initialised!", stderr);
     otCliSerialInit();
-
+    fputs("Fully Initialised!", stderr);
     while (1)
     {
         otProcessNextTasklet();
