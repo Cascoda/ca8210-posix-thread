@@ -29,7 +29,7 @@
 /**
  * @file
  *   This file implements the OpenThread platform abstraction for radio communication.
- * ll
+ * pp
  */
 
 #include <openthread-types.h>
