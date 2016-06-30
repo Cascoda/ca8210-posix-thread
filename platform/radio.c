@@ -387,7 +387,7 @@ exit:
 
 int PlatformRadioProcess(void)    //TODO: port - This should be the callback in future for data receive
 {
-	fputs("Grabbing receiveFrame mutex...", stderr);
+	fputs("Grabbing receiveFrame mutex...",	 stderr);
 	pthread_mutex_lock(&receiveFrame_mutex);
 	fputs("Got it!", stderr);
     switch (sState)
@@ -403,7 +403,7 @@ int PlatformRadioProcess(void)    //TODO: port - This should be the callback in 
 
     case kStateListen:
     case kStateReceive:
-
+    	fputs("(kStateListen)", stderr);
         if (sReceiveFrame.mLength > 0)
         {
             sState = kStateIdle;
@@ -412,6 +412,7 @@ int PlatformRadioProcess(void)    //TODO: port - This should be the callback in 
         break;
 
     case kStateTransmit:
+    	fputs("(kStateTransmit)", stderr);
         if (sTransmitError != kThreadError_None || (sTransmitFrame.mPsdu[0] & IEEE802154_ACK_REQUEST) == 0)
         {
             sState = kStateIdle;
@@ -430,8 +431,10 @@ int PlatformRadioProcess(void)    //TODO: port - This should be the callback in 
 
     sReceiveFrame.mLength = 0;
 
+    fputs("Releasing mutex...", stderr);
     pthread_cond_broadcast(&receiveFrame_cond);
     pthread_mutex_unlock(&receiveFrame_mutex);
+    fputs("Released!", stderr);
 
     if (sState == kStateIdle)
     {
