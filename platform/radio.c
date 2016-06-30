@@ -197,6 +197,7 @@ ThreadError otPlatRadioDisable(void)    //TODO:(lowpriority) port
     VerifyOrExit(sState == kStateIdle, error = kThreadError_Busy);
     sState = kStateDisabled;
 
+
     //should sleep until restarted
 	#ifdef EXECUTE_MODE
     	if (HWME_SET_request_sync (
