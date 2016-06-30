@@ -285,13 +285,59 @@ ThreadError otPlatRadioTransmit(void)
     
     }
 
+    //TODO: Move these
+	#define MAC_SC_SECURITYLEVEL(sc) (sc&0x07)
+	#define MAC_SC_KEYIDMODE(sc) ((sc>>3)&0x03)
+
     //transmit
-    struct MCPS_DATA_request_pset * curPacket = &sTransmitFrame;
+    struct MCPS_DATA_request_pset curPacket;
+    struct SecSpec curSecSpec = {0};
+
+    uint16_t frameControl = GETLE16(sTransmitFrame.mPsdu);
+    curPacket.SrcAddrMode = MAC_FC_SAM(frameControl);
+    curPacket.Dst.AddressMode = MAC_FC_DAM(frameControl);
+    curPacket.TxOptions = frameControl & MAC_FC_ACK_REQ ? 0x01 : 0x00;
+
+    uint8_t addressFieldLength = 0;
+
+    if(curPacket.Dst.AddressMode == MAC_MODE_SHORT_ADDR){
+    	memcpy(curPacket.Dst.Address, sTransmitFrame.mPsdu+5, 2);
+    	memcpy(curPacket.Dst.PANId, sTransmitFrame.mPsdu+3, 2);
+    	addressFieldLength +=4;
+    }
+    else if(curPacket.Dst.AddressMode == MAC_MODE_LONG_ADDR){
+    	memcpy(curPacket.Dst.Address, sTransmitFrame.mPsdu+5, 8);
+    	memcpy(curPacket.Dst.PANId, sTransmitFrame.mPsdu+3, 2);
+    	addressFieldLength +=10;
+    }
+
+    if(curPacket.SrcAddrMode == MAC_MODE_SHORT_ADDR) addressFieldLength +=4;
+    else if(curPacket.SrcAddrMode == MAC_MODE_LONG_ADDR) addressFieldLength +=10;
+
+    if(frameControl & MAC_FC_SEC_ENA){	//if security is required
+    	uint8_t ASHloc = 3 + addressFieldLength;
+    	uint8_t securityControl = sTransmitFrame.mPsdu + ASHloc;
+    	curSecSpec.SecurityLevel = MAC_SC_SECURITYLEVEL(securityControl);
+    	curSecSpec.KeyIdMode = MAC_SC_KEYIDMODE(securityControl);
+
+    	ASHloc += 5;//skip to key identifier
+    	if(curSecSpec.KeyIdMode == 0x02){//Table 96
+    		memcpy(curSecSpec.KeySource, sTransmitFrame.mPsdu + ASHloc, 4);
+    		ASHloc += 4;
+    	}
+    	else if(curSecSpec.KeyIdMode == 0x03){//Table 96
+			memcpy(curSecSpec.KeySource, sTransmitFrame.mPsdu + ASHloc, 8);
+			ASHloc += 8;
+		}
+    	curSecSpec.KeyIndex = sTransmitFrame.mPsdu[ASHloc];
+    }
+
+    //Todo: MSDU + handle & Length
 
     MCPS_DATA_request(
         curPacket->SrcAddrMode,
         curPacket->Dst.AddressMode,
-        GETLE16(curPacket->Dst.PANId),
+        curPacket->Dst.PANId,
         curPacket->Dst.Address,
         curPacket->MsduLength,
         curPacket->Msdu,
