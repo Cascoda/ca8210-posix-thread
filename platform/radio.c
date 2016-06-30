@@ -89,8 +89,10 @@ static PhyState sState;
 
 void setChannel(uint8_t channel)
 {
-    TDME_ChannelInit(channel, pDeviceRef);
-    sChannel = channel;
+    if(sChannel != channel){
+        TDME_ChannelInit(channel, pDeviceRef);
+        sChannel = channel;
+    }
 }
 
 void enableReceiver(void)
@@ -158,6 +160,7 @@ void PlatformRadioInit(void)
     pthread_mutex_lock(&receiveFrame_mutex);
 		sReceiveFrame.mLength = 0;
 		sReceiveFrame.mPsdu = sReceivePsdu;
+		pthread_cond_broadcast(&receiveFrame_cond);
 	pthread_mutex_unlock(&receiveFrame_mutex);
     
     fputs("Initiating kernal exchange...", stderr);
@@ -250,7 +253,7 @@ ThreadError otPlatRadioReceive(uint8_t aChannel)
     pthread_mutex_lock(&receiveFrame_mutex);
     	sReceiveFrame.mLength = 0;
     	sReceiveFrame.mChannel = aChannel;
-    	pthread_cond_signal(&receiveFrame_cond);
+    	pthread_cond_broadcast(&receiveFrame_cond);
     pthread_mutex_unlock(&receiveFrame_mutex);
 
     enableReceiver();
@@ -425,7 +428,7 @@ int PlatformRadioProcess(void)    //TODO: port - This should be the callback in 
 
     sReceiveFrame.mLength = 0;
 
-    pthread_cond_signal(&receiveFrame_cond);
+    pthread_cond_broadcast(&receiveFrame_cond);
     pthread_mutex_unlock(&receiveFrame_mutex);
 
     if (sState == kStateIdle)

@@ -77,7 +77,7 @@ static int ca8210_test_int_exchange(
 {
 	int status, Rx_Length;
 	uint8_t isSynchronous = ((buf[0] & SPI_SYN) && response);
-	fprintf(stderr, "Aquiring driver mutex for command...", stderr);
+	fprintf(stderr, "Aquiring driver mutex for command %#04x...", buf[0]);
 	if(isSynchronous && pthread_mutex_lock(&rx_mutex)) fputs("MUTEX ERRORR!", stderr);	//Enforce synchronous write then read
         fputs("Driver mutex aquired!", stderr);
 	ca8210_test_int_write(buf, len);
