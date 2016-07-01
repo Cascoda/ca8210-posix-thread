@@ -251,10 +251,6 @@ ThreadError otPlatRadioReceive(uint8_t aChannel)
 
     setChannel(aChannel);
 
-    pthread_mutex_lock(&receiveFrame_mutex);
-    sReceiveFrame.mChannel = aChannel;
-    pthread_mutex_unlock(&receiveFrame_mutex);
-
     enableReceiver();
 
 exit:
@@ -480,7 +476,8 @@ int PlatformRadioProcess(void)    //TODO: port - This should be the callback in 
     case kStateListen:
     case kStateReceive:
     	fputs("(kStateListen)", stderr);
-        if (sReceiveFrame.mLength > 0)
+    	uint8_t length = sReceiveFrame.mLength;
+        if (length > 0)
         {
             sState = kStateIdle;
             otPlatRadioReceiveDone(&sReceiveFrame, sReceiveError);
