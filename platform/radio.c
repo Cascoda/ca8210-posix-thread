@@ -95,7 +95,7 @@ void setChannel(uint8_t channel)
     	        0,
     	        sizeof(channel),
     	        &channel,
-    	        pDeviceRef)
+    	        pDeviceRef);
         sChannel = channel;
         fprintf(stderr, "\n\rChannel: %d\n\r", sChannel);
     }
