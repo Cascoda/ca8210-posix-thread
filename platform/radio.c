@@ -271,6 +271,8 @@ ThreadError otPlatRadioTransmit(void)
 {
     ThreadError error = kThreadError_None;
     int i;
+    static uint8_t handle = 0;
+    handle++;
 
     VerifyOrExit(sState == kStateIdle, error = kThreadError_Busy);
     sState = kStateTransmit;
@@ -293,6 +295,8 @@ ThreadError otPlatRadioTransmit(void)
     struct MCPS_DATA_request_pset curPacket;
     struct SecSpec curSecSpec = {0};
 
+    uint8_t headerLength = 0;
+    uint8_t footerLength = 0;
     uint16_t frameControl = GETLE16(sTransmitFrame.mPsdu);
     curPacket.SrcAddrMode = MAC_FC_SAM(frameControl);
     curPacket.Dst.AddressMode = MAC_FC_DAM(frameControl);
@@ -329,8 +333,20 @@ ThreadError otPlatRadioTransmit(void)
 			memcpy(curSecSpec.KeySource, sTransmitFrame.mPsdu + ASHloc, 8);
 			ASHloc += 8;
 		}
-    	curSecSpec.KeyIndex = sTransmitFrame.mPsdu[ASHloc];
+    	curSecSpec.KeyIndex = sTransmitFrame.mPsdu[ASHloc++];
+    	headerLength = ASHloc;
     }
+
+    //Table 95 to calculate auth tag length
+    footerLength = 2 << (curSecSpec.SecurityLevel % 4);
+    footerLength = footerLength == 2 ? 0 : footerLength;
+
+    footerLength += 2; //MFR length
+
+    curPacket.MsduLength = sTransmitFrame.mLength - footerLength - headerLength;
+    curPacket.Msdu = sTransmitFrame + headerLength;
+    curPacket.MsduHandle = handle;
+
 
     //Todo: MSDU + handle & Length
 
@@ -343,7 +359,7 @@ ThreadError otPlatRadioTransmit(void)
         curPacket->Msdu,
         curPacket->MsduHandle,
         curPacket->TxOptions,
-        0,
+        &curSecSpec,
         pDeviceRef);
 
     //PlatformRadioProcess();
