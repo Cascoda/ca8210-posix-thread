@@ -344,18 +344,18 @@ ThreadError otPlatRadioTransmit(void)
     footerLength += 2; //MFR length
 
     curPacket.MsduLength = sTransmitFrame.mLength - footerLength - headerLength;
-    curPacket.Msdu = sTransmitFrame + headerLength;
+    memcpy(curPacket.Msdu, sTransmitFrame.mPsdu + headerLength, curPacket.MsduLength);
     curPacket.MsduHandle = handle;
 
     MCPS_DATA_request(
-        curPacket->SrcAddrMode,
-        curPacket->Dst.AddressMode,
-        curPacket->Dst.PANId,
-        curPacket->Dst.Address,
-        curPacket->MsduLength,
-        curPacket->Msdu,
-        curPacket->MsduHandle,
-        curPacket->TxOptions,
+        curPacket.SrcAddrMode,
+        curPacket.Dst.AddressMode,
+        curPacket.Dst.PANId,
+        curPacket.Dst.Address,
+        curPacket.MsduLength,
+        curPacket.Msdu,
+        curPacket.MsduHandle,
+        curPacket.TxOptions,
         &curSecSpec,
         pDeviceRef);
 
