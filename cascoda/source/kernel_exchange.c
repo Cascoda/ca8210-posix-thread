@@ -34,6 +34,7 @@ static void *ca8210_test_int_read_worker(void *arg)
 	/* TODO: while not told to exit? */
 	while (1) {
 		if(pthread_mutex_lock(&driver_mutex)) fputs("MUTEX ERROR", stderr);
+		fputs("r.", stderr);
 		rx_len = read(DriverFileDescriptor, rx_buf, 0);
 		pthread_mutex_unlock(&driver_mutex);
 		if (rx_len > 0) {
