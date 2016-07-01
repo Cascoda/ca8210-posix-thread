@@ -347,9 +347,6 @@ ThreadError otPlatRadioTransmit(void)
     curPacket.Msdu = sTransmitFrame + headerLength;
     curPacket.MsduHandle = handle;
 
-
-    //Todo: MSDU + handle & Length
-
     MCPS_DATA_request(
         curPacket->SrcAddrMode,
         curPacket->Dst.AddressMode,
