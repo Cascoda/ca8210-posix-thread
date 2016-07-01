@@ -90,7 +90,12 @@ static PhyState sState;
 void setChannel(uint8_t channel)
 {
     if(sChannel != channel){
-        TDME_ChannelInit(channel, pDeviceRef);
+    	MLME_SET_request_sync(
+    			phyCurrentChannel,
+    	        0,
+    	        sizeof(channel),
+    	        &channel,
+    	        pDeviceRef)
         sChannel = channel;
         fprintf(stderr, "\n\rChannel: %d\n\r", sChannel);
     }
@@ -176,10 +181,6 @@ void PlatformRadioInit(void)
     callbacks.MCPS_DATA_confirm = &readConfirmFrame;
     cascoda_register_callbacks(&callbacks);
     
-    fputs("Initialising Chip...", stderr);
-    TDME_ChipInit(pDeviceRef);
-    TDME_SetTxPower(4, pDeviceRef);
-    fputs("Radio Done!", stderr);
 }
 
 ThreadError otPlatRadioEnable(void)    //TODO:(lowpriority) port 
