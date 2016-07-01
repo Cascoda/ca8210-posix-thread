@@ -29,10 +29,12 @@
 /**
  * @file
  *   This file implements the OpenThread platform abstraction for radio communication.
- *
+ * pp
  */
 
 #include <openthread-types.h>
+
+#include <stdio.h>
 
 #include <common/code_utils.hpp>
 #include <platform/radio.h>
@@ -87,8 +89,16 @@ static PhyState sState;
 
 void setChannel(uint8_t channel)
 {
-    TDME_ChannelInit(channel, pDeviceRef);
-    sChannel = channel;
+    if(sChannel != channel){
+    	MLME_SET_request_sync(
+    			phyCurrentChannel,
+    	        0,
+    	        sizeof(channel),
+    	        &channel,
+    	        pDeviceRef);
+        sChannel = channel;
+        fprintf(stderr, "\n\rChannel: %d\n\r", sChannel);
+    }
 }
 
 void enableReceiver(void)
@@ -148,22 +158,29 @@ ThreadError otPlatRadioSetShortAddress(uint16_t address)
 
 void PlatformRadioInit(void)
 {
+    fputs("Initialising radio...", stderr);
     sTransmitFrame.mLength = 0;
     sTransmitFrame.mPsdu = sTransmitPsdu;
-
+    
+    fputs("attempting to acquire mutex...", stderr);
     pthread_mutex_lock(&receiveFrame_mutex);
 		sReceiveFrame.mLength = 0;
 		sReceiveFrame.mPsdu = sReceivePsdu;
+		pthread_cond_broadcast(&receiveFrame_cond);
 	pthread_mutex_unlock(&receiveFrame_mutex);
+    
+    fputs("Initialising kernel exchange...", stderr);
 
-    kernel_exchange_init();
+    if(!kernel_exchange_init()) fputs("Success!", stderr);
+    else fputs("Failed!", stderr);
+
+    fputs("Initialising callbacks", stderr);
 
     struct cascoda_api_callbacks callbacks;
     callbacks.MCPS_DATA_indication = &readFrame;
     callbacks.MCPS_DATA_confirm = &readConfirmFrame;
     cascoda_register_callbacks(&callbacks);
-
-    TDME_ChipInit(pDeviceRef);
+    
 }
 
 ThreadError otPlatRadioEnable(void)    //TODO:(lowpriority) port 
@@ -237,12 +254,6 @@ ThreadError otPlatRadioReceive(uint8_t aChannel)
 
     setChannel(aChannel);
 
-    pthread_mutex_lock(&receiveFrame_mutex);
-    	sReceiveFrame.mLength = 0;
-    	sReceiveFrame.mChannel = aChannel;
-    	pthread_cond_signal(&receiveFrame_cond);
-    pthread_mutex_unlock(&receiveFrame_mutex);
-
     enableReceiver();
 
 exit:
@@ -258,6 +269,8 @@ ThreadError otPlatRadioTransmit(void)
 {
     ThreadError error = kThreadError_None;
     int i;
+    static uint8_t handle = 0;
+    handle++;
 
     VerifyOrExit(sState == kStateIdle, error = kThreadError_Busy);
     sState = kStateTransmit;
@@ -266,22 +279,97 @@ ThreadError otPlatRadioTransmit(void)
     setChannel(sTransmitFrame.mChannel);
     enableReceiver();
 
+    fprintf(stderr, "\n\n\nPacket Sending: ");
+    for(int i = 0; i < sTransmitFrame.mLength; i++){
+	fprintf(stderr, "%#04x ", sTransmitFrame.mPsdu[i]);
+    
+    }
+
+    //TODO: Move these
+	#define MAC_SC_SECURITYLEVEL(sc) (sc&0x07)
+	#define MAC_SC_KEYIDMODE(sc) ((sc>>3)&0x03)
+	#define MAC_BASEHEADERLENGTH 3
+
     //transmit
-    struct MCPS_DATA_request_pset * curPacket = &sTransmitFrame;
+    struct MCPS_DATA_request_pset curPacket;
+    struct SecSpec curSecSpec = {0};
+
+    uint8_t headerLength = 0;
+    uint8_t footerLength = 0;
+    uint16_t frameControl = GETLE16(sTransmitFrame.mPsdu);
+    curPacket.SrcAddrMode = MAC_FC_SAM(frameControl);
+    curPacket.Dst.AddressMode = MAC_FC_DAM(frameControl);
+    curPacket.TxOptions = frameControl & MAC_FC_ACK_REQ ? 0x01 : 0x00;
+
+    uint8_t addressFieldLength = 0;
+
+    if(curPacket.Dst.AddressMode == MAC_MODE_SHORT_ADDR){
+    	memcpy(curPacket.Dst.Address, sTransmitFrame.mPsdu+5, 2);
+    	memcpy(curPacket.Dst.PANId, sTransmitFrame.mPsdu+3, 2);
+    	addressFieldLength +=4;
+    }
+    else if(curPacket.Dst.AddressMode == MAC_MODE_LONG_ADDR){
+    	memcpy(curPacket.Dst.Address, sTransmitFrame.mPsdu+5, 8);
+    	memcpy(curPacket.Dst.PANId, sTransmitFrame.mPsdu+3, 2);
+    	addressFieldLength +=10;
+    }
+
+    if(curPacket.SrcAddrMode == MAC_MODE_SHORT_ADDR) addressFieldLength +=4;
+    else if(curPacket.SrcAddrMode == MAC_MODE_LONG_ADDR) addressFieldLength +=10;
+    headerLength = addressFieldLength + MAC_BASEHEADERLENGTH;
+
+    if(frameControl & MAC_FC_SEC_ENA){	//if security is required
+    	uint8_t ASHloc = MAC_BASEHEADERLENGTH + addressFieldLength;
+    	uint8_t securityControl = sTransmitFrame.mPsdu + ASHloc;
+    	curSecSpec.SecurityLevel = MAC_SC_SECURITYLEVEL(securityControl);
+    	curSecSpec.KeyIdMode = MAC_SC_KEYIDMODE(securityControl);
+
+    	ASHloc += 5;//skip to key identifier
+    	if(curSecSpec.KeyIdMode == 0x02){//Table 96
+    		memcpy(curSecSpec.KeySource, sTransmitFrame.mPsdu + ASHloc, 4);
+    		ASHloc += 4;
+    	}
+    	else if(curSecSpec.KeyIdMode == 0x03){//Table 96
+			memcpy(curSecSpec.KeySource, sTransmitFrame.mPsdu + ASHloc, 8);
+			ASHloc += 8;
+		}
+    	curSecSpec.KeyIndex = sTransmitFrame.mPsdu[ASHloc++];
+    	headerLength = ASHloc;
+    }
+
+    //Table 95 to calculate auth tag length
+    footerLength = 2 << (curSecSpec.SecurityLevel % 4);
+    footerLength = footerLength == 2 ? 0 : footerLength;
+
+    footerLength += 2; //MFR length
+
+    curPacket.MsduLength = sTransmitFrame.mLength - footerLength - headerLength;
+    memcpy(curPacket.Msdu, sTransmitFrame.mPsdu + headerLength, curPacket.MsduLength);
+    curPacket.MsduHandle = handle;
+
+    fputs("\n\r\n\r-----------------------", stderr);
+    fputs("\n\rPACKET!", stderr);
+    fputs("\n\r\n\r-----------------------", stderr);
+    fprintf(stderr, "\n\rSrcAddrMode: %#04x", curPacket.SrcAddrMode);
+    fprintf(stderr, "\n\rDstAddrMode: %#04x", curPacket.Dst.AddressMode);
+    fprintf(stderr, "\n\rDstPANID: %#06x", GETLE16(curPacket.Dst.PANId));
+    fprintf(stderr, "\n\rDstAddr: "); for(int i = 0; i < 8; i++) fprintf(stderr, "%02x ", curPacket.Dst.Address[i]);
+    fprintf(stderr, "\n\rMsdu: "); for(int i = 0; i < curPacket.MsduLength; i++) fprintf(stderr, "%02x ", curPacket.Msdu[i]);
+    fputs("\n\r\n\r-----------------------", stderr);
 
     MCPS_DATA_request(
-        curPacket->SrcAddrMode,
-        curPacket->Dst.AddressMode,
-        GETLE16(curPacket->Dst.PANId),
-        curPacket->Dst.Address,
-        curPacket->MsduLength,
-        curPacket->Msdu,
-        curPacket->MsduHandle,
-        curPacket->TxOptions,
-        0,
+        curPacket.SrcAddrMode,
+        curPacket.Dst.AddressMode,
+        curPacket.Dst.PANId,
+        curPacket.Dst.Address,
+        curPacket.MsduLength,
+        curPacket.Msdu,
+        curPacket.MsduHandle,
+        curPacket.TxOptions,
+        &curSecSpec,
         pDeviceRef);
 
-    PlatformRadioProcess();
+    //PlatformRadioProcess();
 
 exit:
 
@@ -305,14 +393,16 @@ otRadioCaps otPlatRadioGetCaps(void)    //TODO:(lowpriority) port
 
 bool otPlatRadioGetPromiscuous(void)
 {
-    bool * result;
+	uint8_t resultLen;
+    uint8_t result;
     MLME_GET_request_sync(
         macPromiscuousMode,
         0,
-        NULL,
-        result,
+        &resultLen,
+        &result,
         pDeviceRef);
-    return * result;
+    if(resultLen != 1) while(1) fputs("cry.", stderr);
+    return (bool) result;
 }
 
 void otPlatRadioSetPromiscuous(bool aEnable)
@@ -388,8 +478,9 @@ int PlatformRadioProcess(void)    //TODO: port - This should be the callback in 
 
     case kStateListen:
     case kStateReceive:
-
-        if (sReceiveFrame.mLength > 0)
+    	fputs("(kStateListen)", stderr);
+    	uint8_t length = sReceiveFrame.mLength;
+        if (length > 0)
         {
             sState = kStateIdle;
             otPlatRadioReceiveDone(&sReceiveFrame, sReceiveError);
@@ -397,6 +488,7 @@ int PlatformRadioProcess(void)    //TODO: port - This should be the callback in 
         break;
 
     case kStateTransmit:
+    	fputs("(kStateTransmit)", stderr);
         if (sTransmitError != kThreadError_None || (sTransmitFrame.mPsdu[0] & IEEE802154_ACK_REQUEST) == 0)
         {
             sState = kStateIdle;
@@ -409,13 +501,11 @@ int PlatformRadioProcess(void)    //TODO: port - This should be the callback in 
             sState = kStateIdle;
             otPlatRadioTransmitDone((sReceiveFrame.mPsdu[0] & IEEE802154_FRAME_PENDING) != 0, sTransmitError);
         }
-
         break;
     }
 
     sReceiveFrame.mLength = 0;
-
-    pthread_cond_signal(&receiveFrame_cond);
+    pthread_cond_broadcast(&receiveFrame_cond);
     pthread_mutex_unlock(&receiveFrame_mutex);
 
     if (sState == kStateIdle)
