@@ -1413,6 +1413,16 @@ int cascoda_downstream_dispatch(const uint8_t *buf, size_t len)
 			return callbacks.MCPS_DATA_confirm(buf + 2);
 		}
 		break;
+	case SPI_MLME_ASSOCIATE_INDICATION:
+		if (callbacks.MLME_ASSOCIATE_indication) {
+			return callbacks.MLME_ASSOCIATE_indication(buf + 2);
+		}
+		break;
+	case SPI_MLME_ASSOCIATE_CONFIRM:
+		if (callbacks.MLME_ASSOCIATE_confirm) {
+			return callbacks.MLME_ASSOCIATE_confirm(buf + 2);
+		}
+		break;
 	case SPI_MLME_DISASSOCIATE_INDICATION:
 		if (callbacks.MLME_DISASSOCIATE_indication) {
 			return callbacks.MLME_DISASSOCIATE_indication(buf + 2);
