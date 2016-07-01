@@ -396,14 +396,16 @@ otRadioCaps otPlatRadioGetCaps(void)    //TODO:(lowpriority) port
 
 bool otPlatRadioGetPromiscuous(void)
 {
-    bool result;
+	uint8_t resultLen;
+    uint8_t result;
     MLME_GET_request_sync(
         macPromiscuousMode,
         0,
-        NULL,
+        &resultLen,
         &result,
         pDeviceRef);
-    return result;
+    if(resultLen != 1) while(1) fputs("cry.", stderr);
+    return (bool) result;
 }
 
 void otPlatRadioSetPromiscuous(bool aEnable)
