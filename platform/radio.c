@@ -435,7 +435,7 @@ void readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 		//sReceiveFrame.mPower = -20;
     pthread_mutex_unlock(&receiveFrame_mutex);
 
-    PlatformRadioProcess();
+    //PlatformRadioProcess();
 
 exit:
     return;
@@ -457,7 +457,7 @@ void readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
 		//sReceiveFrame.mPower = -20;
     pthread_mutex_unlock(&receiveFrame_mutex);
 
-    PlatformRadioProcess();
+    //PlatformRadioProcess();
 
 exit:
     return;
