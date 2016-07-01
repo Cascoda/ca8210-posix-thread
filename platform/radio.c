@@ -347,6 +347,16 @@ ThreadError otPlatRadioTransmit(void)
     memcpy(curPacket.Msdu, sTransmitFrame.mPsdu + headerLength, curPacket.MsduLength);
     curPacket.MsduHandle = handle;
 
+    fputs("\n\n-----------------------", stderr);
+    fputs("\nPACKET!", stderr);
+    fputs("\n\n-----------------------", stderr);
+    fprintf(stderr, "\nSrcAddrMode: %#04x", curPacket.SrcAddrMode);
+    fprintf(stderr, "\nDstAddrMode: %#04x", curPacket.Dst.AddressMode);
+    fprintf(stderr, "\nDstPANID: %#06x", GETLE16(curPacket.Dst.PANId));
+    fprintf(stderr, "\nDstAddr: "); for(int i = 0; i < 8; i++) fprintf(stderr, "%02x ", curPacket.Dst.Address[i]);
+    fprintf(stderr, "\nMsdu: "); for(int i = 0; i < curPacket.MsduLength; i++) fprintf(stderr, "%02x ", curPacket.Msdu[i]);
+    fputs("\n\n-----------------------", stderr);
+
     MCPS_DATA_request(
         curPacket.SrcAddrMode,
         curPacket.Dst.AddressMode,
