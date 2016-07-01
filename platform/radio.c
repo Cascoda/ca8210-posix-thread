@@ -178,6 +178,7 @@ void PlatformRadioInit(void)
     
     fputs("Initialising Chip...", stderr);
     TDME_ChipInit(pDeviceRef);
+    TDME_SetTxPower(4, pDeviceRef);
     fputs("Radio Done!", stderr);
 }
 
