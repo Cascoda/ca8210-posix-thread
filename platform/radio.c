@@ -290,6 +290,7 @@ ThreadError otPlatRadioTransmit(void)
     //TODO: Move these
 	#define MAC_SC_SECURITYLEVEL(sc) (sc&0x07)
 	#define MAC_SC_KEYIDMODE(sc) ((sc>>3)&0x03)
+	#define MAC_BASEHEADERLENGTH 3
 
     //transmit
     struct MCPS_DATA_request_pset curPacket;
@@ -317,9 +318,10 @@ ThreadError otPlatRadioTransmit(void)
 
     if(curPacket.SrcAddrMode == MAC_MODE_SHORT_ADDR) addressFieldLength +=4;
     else if(curPacket.SrcAddrMode == MAC_MODE_LONG_ADDR) addressFieldLength +=10;
+    headerLength = addressFieldLength + MAC_BASEHEADERLENGTH;
 
     if(frameControl & MAC_FC_SEC_ENA){	//if security is required
-    	uint8_t ASHloc = 3 + addressFieldLength;
+    	uint8_t ASHloc = MAC_BASEHEADERLENGTH + addressFieldLength;
     	uint8_t securityControl = sTransmitFrame.mPsdu + ASHloc;
     	curSecSpec.SecurityLevel = MAC_SC_SECURITYLEVEL(securityControl);
     	curSecSpec.KeyIdMode = MAC_SC_KEYIDMODE(securityControl);
