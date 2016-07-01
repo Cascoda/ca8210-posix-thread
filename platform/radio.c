@@ -156,16 +156,17 @@ void PlatformRadioInit(void)
     sTransmitFrame.mLength = 0;
     sTransmitFrame.mPsdu = sTransmitPsdu;
     
-    fputs("attempting to aquire mutex...", stderr);
+    fputs("attempting to acquire mutex...", stderr);
     pthread_mutex_lock(&receiveFrame_mutex);
 		sReceiveFrame.mLength = 0;
 		sReceiveFrame.mPsdu = sReceivePsdu;
 		pthread_cond_broadcast(&receiveFrame_cond);
 	pthread_mutex_unlock(&receiveFrame_mutex);
     
-    fputs("Initiating kernal exchange...", stderr);
+    fputs("Initialising kernel exchange...", stderr);
 
-    kernel_exchange_init();
+    if(!kernel_exchange_init()) fputs("Success!", stderr);
+    else fputs("Failed!", stderr);
 
     fputs("Initialising callbacks", stderr);
 
