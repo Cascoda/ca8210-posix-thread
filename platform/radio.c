@@ -252,9 +252,7 @@ ThreadError otPlatRadioReceive(uint8_t aChannel)
     setChannel(aChannel);
 
     pthread_mutex_lock(&receiveFrame_mutex);
-    	sReceiveFrame.mLength = 0;
-    	sReceiveFrame.mChannel = aChannel;
-    	pthread_cond_broadcast(&receiveFrame_cond);
+    sReceiveFrame.mChannel = aChannel;
     pthread_mutex_unlock(&receiveFrame_mutex);
 
     enableReceiver();
@@ -503,7 +501,6 @@ int PlatformRadioProcess(void)    //TODO: port - This should be the callback in 
             sState = kStateIdle;
             otPlatRadioTransmitDone((sReceiveFrame.mPsdu[0] & IEEE802154_FRAME_PENDING) != 0, sTransmitError);
         }
-
         break;
     }
 
