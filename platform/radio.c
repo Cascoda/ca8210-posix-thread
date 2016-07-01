@@ -396,14 +396,14 @@ otRadioCaps otPlatRadioGetCaps(void)    //TODO:(lowpriority) port
 
 bool otPlatRadioGetPromiscuous(void)
 {
-    bool * result;
+    bool result;
     MLME_GET_request_sync(
         macPromiscuousMode,
         0,
         NULL,
-        result,
+        &result,
         pDeviceRef);
-    return * result;
+    return result;
 }
 
 void otPlatRadioSetPromiscuous(bool aEnable)
@@ -465,9 +465,7 @@ exit:
 
 int PlatformRadioProcess(void)    //TODO: port - This should be the callback in future for data receive
 {
-	fputs("Grabbing receiveFrame mutex...",	 stderr);
 	pthread_mutex_lock(&receiveFrame_mutex);
-	fputs("Got it!", stderr);
     switch (sState)
     {
     case kStateDisabled:
@@ -508,11 +506,8 @@ int PlatformRadioProcess(void)    //TODO: port - This should be the callback in 
     }
 
     sReceiveFrame.mLength = 0;
-
-    fputs("Releasing mutex...", stderr);
     pthread_cond_broadcast(&receiveFrame_cond);
     pthread_mutex_unlock(&receiveFrame_mutex);
-    fputs("Released!", stderr);
 
     if (sState == kStateIdle)
     {
