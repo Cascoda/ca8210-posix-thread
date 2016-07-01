@@ -349,15 +349,15 @@ ThreadError otPlatRadioTransmit(void)
     memcpy(curPacket.Msdu, sTransmitFrame.mPsdu + headerLength, curPacket.MsduLength);
     curPacket.MsduHandle = handle;
 
-    fputs("\n\n-----------------------", stderr);
-    fputs("\nPACKET!", stderr);
-    fputs("\n\n-----------------------", stderr);
-    fprintf(stderr, "\nSrcAddrMode: %#04x", curPacket.SrcAddrMode);
-    fprintf(stderr, "\nDstAddrMode: %#04x", curPacket.Dst.AddressMode);
-    fprintf(stderr, "\nDstPANID: %#06x", GETLE16(curPacket.Dst.PANId));
-    fprintf(stderr, "\nDstAddr: "); for(int i = 0; i < 8; i++) fprintf(stderr, "%02x ", curPacket.Dst.Address[i]);
-    fprintf(stderr, "\nMsdu: "); for(int i = 0; i < curPacket.MsduLength; i++) fprintf(stderr, "%02x ", curPacket.Msdu[i]);
-    fputs("\n\n-----------------------", stderr);
+    fputs("\n\r\n\r-----------------------", stderr);
+    fputs("\n\rPACKET!", stderr);
+    fputs("\n\r\n\r-----------------------", stderr);
+    fprintf(stderr, "\n\rSrcAddrMode: %#04x", curPacket.SrcAddrMode);
+    fprintf(stderr, "\n\rDstAddrMode: %#04x", curPacket.Dst.AddressMode);
+    fprintf(stderr, "\n\rDstPANID: %#06x", GETLE16(curPacket.Dst.PANId));
+    fprintf(stderr, "\n\rDstAddr: "); for(int i = 0; i < 8; i++) fprintf(stderr, "%02x ", curPacket.Dst.Address[i]);
+    fprintf(stderr, "\n\rMsdu: "); for(int i = 0; i < curPacket.MsduLength; i++) fprintf(stderr, "%02x ", curPacket.Msdu[i]);
+    fputs("\n\r\n\r-----------------------", stderr);
 
     MCPS_DATA_request(
         curPacket.SrcAddrMode,
