@@ -1403,12 +1403,12 @@ int cascoda_downstream_dispatch(const uint8_t *buf, size_t len)
 
 	/* call appropriate api upstream callback */
 	switch (buf[0]) {
-	case SPI_MLME_ASSOCIATE_INDICATION:
+	case SPI_MCPS_DATA_INDICATION:
 		if (callbacks.MCPS_DATA_indication) {
 			return callbacks.MCPS_DATA_indication(buf + 2);
 		}
 		break;
-	case SPI_MLME_ASSOCIATE_CONFIRM:
+	case SPI_MCPS_DATA_CONFIRM:
 		if (callbacks.MCPS_DATA_confirm) {
 			return callbacks.MCPS_DATA_confirm(buf + 2);
 		}
