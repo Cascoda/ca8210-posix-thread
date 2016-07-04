@@ -11,7 +11,7 @@ INCLUDEDIRS := ./\
 	../openthread/src/core/common/
 INCLUDEDIRCMD := $(addprefix -I,$(INCLUDEDIRS)) 
 SOURCEDIR = ./
-CFLAGS := $(INCLUDEDIRCMD) -g -Wall
+CFLAGS := $(INCLUDEDIRCMD) -g -Wall -std=c99
 
 .PHONY: default all clean
 

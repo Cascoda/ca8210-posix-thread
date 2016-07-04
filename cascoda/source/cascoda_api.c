@@ -789,7 +789,6 @@ uint8_t HWME_GET_request_sync(
 	return Response.PData.HWMEGetCnf.Status;
 } // End of HWME_GET_request_sync()
 
-
 /******************************************************************************/
 /******************************************************************************/
 /****** HWME_HAES_request_sync()                                         ******/
@@ -933,7 +932,6 @@ uint8_t TDME_TESTMODE_request_sync(
 	return Response.PData.TDMETestModeCnf.Status;
 } // End of TDME_TESTMODE_request_sync()
 
-
 /******************************************************************************/
 /******************************************************************************/
 /****** TDME_SET_request_sync()                                          ******/
@@ -977,7 +975,6 @@ uint8_t TDME_SET_request_sync(
 
 	return Response.PData.TDMESetCnf.Status;
 } // End of TDME_SET_request_sync()
-
 
 /******************************************************************************/
 /******************************************************************************/
@@ -1032,7 +1029,6 @@ uint8_t TDME_TXPKT_request_sync(
 	return Response.PData.TDMETxPktCnf.Status;
 } // End of TDME_TXPKT_request_sync()
 
-
 /******************************************************************************/
 /******************************************************************************/
 /****** TDME_LOTLK_request_sync()                                        ******/
@@ -1080,7 +1076,6 @@ uint8_t TDME_LOTLK_request_sync(
 
 	return Response.PData.TDMELOTlkCnf.Status;
 } // End of TDME_LOTLK_request_sync()
-
 
 /******************************************************************************/
 /******************************************************************************/
@@ -1397,7 +1392,7 @@ uint8_t TDME_GetTxPower(
 	return status;
 }
 
-int cascoda_register_callbacks(struct cascoda_api_callbacks * in_callbacks)
+int cascoda_register_callbacks(struct cascoda_api_callbacks *in_callbacks)
 {
 	memcpy(&callbacks, in_callbacks, sizeof(struct cascoda_api_callbacks));
 }
@@ -1408,14 +1403,24 @@ int cascoda_downstream_dispatch(const uint8_t *buf, size_t len)
 
 	/* call appropriate api upstream callback */
 	switch (buf[0]) {
-	case SPI_MLME_ASSOCIATE_INDICATION:
+	case SPI_MCPS_DATA_INDICATION:
 		if (callbacks.MCPS_DATA_indication) {
 			return callbacks.MCPS_DATA_indication(buf + 2);
 		}
 		break;
-	case SPI_MLME_ASSOCIATE_CONFIRM:
+	case SPI_MCPS_DATA_CONFIRM:
 		if (callbacks.MCPS_DATA_confirm) {
 			return callbacks.MCPS_DATA_confirm(buf + 2);
+		}
+		break;
+	case SPI_MLME_ASSOCIATE_INDICATION:
+		if (callbacks.MLME_ASSOCIATE_indication) {
+			return callbacks.MLME_ASSOCIATE_indication(buf + 2);
+		}
+		break;
+	case SPI_MLME_ASSOCIATE_CONFIRM:
+		if (callbacks.MLME_ASSOCIATE_confirm) {
+			return callbacks.MLME_ASSOCIATE_confirm(buf + 2);
 		}
 		break;
 	case SPI_MLME_DISASSOCIATE_INDICATION:

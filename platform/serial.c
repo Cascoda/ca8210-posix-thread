@@ -26,6 +26,8 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
+#define _XOPEN_SOURCE 1
+
 #include <assert.h>
 #include <fcntl.h>
 #include <poll.h>
@@ -71,7 +73,7 @@ ThreadError otPlatSerialEnable(void)
 
     s_in_fd = dup(STDIN_FILENO);
     s_out_fd = dup(STDOUT_FILENO);
-    dup2(STDERR_FILENO, STDOUT_FILENO);
+//    dup2(STDERR_FILENO, STDOUT_FILENO);
 
     if (isatty(s_in_fd))
     {
