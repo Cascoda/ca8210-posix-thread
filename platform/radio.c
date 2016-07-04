@@ -44,7 +44,6 @@
 #include <ieee_802_15_4.h>
 #include <pthread.h>
 
-#define EXECUTE_MODE 1
 
 enum
 {
@@ -170,7 +169,7 @@ void PlatformRadioInit(void)
 	pthread_mutex_unlock(&receiveFrame_mutex);
     
 
-    kernel_exchange_init()
+    kernel_exchange_init();
 
     struct cascoda_api_callbacks callbacks;
     callbacks.MCPS_DATA_indication = &readFrame;
@@ -504,6 +503,7 @@ int PlatformRadioProcess(void)    //TODO: port - This should be the callback in 
 
     case kStateListen:
     case kStateReceive:
+	;
     	uint8_t length = sReceiveFrame.mLength;
         if (length > 0)
         {
