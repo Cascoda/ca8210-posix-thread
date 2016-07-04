@@ -44,6 +44,8 @@
 #include <ieee_802_15_4.h>
 #include <pthread.h>
 
+#define EXECUTE_MODE 1
+
 enum
 {
     IEEE802154_MIN_LENGTH = 5,
@@ -184,6 +186,19 @@ ThreadError otPlatRadioEnable(void)    //TODO:(lowpriority) port
     VerifyOrExit(sState == kStateDisabled, error = kThreadError_Busy);
     sState = kStateSleep;
 
+	#ifdef EXECUTE_MODE
+    	if (HWME_SET_request_sync (
+    		HWME_POWERCON,
+    		1,
+    		0x00,
+    		pDeviceRef
+    		) == HWME_SUCCESS)
+    		return kThreadError_None;
+        else return kThreadError_Failed;
+
+	#endif
+
+
 exit:
     return error;
 }
@@ -195,6 +210,19 @@ ThreadError otPlatRadioDisable(void)    //TODO:(lowpriority) port
     VerifyOrExit(sState == kStateIdle, error = kThreadError_Busy);
     sState = kStateDisabled;
 
+    //should sleep until restarted
+	#ifdef EXECUTE_MODE
+    	if (HWME_SET_request_sync (
+    		HWME_POWERCON,
+    		1,
+    		0x0A,
+    		pDeviceRef
+    		) == HWME_SUCCESS)
+	    	return kThreadError_None;
+	    else return kThreadError_Failed;
+
+	#endif
+
 exit:
     return error;
 }
@@ -205,6 +233,18 @@ ThreadError otPlatRadioSleep(void)    //TODO:(lowpriority) port
 
     VerifyOrExit(error = kStateIdle, error = kThreadError_Busy);
     sState = kStateSleep;
+
+	#ifdef EXECUTE_MODE
+		if (HWME_SET_request_sync (
+			HWME_POWERCON,
+			1,
+			0x2A,
+			pDeviceRef
+			) == HWME_SUCCESS)
+			return kThreadError_None;
+	    else return kThreadError_Failed;
+
+	#endif
 
 exit:
     return error;
@@ -235,10 +275,19 @@ ThreadError otPlatRadioIdle(void)    //TODO:(lowpriority) port
         break;
     }
 
+	#ifdef EXECUTE_MODE
+		HWME_GET_request_sync (
+			HWME_POWERCON,
+			1,
+			0x24,
+			pDeviceRef
+		);
+
+	#endif
+
 exit:
     return error;
 }
-
 ThreadError otPlatRadioReceive(uint8_t aChannel)
 {
     ThreadError error = kThreadError_None;
