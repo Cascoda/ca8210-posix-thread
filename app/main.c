@@ -45,9 +45,23 @@ int main(int argc, char *argv[])
 
     NODE_ID = atoi(argv[1]);
 
+    char array[20] = "Hello World";
+ 
+    printf("%s\n",array);
+
     posixPlatformInit();
+    
+    printf("%s\n",array);
+
     otInit();
+
+    printf("%s\n",array);
+
     otCliSerialInit();
+
+    printf("%s\n",array);
+
+
 
     while (1)
     {
