@@ -158,23 +158,17 @@ ThreadError otPlatRadioSetShortAddress(uint16_t address)
 
 void PlatformRadioInit(void)
 {
-    fputs("Initialising radio...", stderr);
     sTransmitFrame.mLength = 0;
     sTransmitFrame.mPsdu = sTransmitPsdu;
     
-    fputs("attempting to acquire mutex...", stderr);
     pthread_mutex_lock(&receiveFrame_mutex);
 		sReceiveFrame.mLength = 0;
 		sReceiveFrame.mPsdu = sReceivePsdu;
 		pthread_cond_broadcast(&receiveFrame_cond);
 	pthread_mutex_unlock(&receiveFrame_mutex);
     
-    fputs("Initialising kernel exchange...", stderr);
 
-    if(!kernel_exchange_init()) fputs("Success!", stderr);
-    else fputs("Failed!", stderr);
-
-    fputs("Initialising callbacks", stderr);
+    kernel_exchange_init()
 
     struct cascoda_api_callbacks callbacks;
     callbacks.MCPS_DATA_indication = &readFrame;
@@ -279,12 +273,6 @@ ThreadError otPlatRadioTransmit(void)
     setChannel(sTransmitFrame.mChannel);
     enableReceiver();
 
-    fprintf(stderr, "\n\n\nPacket Sending: ");
-    for(int i = 0; i < sTransmitFrame.mLength; i++){
-	fprintf(stderr, "%#04x ", sTransmitFrame.mPsdu[i]);
-    
-    }
-
     //TODO: Move these
 	#define MAC_SC_SECURITYLEVEL(sc) (sc&0x07)
 	#define MAC_SC_KEYIDMODE(sc) ((sc>>3)&0x03)
@@ -347,16 +335,6 @@ ThreadError otPlatRadioTransmit(void)
     memcpy(curPacket.Msdu, sTransmitFrame.mPsdu + headerLength, curPacket.MsduLength);
     curPacket.MsduHandle = handle;
 
-    fputs("\n\r\n\r-----------------------", stderr);
-    fputs("\n\rPACKET!", stderr);
-    fputs("\n\r\n\r-----------------------", stderr);
-    fprintf(stderr, "\n\rSrcAddrMode: %#04x", curPacket.SrcAddrMode);
-    fprintf(stderr, "\n\rDstAddrMode: %#04x", curPacket.Dst.AddressMode);
-    fprintf(stderr, "\n\rDstPANID: %#06x", GETLE16(curPacket.Dst.PANId));
-    fprintf(stderr, "\n\rDstAddr: "); for(int i = 0; i < 8; i++) fprintf(stderr, "%02x ", curPacket.Dst.Address[i]);
-    fprintf(stderr, "\n\rMsdu: "); for(int i = 0; i < curPacket.MsduLength; i++) fprintf(stderr, "%02x ", curPacket.Msdu[i]);
-    fputs("\n\r\n\r-----------------------", stderr);
-
     MCPS_DATA_request(
         curPacket.SrcAddrMode,
         curPacket.Dst.AddressMode,
@@ -401,7 +379,6 @@ bool otPlatRadioGetPromiscuous(void)
         &resultLen,
         &result,
         pDeviceRef);
-    if(resultLen != 1) while(1) fputs("cry.", stderr);
     return (bool) result;
 }
 
@@ -478,7 +455,6 @@ int PlatformRadioProcess(void)    //TODO: port - This should be the callback in 
 
     case kStateListen:
     case kStateReceive:
-    	fputs("(kStateListen)", stderr);
     	uint8_t length = sReceiveFrame.mLength;
         if (length > 0)
         {
@@ -488,7 +464,6 @@ int PlatformRadioProcess(void)    //TODO: port - This should be the callback in 
         break;
 
     case kStateTransmit:
-    	fputs("(kStateTransmit)", stderr);
         if (sTransmitError != kThreadError_None || (sTransmitFrame.mPsdu[0] & IEEE802154_ACK_REQUEST) == 0)
         {
             sState = kStateIdle;
