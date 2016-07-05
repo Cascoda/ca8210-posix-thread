@@ -34,6 +34,7 @@
 
 #include <openthread-types.h>
 
+#include <math.h>
 #include <common/code_utils.hpp>
 #include <platform/radio.h>
 #include <cascoda_api.h>
@@ -101,6 +102,31 @@ void disableReceiver(void)
 {
     //nothing
 }
+
+ThreadError otActiveScan(uint16_t aScanChannels, uint16_t aScanDuration, otHandleActiveScanResult aCallback)
+{
+	/*
+	 * uint8_t MLME_SCAN_request(
+	uint8_t          ScanType, 0101010101010101101111111011
+	uint32_t         ScanChannels,
+	uint8_t          ScanDuration,
+	struct SecSpec  *pSecurity,
+	void            *pDeviceRef
+);
+	 */
+	//uint32_t scanChannels = ((uint32_t)0x0000 << 16) | aScanChannels;
+
+	//uint16_t aScanDuration = aBaseSuperframeDuration * (pow(2,ScanDuration) +1);
+	uint32_t ScanChannels = ((uint32_t)aScanChannels) << 11;
+	uint8_t ScanDuration = log2((aScanDuration/aBaseSuperframeDuration) -1);
+	struct SecSpec pSecurity = {0};
+
+
+	return MLME_SCAN_request(1, aScanChannels, ScanDuration, &pSecurity, pDeviceRef);
+    /*return sThreadNetif->GetMac().ActiveScan(aScanChannels, aScanDuration, &HandleActiveScanResult,
+                                             reinterpret_cast<void *>(aCallback));*/
+}
+
 
 ThreadError otPlatRadioSetPanId(uint16_t panid)
 {
