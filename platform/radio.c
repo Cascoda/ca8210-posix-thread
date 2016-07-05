@@ -321,6 +321,10 @@ ThreadError otPlatRadioTransmit(void)
     handle++;
 
     VerifyOrExit(sState == kStateIdle, error = kThreadError_Busy);
+    uint16_t frameControl = GETLE16(sTransmitFrame.mPsdu);
+    VerifyOrExit(frameControl & MAC_FC_FT_MASK == MAC_FC_FT_DATA, error = kThreadError_Abort);
+
+
     sState = kStateTransmit;
     sTransmitError = kThreadError_None;
 
@@ -333,7 +337,7 @@ ThreadError otPlatRadioTransmit(void)
 
     uint8_t headerLength = 0;
     uint8_t footerLength = 0;
-    uint16_t frameControl = GETLE16(sTransmitFrame.mPsdu);
+
     curPacket.SrcAddrMode = MAC_FC_SAM(frameControl);
     curPacket.Dst.AddressMode = MAC_FC_DAM(frameControl);
     curPacket.TxOptions = frameControl & MAC_FC_ACK_REQ ? 0x01 : 0x00;
@@ -448,80 +452,93 @@ void readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 
 
     VerifyOrExit(sState == kStateListen, ;);
-    uint8_t tempTransmitPsdu[IEEE802154_MAX_LENGTH];
 
-    struct SecSpec curSecSpec = {0};
+    pthread_mutex_lock(&receiveFrame_mutex);
+	//wait until the main thread is free to process the frame
+	while(sReceiveFrame.mLength != 0) {pthread_cond_wait(&receiveFrame_cond, &receiveFrame_mutex);}
 
 	uint8_t headerLength = 0;
 	uint8_t footerLength = 0;
 	uint16_t frameControl = 0;
 	uint8_t msduLength = params->MsduLength;
+	struct SecSpec * curSecSpec = params + msduLength + 29 ; //Location defined in cascoda API docs
+
+	//TODO: Move this
+	#define CASCODA_DATAIND_SEC_LOC 29
 
 
 	frameControl |= params->Src.AddressMode << 14;
 	frameControl |= params->Dst.AddressMode << 10;
-	frameControl |= params[msduLength + 29] ? MAC_FC_SEC_ENA : 0;	//Security Enabled field
+	frameControl |= curSecSpec->SecurityLevel ? MAC_FC_SEC_ENA : 0;	//Security Enabled field
 	frameControl |= MAC_FC_FT_DATA; //Frame type = data
 
-	curPacket.Dst.AddressMode = MAC_FC_DAM(frameControl);
-	curPacket.TxOptions = frameControl & MAC_FC_ACK_REQ ? 0x01 : 0x00;
+	PUTLE16(frameControl, sReceiveFrame.mPsdu);
 
 	uint8_t addressFieldLength = 0;
 
-	if(curPacket.Dst.AddressMode == MAC_MODE_SHORT_ADDR){
-		memcpy(curPacket.Dst.Address, sTransmitFrame.mPsdu+5, 2);
-		memcpy(curPacket.Dst.PANId, sTransmitFrame.mPsdu+3, 2);
+	if(params->Dst.AddressMode == MAC_MODE_SHORT_ADDR){
+		memcpy(sReceiveFrame.mPsdu+5, params->Dst.Address, 2);
+		memcpy(sReceiveFrame.mPsdu+3, params->Dst.PANId, 2);
 		addressFieldLength +=4;
 	}
-	else if(curPacket.Dst.AddressMode == MAC_MODE_LONG_ADDR){
-		memcpy(curPacket.Dst.Address, sTransmitFrame.mPsdu+5, 8);
-		memcpy(curPacket.Dst.PANId, sTransmitFrame.mPsdu+3, 2);
+	else if(params->Dst.AddressMode == MAC_MODE_LONG_ADDR){
+		memcpy(sReceiveFrame.mPsdu+5, params->Dst.Address, 8);
+		memcpy(sReceiveFrame.mPsdu+3, params->Dst.PANId, 2);
 		addressFieldLength +=10;
 	}
 
-	if(curPacket.SrcAddrMode == MAC_MODE_SHORT_ADDR) addressFieldLength +=4;
-	else if(curPacket.SrcAddrMode == MAC_MODE_LONG_ADDR) addressFieldLength +=10;
+	if(params->Src.AddressMode == MAC_MODE_SHORT_ADDR){
+		memcpy(sReceiveFrame.mPsdu + addressFieldLength + 5, params->Src.Address, 2);
+		memcpy(sReceiveFrame.mPsdu + addressFieldLength + 3, params->Src.PANId, 2);
+		addressFieldLength +=4;
+	}
+	else if(params->Src.AddressMode == MAC_MODE_LONG_ADDR){
+		memcpy(sReceiveFrame.mPsdu + addressFieldLength + 5, params->Src.Address, 8);
+		memcpy(sReceiveFrame.mPsdu + addressFieldLength + 3, params->Src.PANId, 2);
+		addressFieldLength +=10;
+	}
+
 	headerLength = addressFieldLength + MAC_BASEHEADERLENGTH;
 
 	if(frameControl & MAC_FC_SEC_ENA){	//if security is required
 		uint8_t ASHloc = MAC_BASEHEADERLENGTH + addressFieldLength;
-		uint8_t securityControl = sTransmitFrame.mPsdu + ASHloc;
-		curSecSpec.SecurityLevel = MAC_SC_SECURITYLEVEL(securityControl);
-		curSecSpec.KeyIdMode = MAC_SC_KEYIDMODE(securityControl);
+
+		uint8_t securityControl = 0;
+		securityControl |= MAC_SC_SECURITYLEVEL(curSecSpec->SecurityLevel);
+		securityControl |= MAC_KEYIDMODE_SC(curSecSpec->KeyIdMode);
+
+		sReceiveFrame[ASHloc] = securityControl;
 
 		ASHloc += 5;//skip to key identifier
-		if(curSecSpec.KeyIdMode == 0x02){//Table 96
-			memcpy(curSecSpec.KeySource, sTransmitFrame.mPsdu + ASHloc, 4);
+		if(curSecSpec->KeyIdMode == 0x02){//Table 96
+			memcpy(sReceiveFrame.mPsdu + ASHloc, curSecSpec->KeySource, 4);
 			ASHloc += 4;
 		}
-		else if(curSecSpec.KeyIdMode == 0x03){//Table 96
-			memcpy(curSecSpec.KeySource, sTransmitFrame.mPsdu + ASHloc, 8);
+		else if(curSecSpec->KeyIdMode == 0x03){//Table 96
+			memcpy(sReceiveFrame.mPsdu + ASHloc, curSecSpec->KeySource, 8);
 			ASHloc += 8;
 		}
-		curSecSpec.KeyIndex = sTransmitFrame.mPsdu[ASHloc++];
+		sReceiveFrame.mPsdu[ASHloc++] = curSecSpec->KeyIndex;
 		headerLength = ASHloc;
 	}
 
 	//Table 95 to calculate auth tag length
-	footerLength = 2 << (curSecSpec.SecurityLevel % 4);
+	footerLength = 2 << (curSecSpec->SecurityLevel % 4);
 	footerLength = footerLength == 2 ? 0 : footerLength;
 
 	footerLength += 2; //MFR length
 
-	curPacket.MsduLength = sTransmitFrame.mLength - footerLength - headerLength;
+	sReceiveFrame.mLength = params->MsduLength + footerLength + headerLength;
 
-
-
-    pthread_mutex_lock(&receiveFrame_mutex);
-    	//wait until the main thread is free to process the frame
-    	while(sReceiveFrame.mLength != 0) {pthread_cond_wait(&receiveFrame_cond, &receiveFrame_mutex);}
-
-		sReceiveFrame.mPsdu = params;
-		sReceiveFrame.mLength = params->MsduLength + 40;
-		sReceiveFrame.mLqi = params->MpduLinkQuality;
-		sReceiveFrame.mChannel = sChannel;
-		//sReceiveFrame.mPower = -20;
+	sReceiveFrame.mPsdu = params;
+	sReceiveFrame.mLength = params->MsduLength + 40;
+	sReceiveFrame.mLqi = params->MpduLinkQuality;
+	sReceiveFrame.mChannel = sChannel;
+	sReceiveFrame.mPower = -20;
     pthread_mutex_unlock(&receiveFrame_mutex);
+
+	sState = kStateIdle;
+	otPlatRadioReceiveDone(&sReceiveFrame, sReceiveError);
 
     PlatformRadioProcess();
 
@@ -552,35 +569,9 @@ exit:
     return;
 }
 
-int PlatformRadioProcess(void)    //TODO: port - This should be the callback in future for data receive
+int PlatformRadioProcess(void)
 {
 	pthread_mutex_lock(&receiveFrame_mutex);
-    switch (sState)
-    {
-    case kStateDisabled:
-        break;
-
-    case kStateSleep:
-        break;
-
-    case kStateIdle:
-        break;
-
-    case kStateListen:
-    case kStateReceive:
-    	;
-    	uint8_t length = sReceiveFrame.mLength;
-        if (length > 0)
-        {
-            sState = kStateIdle;
-            otPlatRadioReceiveDone(&sReceiveFrame, sReceiveError);
-        }
-        break;
-
-    case kStateTransmit:
-    	//All handled in confirm callback
-        break;
-    }
 
     sReceiveFrame.mLength = 0;
     pthread_cond_broadcast(&receiveFrame_cond);
