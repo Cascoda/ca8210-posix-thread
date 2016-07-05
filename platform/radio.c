@@ -507,7 +507,7 @@ void readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 		securityControl |= MAC_SC_SECURITYLEVEL(curSecSpec->SecurityLevel);
 		securityControl |= MAC_KEYIDMODE_SC(curSecSpec->KeyIdMode);
 
-		sReceiveFrame[ASHloc] = securityControl;
+		sReceiveFrame.mPsdu[ASHloc] = securityControl;
 
 		ASHloc += 5;//skip to key identifier
 		if(curSecSpec->KeyIdMode == 0x02){//Table 96
