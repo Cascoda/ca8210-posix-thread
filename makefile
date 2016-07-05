@@ -1,5 +1,6 @@
 SUBDIRS = app cascoda openthread platform
 CLEANSUBDIRS := $(addsuffix .clean,$(SUBDIRS))
+CFLAGS = -g
 LDFLAGS = -pthread
 
 .PHONY: subdirs $(SUBDIRS) clean $(SUBCLEAN)

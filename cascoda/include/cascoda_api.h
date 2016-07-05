@@ -32,8 +32,8 @@
 #ifndef CASCODA_API_H
 #define CASCODA_API_H
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #include "mac_messages.h"
 
@@ -293,9 +293,8 @@ uint8_t TDME_GetTxPower(uint8_t *txp, void *pDeviceRef);
 /****** API callback functions                                           ******/
 /******************************************************************************/
 
-int cascoda_register_callbacks(struct cascoda_api_callbacks * in_callbacks);
+int cascoda_register_callbacks(struct cascoda_api_callbacks *in_callbacks);
 int cascoda_downstream_dispatch(const uint8_t *buf, size_t len);
-int kernel_exchange_init(void);
 
 /******************************************************************************/
 /****** External function pointers                                       ******/

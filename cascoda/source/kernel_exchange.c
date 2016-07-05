@@ -2,6 +2,7 @@
 #include <pthread.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "../include/cascoda_api.h"
 
@@ -22,6 +23,7 @@ static int ca8210_test_int_exchange(
 
 static int DriverFileDescriptor;
 static pthread_t rx_thread;
+static pthread_mutex_t driver_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /******************************************************************************/
 
@@ -31,7 +33,9 @@ static void *ca8210_test_int_read_worker(void *arg)
 	size_t rx_len;
 	/* TODO: while not told to exit? */
 	while (1) {
+		pthread_mutex_lock(&driver_mutex);
 		rx_len = read(DriverFileDescriptor, rx_buf, 0);
+		pthread_mutex_unlock(&driver_mutex);
 		if (rx_len > 0) {
 			cascoda_downstream_dispatch(rx_buf, rx_len);
 		}
@@ -44,12 +48,13 @@ int kernel_exchange_init(void)
 {
 	int ret;
 	pthread_attr_t attrs;
-
+	//pthread_mutex_init(&rx_mutex, PTHREAD_MUTEX_NORMAL);
 	DriverFileDescriptor = open(DriverFilePath, O_RDWR);
 
 	cascoda_api_downstream = ca8210_test_int_exchange;
 
-	ret = pthread_create(&rx_thread, &attrs, ca8210_test_int_read_worker, NULL);
+	ret = pthread_create(&rx_thread, NULL, ca8210_test_int_read_worker, NULL);
+	fprintf(stderr, "Error %d ", ret);
 	return ret;
 }
 
@@ -72,13 +77,19 @@ static int ca8210_test_int_exchange(
 )
 {
 	int status, Rx_Length;
+	pthread_mutex_lock(&driver_mutex);	//Enforce synchronous write then read
+
+
 	ca8210_test_int_write(buf, len);
 
-	if ((buf[0] & SPI_SYN) && response) {
+	if (((buf[0] & SPI_SYN) && response)) {
 		do {
 			Rx_Length = read(DriverFileDescriptor, response, NULL);
 		} while (Rx_Length == 0);
 	}
+
+	pthread_mutex_unlock(&driver_mutex);
+
 
 	return 0;
 }
