@@ -34,12 +34,8 @@
 
 #include <openthread-types.h>
 
-<<<<<<< HEAD
 #include <math.h>
-=======
 #include <stdio.h>
-
->>>>>>> d8df1590535a8e9d89536c161be07bf8959f7065
 #include <common/code_utils.hpp>
 #include <platform/radio.h>
 #include <cascoda_api.h>
@@ -63,12 +59,15 @@ enum
 
 void readFrame(struct MCPS_DATA_indication_pset *params);
 void readConfirmFrame(struct MCPS_DATA_confirm_pset *params);
+void scanConfirmFrame(struct MLME_SCAN_confirm_pset *params);
 
 static struct MAC_Message response;
 static RadioPacket sTransmitFrame;
 static RadioPacket sReceiveFrame;
 static ThreadError sTransmitError;
 static ThreadError sReceiveError;
+
+static otHandleActiveScanResult scanCallback;
 
 static void* pDeviceRef = NULL;
 
@@ -118,22 +117,14 @@ void disableReceiver(void)
 
 ThreadError otActiveScan(uint16_t aScanChannels, uint16_t aScanDuration, otHandleActiveScanResult aCallback)
 {
-	/*
-	 * uint8_t MLME_SCAN_request(
-	uint8_t          ScanType, 0101010101010101101111111011
-	uint32_t         ScanChannels,
-	uint8_t          ScanDuration,
-	struct SecSpec  *pSecurity,
-	void            *pDeviceRef
-);
-	 */
 	//uint32_t scanChannels = ((uint32_t)0x0000 << 16) | aScanChannels;
+	uint32_t ScanChannels = ((uint32_t)aScanChannels) << 11;
 
 	//uint16_t aScanDuration = aBaseSuperframeDuration * (pow(2,ScanDuration) +1);
-	uint32_t ScanChannels = ((uint32_t)aScanChannels) << 11;
 	uint8_t ScanDuration = log2((aScanDuration/aBaseSuperframeDuration) -1);
 	struct SecSpec pSecurity = {0};
 
+	scanCallback = aCallback;
 
 	return MLME_SCAN_request(1, aScanChannels, ScanDuration, &pSecurity, pDeviceRef);
     /*return sThreadNetif->GetMac().ActiveScan(aScanChannels, aScanDuration, &HandleActiveScanResult,
@@ -203,6 +194,7 @@ void PlatformRadioInit(void)
     struct cascoda_api_callbacks callbacks;
     callbacks.MCPS_DATA_indication = &readFrame;
     callbacks.MCPS_DATA_confirm = &readConfirmFrame;
+    callbacks.MLME_SCAN_confirm = &scanConfirmFrame;
     cascoda_register_callbacks(&callbacks);
     
 }
@@ -517,6 +509,34 @@ void readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
     pthread_mutex_unlock(&receiveFrame_mutex);
 
     PlatformRadioProcess();
+
+exit:
+    return;
+}
+
+void scanConfirmFrame(struct MLME_SCAN_confirm_pset *params)   //Async
+{
+	for (int i = 0; i < params->ResultListSize; i++){
+		static struct PanDescriptor * curStruct = params + 7;
+
+		otActiveScanResult resultStruct;
+
+		if ((curStruct->Coord->AddressMode) == 3) {
+			resultStruct.mExtAddress = curStruct->Coord->Address;
+		} else {
+			//cause scan to fail
+			assert(false);
+		}
+
+		resultStruct.mPanId = curStruct->Coord->PANId;
+		resultStruct.mChannel = curStruct->LogicalChannel;
+		resultStruct.mRssi = -20;
+		resultStruct.mLqi = curStruct->LinkQuality;
+
+		scanCallback(resultStruct);
+
+		curStruct += 32;
+	}
 
 exit:
     return;
