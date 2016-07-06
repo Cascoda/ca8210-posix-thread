@@ -50,8 +50,6 @@ int main(int argc, char *argv[])
     otInit();
     otCliSerialInit();
 
-    posixPlatformInit();
-
     otInit();
 
     otCliSerialInit();

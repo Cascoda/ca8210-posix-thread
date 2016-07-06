@@ -45,6 +45,12 @@
 #include <pthread.h>
 
 
+//Mac tools
+#define MAC_SC_SECURITYLEVEL(sc) (sc&0x07)
+#define MAC_SC_KEYIDMODE(sc) ((sc>>3)&0x03)
+#define MAC_KEYIDMODE_SC(keyidmode) ((keyidmode&0x03)<<3)
+#define MAC_BASEHEADERLENGTH 3
+
 enum
 {
     IEEE802154_MIN_LENGTH = 5,
@@ -342,16 +348,15 @@ ThreadError otPlatRadioTransmit(void)
     handle++;
 
     VerifyOrExit(sState == kStateIdle, error = kThreadError_Busy);
+    uint16_t frameControl = GETLE16(sTransmitFrame.mPsdu);
+    VerifyOrExit(frameControl & MAC_FC_FT_MASK == MAC_FC_FT_DATA, error = kThreadError_Abort);
+
+
     sState = kStateTransmit;
     sTransmitError = kThreadError_None;
 
     setChannel(sTransmitFrame.mChannel);
     enableReceiver();
-
-    //TODO: Move these
-	#define MAC_SC_SECURITYLEVEL(sc) (sc&0x07)
-	#define MAC_SC_KEYIDMODE(sc) ((sc>>3)&0x03)
-	#define MAC_BASEHEADERLENGTH 3
 
     //transmit
     struct MCPS_DATA_request_pset curPacket;
@@ -359,7 +364,7 @@ ThreadError otPlatRadioTransmit(void)
 
     uint8_t headerLength = 0;
     uint8_t footerLength = 0;
-    uint16_t frameControl = GETLE16(sTransmitFrame.mPsdu);
+
     curPacket.SrcAddrMode = MAC_FC_SAM(frameControl);
     curPacket.Dst.AddressMode = MAC_FC_DAM(frameControl);
     curPacket.TxOptions = frameControl & MAC_FC_ACK_REQ ? 0x01 : 0x00;
@@ -476,15 +481,91 @@ void readFrame(struct MCPS_DATA_indication_pset *params)   //Async
     VerifyOrExit(sState == kStateListen, ;);
 
     pthread_mutex_lock(&receiveFrame_mutex);
-    	//wait until the main thread is free to process the frame
-    	while(sReceiveFrame.mLength != 0) {pthread_cond_wait(&receiveFrame_cond, &receiveFrame_mutex);}
+	//wait until the main thread is free to process the frame
+	while(sReceiveFrame.mLength != 0) {pthread_cond_wait(&receiveFrame_cond, &receiveFrame_mutex);}
 
-		sReceiveFrame.mPsdu = params;
-		sReceiveFrame.mLength = params->MsduLength + 40;
-		sReceiveFrame.mLqi = params->MpduLinkQuality;
-		sReceiveFrame.mChannel = sChannel;
-		//sReceiveFrame.mPower = -20;
+	uint8_t headerLength = 0;
+	uint8_t footerLength = 0;
+	uint16_t frameControl = 0;
+	uint8_t msduLength = params->MsduLength;
+	struct SecSpec * curSecSpec = params + msduLength + 29 ; //Location defined in cascoda API docs
+
+	//TODO: Move this
+	#define CASCODA_DATAIND_SEC_LOC 29
+
+
+	frameControl |= params->Src.AddressMode << 14;
+	frameControl |= params->Dst.AddressMode << 10;
+	frameControl |= curSecSpec->SecurityLevel ? MAC_FC_SEC_ENA : 0;	//Security Enabled field
+	frameControl |= MAC_FC_FT_DATA; //Frame type = data
+
+	PUTLE16(frameControl, sReceiveFrame.mPsdu);
+
+	uint8_t addressFieldLength = 0;
+
+	if(params->Dst.AddressMode == MAC_MODE_SHORT_ADDR){
+		memcpy(sReceiveFrame.mPsdu+5, params->Dst.Address, 2);
+		memcpy(sReceiveFrame.mPsdu+3, params->Dst.PANId, 2);
+		addressFieldLength +=4;
+	}
+	else if(params->Dst.AddressMode == MAC_MODE_LONG_ADDR){
+		memcpy(sReceiveFrame.mPsdu+5, params->Dst.Address, 8);
+		memcpy(sReceiveFrame.mPsdu+3, params->Dst.PANId, 2);
+		addressFieldLength +=10;
+	}
+
+	if(params->Src.AddressMode == MAC_MODE_SHORT_ADDR){
+		memcpy(sReceiveFrame.mPsdu + addressFieldLength + 5, params->Src.Address, 2);
+		memcpy(sReceiveFrame.mPsdu + addressFieldLength + 3, params->Src.PANId, 2);
+		addressFieldLength +=4;
+	}
+	else if(params->Src.AddressMode == MAC_MODE_LONG_ADDR){
+		memcpy(sReceiveFrame.mPsdu + addressFieldLength + 5, params->Src.Address, 8);
+		memcpy(sReceiveFrame.mPsdu + addressFieldLength + 3, params->Src.PANId, 2);
+		addressFieldLength +=10;
+	}
+
+	headerLength = addressFieldLength + MAC_BASEHEADERLENGTH;
+
+	if(frameControl & MAC_FC_SEC_ENA){	//if security is required
+		uint8_t ASHloc = MAC_BASEHEADERLENGTH + addressFieldLength;
+
+		uint8_t securityControl = 0;
+		securityControl |= MAC_SC_SECURITYLEVEL(curSecSpec->SecurityLevel);
+		securityControl |= MAC_KEYIDMODE_SC(curSecSpec->KeyIdMode);
+
+		sReceiveFrame.mPsdu[ASHloc] = securityControl;
+
+		ASHloc += 5;//skip to key identifier
+		if(curSecSpec->KeyIdMode == 0x02){//Table 96
+			memcpy(sReceiveFrame.mPsdu + ASHloc, curSecSpec->KeySource, 4);
+			ASHloc += 4;
+		}
+		else if(curSecSpec->KeyIdMode == 0x03){//Table 96
+			memcpy(sReceiveFrame.mPsdu + ASHloc, curSecSpec->KeySource, 8);
+			ASHloc += 8;
+		}
+		sReceiveFrame.mPsdu[ASHloc++] = curSecSpec->KeyIndex;
+		headerLength = ASHloc;
+	}
+
+	//Table 95 to calculate auth tag length
+	footerLength = 2 << (curSecSpec->SecurityLevel % 4);
+	footerLength = footerLength == 2 ? 0 : footerLength;
+
+	footerLength += 2; //MFR length
+
+	sReceiveFrame.mLength = params->MsduLength + footerLength + headerLength;
+
+	sReceiveFrame.mPsdu = params;
+	sReceiveFrame.mLength = params->MsduLength + 40;
+	sReceiveFrame.mLqi = params->MpduLinkQuality;
+	sReceiveFrame.mChannel = sChannel;
+	sReceiveFrame.mPower = -20;
     pthread_mutex_unlock(&receiveFrame_mutex);
+
+	sState = kStateIdle;
+	otPlatRadioReceiveDone(&sReceiveFrame, sReceiveError);
 
     PlatformRadioProcess();
 
@@ -498,21 +579,23 @@ void readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
 
     VerifyOrExit(sState == kStateTransmit, ;);
 
-    pthread_mutex_lock(&receiveFrame_mutex);
-    	//wait until the main thread is free to process the frame
-    	while(sReceiveFrame.mLength != 0) {pthread_cond_wait(&receiveFrame_cond, &receiveFrame_mutex);}
-
-		sReceiveFrame.mPsdu = params;
-		sReceiveFrame.mLength = 6;
-		sReceiveFrame.mChannel = sChannel;
-		//sReceiveFrame.mPower = -20;
-    pthread_mutex_unlock(&receiveFrame_mutex);
+    if(params->Status == MAC_SUCCESS){
+    	otPlatRadioTransmitDone(false, sTransmitError);
+    }
+    else{
+    	if(params->Status == MAC_CHANNEL_ACCESS_FAILURE) sTransmitError = kThreadError_ChannelAccessFailure;
+    	else if(params->Status == MAC_NO_ACK) sTransmitError = kThreadError_NoAck;
+    	else sTransmitError = kThreadError_Abort;
+    	sState = kStateIdle;
+    	otPlatRadioTransmitDone(false, sTransmitError);
+    }
 
     PlatformRadioProcess();
 
 exit:
     return;
 }
+
 
 void scanConfirmFrame(struct MLME_SCAN_confirm_pset *params)   //Async
 {
@@ -543,45 +626,9 @@ exit:
 }
 
 int PlatformRadioProcess(void)    //TODO: port - This should be the callback in future for data receive
+
 {
 	pthread_mutex_lock(&receiveFrame_mutex);
-    switch (sState)
-    {
-    case kStateDisabled:
-        break;
-
-    case kStateSleep:
-        break;
-
-    case kStateIdle:
-        break;
-
-    case kStateListen:
-    case kStateReceive:
-	;
-    	uint8_t length = sReceiveFrame.mLength;
-        if (length > 0)
-        {
-            sState = kStateIdle;
-            otPlatRadioReceiveDone(&sReceiveFrame, sReceiveError);
-        }
-        break;
-
-    case kStateTransmit:
-        if (sTransmitError != kThreadError_None || (sTransmitFrame.mPsdu[0] & IEEE802154_ACK_REQUEST) == 0)
-        {
-            sState = kStateIdle;
-            otPlatRadioTransmitDone(false, sTransmitError);
-        }
-        else if (sReceiveFrame.mLength == IEEE802154_ACK_LENGTH &&
-                 (sReceiveFrame.mPsdu[0] & IEEE802154_FRAME_TYPE_MASK) == IEEE802154_FRAME_TYPE_ACK &&
-                 (sReceiveFrame.mPsdu[IEEE802154_DSN_OFFSET] == sTransmitFrame.mPsdu[IEEE802154_DSN_OFFSET]))
-        {
-            sState = kStateIdle;
-            otPlatRadioTransmitDone((sReceiveFrame.mPsdu[0] & IEEE802154_FRAME_PENDING) != 0, sTransmitError);
-        }
-        break;
-    }
 
     sReceiveFrame.mLength = 0;
     pthread_cond_broadcast(&receiveFrame_cond);
