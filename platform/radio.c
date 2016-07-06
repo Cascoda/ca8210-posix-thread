@@ -605,17 +605,17 @@ void scanConfirmFrame(struct MLME_SCAN_confirm_pset *params)   //Async
 		otActiveScanResult resultStruct;
 
 		if ((curStruct->Coord.AddressMode) == 3) {
-			memcpy(resultStruct.mExtAddress, curStruct->Coord.Address, 2);
+			memcpy(&resultStruct.mExtAddress, curStruct->Coord.Address, 2);
 		} else {
 			//cause scan to fail
 			assert(false);
 		}
-		memcpy(resultStruct.mPanId, curStruct->Coord.PANId, 8);
+		resultStruct.mPanId = GETLE16(curStruct->Coord.PANId);
 		resultStruct.mChannel = curStruct->LogicalChannel;
 		resultStruct.mRssi = -20;
 		resultStruct.mLqi = curStruct->LinkQuality;
 
-		scanCallback(resultStruct);
+		scanCallback(&resultStruct);
 
 		curStruct += 32;
 	}
