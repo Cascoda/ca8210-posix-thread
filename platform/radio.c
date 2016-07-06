@@ -599,19 +599,19 @@ exit:
 
 void scanConfirmFrame(struct MLME_SCAN_confirm_pset *params)   //Async
 {
+	struct PanDescriptor * curStruct = params + 7;
 	for (int i = 0; i < params->ResultListSize; i++){
-		static struct PanDescriptor * curStruct = params + 7;
 
 		otActiveScanResult resultStruct;
 
-		if ((curStruct->Coord->AddressMode) == 3) {
-			resultStruct.mExtAddress = curStruct->Coord->Address;
+		if ((curStruct->Coord.AddressMode) == 3) {
+			resultStruct.mExtAddress = curStruct->Coord.Address;
 		} else {
 			//cause scan to fail
 			assert(false);
 		}
 
-		resultStruct.mPanId = curStruct->Coord->PANId;
+		resultStruct.mPanId = curStruct->Coord.PANId;
 		resultStruct.mChannel = curStruct->LogicalChannel;
 		resultStruct.mRssi = -20;
 		resultStruct.mLqi = curStruct->LinkQuality;
