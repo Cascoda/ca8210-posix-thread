@@ -605,13 +605,12 @@ void scanConfirmFrame(struct MLME_SCAN_confirm_pset *params)   //Async
 		otActiveScanResult resultStruct;
 
 		if ((curStruct->Coord.AddressMode) == 3) {
-			resultStruct.mExtAddress = curStruct->Coord.Address;
+			memcpy(resultStruct.mExtAddress, curStruct->Coord.Address, 2);
 		} else {
 			//cause scan to fail
 			assert(false);
 		}
-
-		resultStruct.mPanId = curStruct->Coord.PANId;
+		memcpy(resultStruct.mPanId, curStruct->Coord.PANId, 8);
 		resultStruct.mChannel = curStruct->LogicalChannel;
 		resultStruct.mRssi = -20;
 		resultStruct.mLqi = curStruct->LinkQuality;
