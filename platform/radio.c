@@ -351,7 +351,7 @@ ThreadError otPlatRadioTransmit(void)
 
     VerifyOrExit(sState == kStateIdle, error = kThreadError_Busy);
     uint16_t frameControl = GETLE16(sTransmitFrame.mPsdu);
-    VerifyOrExit(frameControl & MAC_FC_FT_MASK == MAC_FC_FT_DATA, error = kThreadError_Abort);
+    VerifyOrExit((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_DATA, error = kThreadError_Abort);
 
 
     sState = kStateTransmit;
