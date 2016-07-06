@@ -37,6 +37,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <assert.h>
 #include <common/code_utils.hpp>
 #include <platform/radio.h>
 #include <cascoda_api.h>
