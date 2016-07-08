@@ -353,6 +353,12 @@ ThreadError otPlatRadioTransmit(void)
     uint16_t frameControl = GETLE16(sTransmitFrame.mPsdu);
     VerifyOrExit((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_DATA, error = kThreadError_Abort);
 
+    fprintf(stderr, "\n\rPSDU to send: ");
+	for(int i = 0; i < sTransmitFrame.mLength; i++){
+		fprintf(stderr, " %#04x", sTransmitFrame.mPsdu[i]);
+	}
+	fprintf(stderr, "\n\r");
+
 
     sState = kStateTransmit;
     sTransmitError = kThreadError_None;
