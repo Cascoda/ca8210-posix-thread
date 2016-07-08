@@ -33,9 +33,11 @@
  */
 
 #include <openthread-types.h>
+#include <openthread.h>
 
+#include <math.h>
 #include <stdio.h>
-
+#include <assert.h>
 #include <common/code_utils.hpp>
 #include <platform/radio.h>
 #include <cascoda_api.h>
@@ -65,12 +67,15 @@ enum
 
 void readFrame(struct MCPS_DATA_indication_pset *params);
 void readConfirmFrame(struct MCPS_DATA_confirm_pset *params);
+void scanConfirmFrame(struct MLME_SCAN_confirm_pset *params);
 
 static struct MAC_Message response;
 static RadioPacket sTransmitFrame;
 static RadioPacket sReceiveFrame;
 static ThreadError sTransmitError;
 static ThreadError sReceiveError;
+
+static otHandleActiveScanResult scanCallback;
 
 static void* pDeviceRef = NULL;
 
@@ -117,6 +122,23 @@ void disableReceiver(void)
 {
     //nothing
 }
+
+ThreadError otActiveScan(uint16_t aScanChannels, uint16_t aScanDuration, otHandleActiveScanResult aCallback)
+{
+	//uint32_t scanChannels = ((uint32_t)0x0000 << 16) | aScanChannels;
+	uint32_t ScanChannels = ((uint32_t)aScanChannels) << 11;
+
+	//uint16_t aScanDuration = aBaseSuperframeDuration * (pow(2,ScanDuration) +1);
+	uint8_t ScanDuration = log2((aScanDuration/aBaseSuperframeDuration) -1);
+	struct SecSpec pSecurity = {0};
+
+	scanCallback = aCallback;
+
+	return MLME_SCAN_request(1, aScanChannels, ScanDuration, &pSecurity, pDeviceRef);
+    /*return sThreadNetif->GetMac().ActiveScan(aScanChannels, aScanDuration, &HandleActiveScanResult,
+                                             reinterpret_cast<void *>(aCallback));*/
+}
+
 
 ThreadError otPlatRadioSetPanId(uint16_t panid)
 {
@@ -180,6 +202,7 @@ void PlatformRadioInit(void)
     struct cascoda_api_callbacks callbacks;
     callbacks.MCPS_DATA_indication = &readFrame;
     callbacks.MCPS_DATA_confirm = &readConfirmFrame;
+    callbacks.MLME_SCAN_confirm = &scanConfirmFrame;
     cascoda_register_callbacks(&callbacks);
     
 }
@@ -192,10 +215,11 @@ ThreadError otPlatRadioEnable(void)    //TODO:(lowpriority) port
     sState = kStateSleep;
 
 	#ifdef EXECUTE_MODE
+    	uint8_t HWMEAttVal = 0; //0x00
     	if (HWME_SET_request_sync (
     		HWME_POWERCON,
     		1,
-    		0x00,
+    		&HWMEAttVal,
     		pDeviceRef
     		) == HWME_SUCCESS)
     		return kThreadError_None;
@@ -217,10 +241,11 @@ ThreadError otPlatRadioDisable(void)    //TODO:(lowpriority) port
 
     //should sleep until restarted
 	#ifdef EXECUTE_MODE
+    	uint8_t HWMEAttVal = 10; //0x0A
     	if (HWME_SET_request_sync (
     		HWME_POWERCON,
     		1,
-    		0x0A,
+    		&HWMEAttVal,
     		pDeviceRef
     		) == HWME_SUCCESS)
 	    	return kThreadError_None;
@@ -240,10 +265,11 @@ ThreadError otPlatRadioSleep(void)    //TODO:(lowpriority) port
     sState = kStateSleep;
 
 	#ifdef EXECUTE_MODE
+    	uint8_t HWMEAttVal = 42; //0x2A
 		if (HWME_SET_request_sync (
 			HWME_POWERCON,
 			1,
-			0x2A,
+			&HWMEAttVal,
 			pDeviceRef
 			) == HWME_SUCCESS)
 			return kThreadError_None;
@@ -281,12 +307,15 @@ ThreadError otPlatRadioIdle(void)    //TODO:(lowpriority) port
     }
 
 	#ifdef EXECUTE_MODE
-		HWME_GET_request_sync (
+    	uint8_t HWMEAttVal = 36; //0x24
+		if (HWME_GET_request_sync (
 			HWME_POWERCON,
 			1,
-			0x24,
+			&HWMEAttVal,
 			pDeviceRef
-		);
+			) == HWME_SUCCESS)
+			return kThreadError_None;
+		else return kThreadError_Failed;
 
 	#endif
 
@@ -322,7 +351,7 @@ ThreadError otPlatRadioTransmit(void)
 
     VerifyOrExit(sState == kStateIdle, error = kThreadError_Busy);
     uint16_t frameControl = GETLE16(sTransmitFrame.mPsdu);
-    VerifyOrExit(frameControl & MAC_FC_FT_MASK == MAC_FC_FT_DATA, error = kThreadError_Abort);
+    VerifyOrExit((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_DATA, error = kThreadError_Abort);
 
 
     sState = kStateTransmit;
@@ -569,7 +598,36 @@ exit:
     return;
 }
 
-int PlatformRadioProcess(void)
+
+void scanConfirmFrame(struct MLME_SCAN_confirm_pset *params)   //Async
+{
+	struct PanDescriptor * curStruct = params + 7;
+	for (int i = 0; i < params->ResultListSize; i++){
+
+		otActiveScanResult resultStruct;
+
+		if ((curStruct->Coord.AddressMode) == 3) {
+			memcpy(&resultStruct.mExtAddress, curStruct->Coord.Address, 2);
+		} else {
+			//cause scan to fail
+			assert(false);
+		}
+		resultStruct.mPanId = GETLE16(curStruct->Coord.PANId);
+		resultStruct.mChannel = curStruct->LogicalChannel;
+		resultStruct.mRssi = -20;
+		resultStruct.mLqi = curStruct->LinkQuality;
+
+		scanCallback(&resultStruct);
+
+		curStruct += 32;
+	}
+
+exit:
+    return;
+}
+
+int PlatformRadioProcess(void)    //TODO: port - This should be the callback in future for data receive
+
 {
 	pthread_mutex_lock(&receiveFrame_mutex);
 
