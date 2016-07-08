@@ -37,6 +37,7 @@ static void *ca8210_test_int_read_worker(void *arg)
 		rx_len = read(DriverFileDescriptor, rx_buf, 0);
 		pthread_mutex_unlock(&driver_mutex);
 		if (rx_len > 0) {
+			fprintf(stderr, "\n\rUpstream command: %#04x \n\r", rx_buf[0]);
 			cascoda_downstream_dispatch(rx_buf, rx_len);
 		}
 	}
