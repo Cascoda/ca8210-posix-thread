@@ -376,6 +376,7 @@ ThreadError otPlatRadioTransmit(void)
     curPacket.SrcAddrMode = MAC_FC_SAM(frameControl);
     curPacket.Dst.AddressMode = MAC_FC_DAM(frameControl);
     curPacket.TxOptions = frameControl & MAC_FC_ACK_REQ ? 0x01 : 0x00;
+    uint8_t isPanCompressed = frameControl & MAC_FC_PAN_COMP;
 
     uint8_t addressFieldLength = 0;
 
@@ -390,8 +391,9 @@ ThreadError otPlatRadioTransmit(void)
     	addressFieldLength +=10;
     }
 
-    if(curPacket.SrcAddrMode == MAC_MODE_SHORT_ADDR) addressFieldLength +=4;
-    else if(curPacket.SrcAddrMode == MAC_MODE_LONG_ADDR) addressFieldLength +=10;
+    if(curPacket.SrcAddrMode == MAC_MODE_SHORT_ADDR) addressFieldLength += 4;
+    else if(curPacket.SrcAddrMode == MAC_MODE_LONG_ADDR) addressFieldLength += 10;
+    if(curPacket.SrcAddrMode & isPanCompressed) addressFieldLength -= 2; //Remove size saved by not including the same PAN twice
     headerLength = addressFieldLength + MAC_BASEHEADERLENGTH;
 
     if(frameControl & MAC_FC_SEC_ENA){	//if security is required
@@ -432,7 +434,7 @@ ThreadError otPlatRadioTransmit(void)
     MCPS_DATA_request(
         curPacket.SrcAddrMode,
         curPacket.Dst.AddressMode,
-        curPacket.Dst.PANId,
+        GETLE16(curPacket.Dst.PANId),
         curPacket.Dst.Address,
         curPacket.MsduLength,
         curPacket.Msdu,
