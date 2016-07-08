@@ -417,7 +417,7 @@ ThreadError otPlatRadioTransmit(void)
 
     //Table 95 to calculate auth tag length
     footerLength = 2 << (curSecSpec.SecurityLevel % 4);
-    footerLength = footerLength == 2 ? 0 : footerLength;
+    footerLength = (footerLength == 2) ? 0 : footerLength;
 
     footerLength += 2; //MFR length
 
