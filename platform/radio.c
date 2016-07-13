@@ -487,7 +487,7 @@ void readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 {
 
 
-    VerifyOrExit(sState == kStateListen, fputs("\r\nNot Listening!\r\n", stderr));
+    //VerifyOrExit(sState == kStateListen, fputs("\r\nNot Listening!\r\n", stderr));
 
     pthread_mutex_lock(&receiveFrame_mutex);
 	//wait until the main thread is free to process the frame
