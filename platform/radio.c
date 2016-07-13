@@ -535,7 +535,7 @@ void readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 		addressFieldLength +=10;
 	}
 
-	if(memcmp(params->Src.Address, params->Dst.Address, 8)){ //Different PANs
+	if(memcmp(params->Src.PANId, params->Dst.PANId, 2)){ //Different PANs
 		if(params->Src.AddressMode == MAC_MODE_SHORT_ADDR){
 			memcpy(sReceiveFrame.mPsdu + addressFieldLength + 5, params->Src.Address, 2);
 			memcpy(sReceiveFrame.mPsdu + addressFieldLength + 3, params->Src.PANId, 2);
