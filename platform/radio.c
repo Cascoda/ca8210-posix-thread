@@ -373,7 +373,7 @@ ThreadError otPlatRadioTransmit(void)
 
     curPacket.SrcAddrMode = MAC_FC_SAM(frameControl);
     curPacket.Dst.AddressMode = MAC_FC_DAM(frameControl);
-    curPacket.TxOptions = frameControl & MAC_FC_ACK_REQ ? 0x01 : 0x00;
+    curPacket.TxOptions = (frameControl & MAC_FC_ACK_REQ) ? 0x01 : 0x00;
     uint8_t isPanCompressed = frameControl & MAC_FC_PAN_COMP;
 
     uint8_t addressFieldLength = 0;
