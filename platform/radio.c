@@ -509,7 +509,7 @@ void readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 	#define CASCODA_DATAIND_SEC_LOC 29
 
 	fprintf(stderr, "\n\rRAW: ");
-	for(int i = 0; i < sizeof(params); i++){
+	for(int i = 0; i < sizeof(*params); i++){
 		fprintf(stderr, " %#04x", params[i]);
 	}
 	fprintf(stderr, "\n\r");
