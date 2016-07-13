@@ -578,8 +578,6 @@ void readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 
 	sReceiveFrame.mLength = params->MsduLength + footerLength + headerLength;
 
-	sReceiveFrame.mPsdu = params;
-	sReceiveFrame.mLength = params->MsduLength + 40;
 	sReceiveFrame.mLqi = params->MpduLinkQuality;
 	sReceiveFrame.mChannel = sChannel;
 	sReceiveFrame.mPower = -20;
@@ -633,7 +631,7 @@ void scanConfirmFrame(struct MLME_SCAN_confirm_pset *params)   //Async
 		otActiveScanResult resultStruct;
 
 		if ((curStruct->Coord.AddressMode) == 3) {
-			memcpy(&resultStruct.mExtAddress, curStruct->Coord.Address, 2);
+			memcpy(resultStruct.mExtAddress.m8, curStruct->Coord.Address, 2);
 		} else {
 			//cause scan to fail
 			assert(false);
