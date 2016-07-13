@@ -353,11 +353,13 @@ ThreadError otPlatRadioTransmit(void)
     uint16_t frameControl = GETLE16(sTransmitFrame.mPsdu);
     VerifyOrExit((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_DATA, error = kThreadError_Abort);
 
+    /*
     fputs("\r\nTransmit:",stderr);
     for(i = 0; i < sTransmitFrame.mLength; i++){
     	fprintf(stderr, " %#04x", sTransmitFrame.mPsdu[i]);
     }
     fputs("\r\n",stderr);
+    */
 
     sState = kStateTransmit;
     sTransmitError = kThreadError_None;
@@ -582,11 +584,13 @@ void readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 	sReceiveFrame.mChannel = sChannel;
 	sReceiveFrame.mPower = -20;
 
+	/*
 	fputs("\r\nReceived:",stderr);
 	for(int i = 0; i < sReceiveFrame.mLength; i++){
 		fprintf(stderr, " %#04x", sReceiveFrame.mPsdu[i]);
 	}
 	fputs("\r\n",stderr);
+	*/
 
     pthread_mutex_unlock(&receiveFrame_mutex);
 
