@@ -40,7 +40,7 @@
 
 #include <openthread.h>
 #include <platform/alarm.h>
-#include <platform/serial.h>
+#include <platform/uart.h>
 #include <posix-platform.h>
 
 uint32_t NODE_ID = 1;
@@ -51,7 +51,7 @@ void posixPlatformInit(void)
     posixPlatformAlarmInit();
     PlatformRadioInit();
     posixPlatformRandomInit();
-    otPlatSerialEnable();
+    otPlatUartEnable();
 }
 
 void posixPlatformProcessDrivers(void)
@@ -65,7 +65,7 @@ void posixPlatformProcessDrivers(void)
     FD_ZERO(&read_fds);
     FD_ZERO(&write_fds);
 
-    posixPlatformSerialUpdateFdSet(&read_fds, &write_fds, &max_fd);
+    posixPlatformUartUpdateFdSet(&read_fds, &write_fds, &max_fd);
     posixPlatformAlarmUpdateTimeout(&timeout);
 
     if (!otAreTaskletsPending())
@@ -74,7 +74,7 @@ void posixPlatformProcessDrivers(void)
         assert(rval >= 0 && errno != ETIME);
     }
 
-    posixPlatformSerialProcess();
+    posixPlatformUartProcess();
     PlatformRadioProcess();
     posixPlatformAlarmProcess();
 }

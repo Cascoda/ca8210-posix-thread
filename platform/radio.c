@@ -123,7 +123,7 @@ void disableReceiver(void)
     //nothing
 }
 
-ThreadError otActiveScan(uint16_t aScanChannels, uint16_t aScanDuration, otHandleActiveScanResult aCallback)
+ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandleActiveScanResult aCallback)
 {
 	//uint32_t scanChannels = ((uint32_t)0x0000 << 16) | aScanChannels;
 	uint32_t ScanChannels = ((uint32_t)aScanChannels) << 11;

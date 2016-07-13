@@ -87,7 +87,7 @@ void PlatformRandomInit(void);
  * This method performs radio driver processing.
  *
  */
-void PlatformSerialProcess(void);
+void PlatformUartProcess(void);
 
 #ifdef __cplusplus
 }  // extern "C"
