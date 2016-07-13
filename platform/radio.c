@@ -522,8 +522,6 @@ void readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 	frameControl |= curSecSpec->SecurityLevel ? MAC_FC_SEC_ENA : 0;	//Security Enabled field
 	frameControl |= MAC_FC_FT_DATA; //Frame type = data
 
-	PUTLE16(frameControl, sReceiveFrame.mPsdu);
-
 	uint8_t addressFieldLength = 0;
 
 	if(params->Dst.AddressMode == MAC_MODE_SHORT_ADDR){
@@ -537,16 +535,31 @@ void readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 		addressFieldLength +=10;
 	}
 
-	if(params->Src.AddressMode == MAC_MODE_SHORT_ADDR){
-		memcpy(sReceiveFrame.mPsdu + addressFieldLength + 5, params->Src.Address, 2);
-		memcpy(sReceiveFrame.mPsdu + addressFieldLength + 3, params->Src.PANId, 2);
-		addressFieldLength +=4;
+	if(memcmp(params->Src.Address, params->Dst.Address, 8)){ //Different PANs
+		if(params->Src.AddressMode == MAC_MODE_SHORT_ADDR){
+			memcpy(sReceiveFrame.mPsdu + addressFieldLength + 5, params->Src.Address, 2);
+			memcpy(sReceiveFrame.mPsdu + addressFieldLength + 3, params->Src.PANId, 2);
+			addressFieldLength +=4;
+		}
+		else if(params->Src.AddressMode == MAC_MODE_LONG_ADDR){
+			memcpy(sReceiveFrame.mPsdu + addressFieldLength + 5, params->Src.Address, 8);
+			memcpy(sReceiveFrame.mPsdu + addressFieldLength + 3, params->Src.PANId, 2);
+			addressFieldLength +=10;
+		}
 	}
-	else if(params->Src.AddressMode == MAC_MODE_LONG_ADDR){
-		memcpy(sReceiveFrame.mPsdu + addressFieldLength + 5, params->Src.Address, 8);
-		memcpy(sReceiveFrame.mPsdu + addressFieldLength + 3, params->Src.PANId, 2);
-		addressFieldLength +=10;
+	else{	//use PAN compression
+		if(params->Src.AddressMode == MAC_MODE_SHORT_ADDR){
+			memcpy(sReceiveFrame.mPsdu + addressFieldLength + 3, params->Src.Address, 2);
+			addressFieldLength +=2;
+		}
+		else if(params->Src.AddressMode == MAC_MODE_LONG_ADDR){
+			memcpy(sReceiveFrame.mPsdu + addressFieldLength + 3, params->Src.Address, 8);
+			addressFieldLength +=8;
+		}
+		frameControl |= MAC_FC_PAN_COMP;
 	}
+
+	PUTLE16(frameControl, sReceiveFrame.mPsdu);	//Commit the frame control bytes to the frame
 
 	headerLength = addressFieldLength + MAC_BASEHEADERLENGTH;
 
