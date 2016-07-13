@@ -515,8 +515,8 @@ void readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 	fprintf(stderr, "\n\r");
 
 
-	frameControl |= params->Src.AddressMode << 14;
-	frameControl |= params->Dst.AddressMode << 10;
+	frameControl |= (params->Src.AddressMode & 0x11) << 14;
+	frameControl |= (params->Dst.AddressMode & 0x11) << 10;
 	frameControl |= curSecSpec->SecurityLevel ? MAC_FC_SEC_ENA : 0;	//Security Enabled field
 	frameControl |= MAC_FC_FT_DATA; //Frame type = data
 
