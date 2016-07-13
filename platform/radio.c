@@ -577,7 +577,7 @@ void readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 	footerLength += 2; //MFR length
 
 	sReceiveFrame.mLength = params->MsduLength + footerLength + headerLength;
-
+	memcpy(sTransmitFrame.mPsdu + headerLength, params->Msdu, params->MsduLength);
 	sReceiveFrame.mLqi = params->MpduLinkQuality;
 	sReceiveFrame.mChannel = sChannel;
 	sReceiveFrame.mPower = -20;
