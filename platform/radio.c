@@ -503,7 +503,7 @@ void readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 	uint8_t footerLength = 0;
 	uint16_t frameControl = 0;
 	uint8_t msduLength = params->MsduLength;
-	struct SecSpec * curSecSpec = (struct SecSpec*)((void*)params + (void*)msduLength + (void*)29); //Location defined in cascoda API docs
+	struct SecSpec * curSecSpec = (struct SecSpec*)((unsigned int)params + (unsigned int)msduLength + 29); //Location defined in cascoda API docs
 
 	//TODO: Move this
 	#define CASCODA_DATAIND_SEC_LOC 29
@@ -514,6 +514,8 @@ void readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 	}
 	fprintf(stderr, "\n\r");
 
+	fprintf(stderr, "\n\rsecoffset: %d\n\r", (unsigned int)curSecSpec-(unsigned int)params);
+	fprintf(stderr, "\n\rsecAddr: %#x, secLevel %#x\n\r", curSecSpec, curSecSpec->SecurityLevel);
 
 	frameControl |= (params->Src.AddressMode & 0x3) << 14;
 	frameControl |= (params->Dst.AddressMode & 0x3) << 10;
