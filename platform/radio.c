@@ -424,12 +424,6 @@ ThreadError otPlatRadioTransmit(void)
     memcpy(curPacket.Msdu, sTransmitFrame.mPsdu + headerLength, curPacket.MsduLength);
     curPacket.MsduHandle = handle;
 
-    fprintf(stderr, "\n\rSent: ");
-    for(int i = 0; i < curPacket.MsduLength; i++){
-    	fprintf(stderr, " %#04x", curPacket.Msdu[i]);
-    }
-    fprintf(stderr, "\n\r");
-
     MCPS_DATA_request(
         curPacket.SrcAddrMode,
         curPacket.Dst.AddressMode,
@@ -507,15 +501,6 @@ void readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 
 	//TODO: Move this
 	#define CASCODA_DATAIND_SEC_LOC 29
-
-	fprintf(stderr, "\n\rRAW: ");
-	for(int i = 0; i < sizeof(*params); i++){
-		fprintf(stderr, " %#04x", ((uint8_t*)params)[i]);
-	}
-	fprintf(stderr, "\n\r");
-
-	fprintf(stderr, "\n\rsecoffset: %d\n\r", (unsigned int)curSecSpec-(unsigned int)params);
-	fprintf(stderr, "\n\rsecAddr: %#x, secLevel %#x\n\r", curSecSpec, curSecSpec->SecurityLevel);
 
 	frameControl |= (params->Src.AddressMode & 0x3) << 14;
 	frameControl |= (params->Dst.AddressMode & 0x3) << 10;
