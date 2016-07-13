@@ -73,7 +73,7 @@ static struct MAC_Message response;
 static RadioPacket sTransmitFrame;
 static RadioPacket sReceiveFrame;
 static ThreadError sTransmitError;
-static ThreadError sReceiveError;
+static ThreadError sReceiveError = kThreadError_None;
 
 static otHandleActiveScanResult scanCallback;
 
@@ -616,6 +616,8 @@ void readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
     	sState = kStateIdle;
     	otPlatRadioTransmitDone(false, sTransmitError);
     }
+
+    sTransmitError = kThreadError_None;
 
     PlatformRadioProcess();
 
