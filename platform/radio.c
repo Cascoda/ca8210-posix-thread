@@ -392,7 +392,7 @@ ThreadError otPlatRadioTransmit(void)
 
     if(curPacket.SrcAddrMode == MAC_MODE_SHORT_ADDR) addressFieldLength += 4;
     else if(curPacket.SrcAddrMode == MAC_MODE_LONG_ADDR) addressFieldLength += 10;
-    if(curPacket.SrcAddrMode & isPanCompressed) addressFieldLength -= 2; //Remove size saved by not including the same PAN twice
+    if(curPacket.SrcAddrMode && isPanCompressed) addressFieldLength -= 2; //Remove size saved by not including the same PAN twice
     headerLength = addressFieldLength + MAC_BASEHEADERLENGTH;
 
     if(frameControl & MAC_FC_SEC_ENA){	//if security is required
