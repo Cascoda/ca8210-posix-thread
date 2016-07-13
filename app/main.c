@@ -30,7 +30,7 @@
 #include <stdio.h>
 
 #include <openthread.h>
-#include <cli/cli-serial.h>
+#include <cli/cli-uart.h>
 #include <posix-platform.h>
 
 void otSignalTaskletPending(void)
@@ -48,11 +48,11 @@ int main(int argc, char *argv[])
 
     posixPlatformInit();
     otInit();
-    otCliSerialInit();
+    otCliUartInit();
 
     otInit();
 
-    otCliSerialInit();
+    otCliUartInit();
 
     while (1)
     {

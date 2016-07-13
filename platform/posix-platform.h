@@ -113,13 +113,13 @@ void posixPlatformRandomInit(void);
  * @param[inout]  aMaxFd       A pointer to the max file descriptor.
  *
  */
-void posixPlatformSerialUpdateFdSet(fd_set *aReadFdSet, fd_set *aWriteFdSet, int *aMaxFd);
+void posixPlatformUartUpdateFdSet(fd_set *aReadFdSet, fd_set *aWriteFdSet, int *aMaxFd);
 
 /**
  * This method performs radio driver processing.
  *
  */
-void posixPlatformSerialProcess(void);
+void posixPlatformUartProcess(void);
 
 #ifdef __cplusplus
 }  // extern "C"
