@@ -396,7 +396,7 @@ ThreadError otPlatRadioTransmit(void)
 
     if(frameControl & MAC_FC_SEC_ENA){	//if security is required
     	uint8_t ASHloc = MAC_BASEHEADERLENGTH + addressFieldLength;
-    	uint8_t securityControl = *(uint8_t*)(sTransmitFrame.mPsdu + (uint8_t*)ASHloc);
+    	uint8_t securityControl = *(uint8_t*)(sTransmitFrame.mPsdu + ASHloc);
     	fprintf(stderr, "\r\nSecurity Control: %#04x", securityControl);
     	curSecSpec.SecurityLevel = MAC_SC_SECURITYLEVEL(securityControl);
     	fprintf(stderr, "\r\nSecurity Level: %#04x", curSecSpec.SecurityLevel);
