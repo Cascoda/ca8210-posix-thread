@@ -397,8 +397,11 @@ ThreadError otPlatRadioTransmit(void)
     if(frameControl & MAC_FC_SEC_ENA){	//if security is required
     	uint8_t ASHloc = MAC_BASEHEADERLENGTH + addressFieldLength;
     	uint8_t securityControl = *(uint8_t*)(sTransmitFrame.mPsdu + (uint8_t*)ASHloc);
+    	fprintf(stderr, "\r\nSecurity Control: %#04x", securityControl);
     	curSecSpec.SecurityLevel = MAC_SC_SECURITYLEVEL(securityControl);
+    	fprintf(stderr, "\r\nSecurity Level: %#04x", curSecSpec.SecurityLevel);
     	curSecSpec.KeyIdMode = MAC_SC_KEYIDMODE(securityControl);
+    	fprintf(stderr, "\r\nKeyIDMode: %#04x", curSecSpec.KeyIdMode);
 
     	ASHloc += 5;//skip to key identifier
     	if(curSecSpec.KeyIdMode == 0x02){//Table 96
@@ -604,7 +607,7 @@ void readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
 {
 
 
-    VerifyOrExit(sState == kStateTransmit, ;);
+    //VerifyOrExit(sState == kStateTransmit, ;);
 
     if(params->Status == MAC_SUCCESS){
     	otPlatRadioTransmitDone(false, sTransmitError);
