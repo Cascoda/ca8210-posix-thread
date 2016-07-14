@@ -396,7 +396,7 @@ ThreadError otPlatRadioTransmit(void)
 
     if(frameControl & MAC_FC_SEC_ENA){	//if security is required
     	uint8_t ASHloc = MAC_BASEHEADERLENGTH + addressFieldLength;
-    	uint8_t securityControl = sTransmitFrame.mPsdu + ASHloc;
+    	uint8_t securityControl = *(sTransmitFrame.mPsdu + ASHloc);
     	curSecSpec.SecurityLevel = MAC_SC_SECURITYLEVEL(securityControl);
     	curSecSpec.KeyIdMode = MAC_SC_KEYIDMODE(securityControl);
 
