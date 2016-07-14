@@ -73,7 +73,7 @@ static struct MAC_Message response;
 static RadioPacket sTransmitFrame;
 static RadioPacket sReceiveFrame;
 static ThreadError sTransmitError;
-static ThreadError sReceiveError;
+static ThreadError sReceiveError = kThreadError_None;
 
 static otHandleActiveScanResult scanCallback;
 
@@ -373,7 +373,7 @@ ThreadError otPlatRadioTransmit(void)
 
     curPacket.SrcAddrMode = MAC_FC_SAM(frameControl);
     curPacket.Dst.AddressMode = MAC_FC_DAM(frameControl);
-    curPacket.TxOptions = frameControl & MAC_FC_ACK_REQ ? 0x01 : 0x00;
+    curPacket.TxOptions = (frameControl & MAC_FC_ACK_REQ) ? 0x01 : 0x00;
     uint8_t isPanCompressed = frameControl & MAC_FC_PAN_COMP;
 
     uint8_t addressFieldLength = 0;
@@ -616,6 +616,8 @@ void readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
     	sState = kStateIdle;
     	otPlatRadioTransmitDone(false, sTransmitError);
     }
+
+    sTransmitError = kThreadError_None;
 
     PlatformRadioProcess();
 
