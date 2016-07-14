@@ -202,6 +202,14 @@ void PlatformRadioInit(void)
     callbacks.MLME_SCAN_confirm = &scanConfirmFrame;
     cascoda_register_callbacks(&callbacks);
     
+    uint8_t enable = 1;	//enable security
+	MLME_SET_request_sync(
+		macSecurityEnabled,
+		0,
+		sizeof(enable),
+		&enable,
+		pDeviceRef);
+
 }
 
 ThreadError otPlatRadioEnable(void)    //TODO:(lowpriority) port 
