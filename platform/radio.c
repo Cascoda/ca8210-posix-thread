@@ -68,6 +68,7 @@ enum
 void readFrame(struct MCPS_DATA_indication_pset *params);
 void readConfirmFrame(struct MCPS_DATA_confirm_pset *params);
 void scanConfirmFrame(struct MLME_SCAN_confirm_pset *params);
+void keyChangedCallback(uint32_t aFlags, void *aContext);
 
 static struct MAC_Message response;
 static RadioPacket sTransmitFrame;
@@ -210,6 +211,74 @@ void PlatformRadioInit(void)
 		&enable,
 		pDeviceRef);
 
+	uint8_t * defaultKeySource = {0, 0, 0, 0, 0, 0, 0, 0xFF};	//set the defaultKeySource as defined in 7.2.2.1 of thread spec
+	MLME_SET_request_sync(
+		macDefaultKeySource,
+		0,
+		sizeof(enable),
+		&enable,
+		pDeviceRef);
+
+}
+
+void keyChangedCallback(uint32_t aFlags, void *aContext){
+	if(aFlags & OT_NET_KEY_SEQUENCE){	//The thrKeySequenceCounter has changed
+		//Therefore update the keys stored in the macKeytable
+
+		uint32_t tKeySeq = otGetKeySequenceCounter() - 1;
+
+		struct M_KeyTableEntryFixed tKeyDescriptor;	//Table 7-5 in section 7.2.2.2.1 of thread spec
+		tKeyDescriptor.KeyIdLookupListEntries = 1;
+		tKeyDescriptor.KeyUsageListEntries = 2;
+
+		//Flags according to Cascoda API 5.3.1
+		uint8_t tKeyUsageData = (MAC_FC_FT_DATA & KUD_FrameTypeMask);
+		uint8_t tKeyUsageDataReq = (MAC_FC_FT_COMMAND & KUD_FrameTypeMask) | ((CMD_DATA_REQ << KUD_CommandFrameIdentifierShift) & KUD_CommandFrameIdentifierMask);
+
+		struct M_KeyIdLookupDesc tLookupDesc;
+		tLookupDesc.LookupDataSizeCode = 9;
+		//This sets the MSB of the lookUpData to equal defaultKeySource as is required by 7.5.8.2.2 of IEEE 15.4 spec
+		tLookupDesc.LookupData[8] = 0xFF;	//Set lookup data to the macDefaultKeySource to be right concatenated to the individual keyIndex param
+		for(int i = 0; i < 8; i++) tLookupDesc.LookupData[i] = 0;
+
+		uint8_t count = 0;
+		for(uint8_t i = 0; i < 5; i++){
+			otChildInfo tChildInfo;
+			otGetChildInfoByIndex(i, &tChildInfo);
+
+			struct M_DeviceDescriptor tDeviceDescriptor;
+
+			PUTLE16(otGetPanId() ,tDeviceDescriptor.PANId);
+			PUTLE16(otGetShortAddress(), tDeviceDescriptor.ShortAddress);
+			memcpy(tDeviceDescriptor.ExtAddress, otGetExtendedAddress());
+			tDeviceDescriptor.	//TODO: Figure out how to do frame counter
+
+			MLME_SET_request_sync(
+					macDeviceTable,
+					count,
+					);
+
+		}
+
+		//Generate and store the keys for the current, previous, and next rotations
+		for(uint8_t i = 0; i < 3; i++){
+			if(tKeySeq + i > 0){	//0 is invalid key sequence
+				MLME_SET_request_sync(
+						macKeyTable,
+						i,
+						);
+			}
+		}
+
+	}
+
+	if((aFlags & OT_THREAD_CHILD_ADDED) || (aFlags & OT_THREAD_CHILD_REMOVED)){
+		//TODO: Update device table
+	}
+
+	if((aFlags & OT_THREAD_CHILD_ADDED) || (aFlags & OT_THREAD_CHILD_REMOVED)){
+		//TODO: Update device table
+	}
 }
 
 ThreadError otPlatRadioEnable(void)    //TODO:(lowpriority) port 
