@@ -67,7 +67,6 @@ enum
 
 void readFrame(struct MCPS_DATA_indication_pset *params);
 void readConfirmFrame(struct MCPS_DATA_confirm_pset *params);
-//void scanConfirmFrame(struct MLME_SCAN_confirm_pset *params);
 void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params);
 
 
@@ -201,7 +200,6 @@ void PlatformRadioInit(void)
     struct cascoda_api_callbacks callbacks;
     callbacks.MCPS_DATA_indication = &readFrame;
     callbacks.MCPS_DATA_confirm = &readConfirmFrame;
-    //callbacks.MLME_SCAN_confirm = &scanConfirmFrame;
     callbacks.MLME_BEACON_NOTIFY_indication = &beaconNotifyFrame;
     cascoda_register_callbacks(&callbacks);
     
@@ -627,34 +625,6 @@ void readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
 exit:
     return;
 }
-
-
-/*void scanConfirmFrame(struct MLME_SCAN_confirm_pset *params)   //Async
-{
-	struct PanDescriptor * curStruct = params + 7;
-	for (int i = 0; i < params->ResultListSize; i++){
-
-		otActiveScanResult resultStruct;
-
-		if ((curStruct->Coord.AddressMode) == 3) {
-			memcpy(resultStruct.mExtAddress.m8, curStruct->Coord.Address, 2);
-		} else {
-			//cause scan to fail
-			assert(false);
-		}
-		resultStruct.mPanId = GETLE16(curStruct->Coord.PANId);
-		resultStruct.mChannel = curStruct->LogicalChannel;
-		resultStruct.mRssi = -20;
-		resultStruct.mLqi = curStruct->LinkQuality;
-
-		scanCallback(&resultStruct);
-
-		curStruct += 32;
-	}
-
-exit:
-    return;
-}*/
 
 void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
 {
