@@ -412,7 +412,11 @@ ThreadError otPlatRadioTransmit(void)
     	fprintf(stderr, "\r\nKeyIDMode: %#04x", curSecSpec.KeyIdMode);
 
     	ASHloc += 5;//skip to key identifier
-    	if(curSecSpec.KeyIdMode == 0x02){//Table 96
+    	if(curSecSpec.KeyIdMode == 0x01){//Table 96
+			memcpy(curSecSpec.KeySource, sTransmitFrame.mPsdu + ASHloc, 1);
+			ASHloc += 1;
+		}
+    	else if(curSecSpec.KeyIdMode == 0x02){//Table 96
     		memcpy(curSecSpec.KeySource, sTransmitFrame.mPsdu + ASHloc, 4);
     		ASHloc += 4;
     	}
@@ -568,7 +572,11 @@ void readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 		sReceiveFrame.mPsdu[ASHloc] = securityControl;
 
 		ASHloc += 5;//skip to key identifier
-		if(curSecSpec->KeyIdMode == 0x02){//Table 96
+		if(curSecSpec.KeyIdMode == 0x01){//Table 96
+			memcpy(sTransmitFrame.mPsdu + ASHloc, curSecSpec.KeySource, 1);
+			ASHloc += 1;
+		}
+		else if(curSecSpec->KeyIdMode == 0x02){//Table 96
 			memcpy(sReceiveFrame.mPsdu + ASHloc, curSecSpec->KeySource, 4);
 			ASHloc += 4;
 		}
