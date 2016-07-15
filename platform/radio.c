@@ -67,7 +67,9 @@ enum
 
 void readFrame(struct MCPS_DATA_indication_pset *params);
 void readConfirmFrame(struct MCPS_DATA_confirm_pset *params);
-void scanConfirmFrame(struct MLME_SCAN_confirm_pset *params);
+//void scanConfirmFrame(struct MLME_SCAN_confirm_pset *params);
+void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params);
+
 
 static struct MAC_Message response;
 static RadioPacket sTransmitFrame;
@@ -199,7 +201,8 @@ void PlatformRadioInit(void)
     struct cascoda_api_callbacks callbacks;
     callbacks.MCPS_DATA_indication = &readFrame;
     callbacks.MCPS_DATA_confirm = &readConfirmFrame;
-    callbacks.MLME_SCAN_confirm = &scanConfirmFrame;
+    //callbacks.MLME_SCAN_confirm = &scanConfirmFrame;
+    callbacks.MLME_BEACON_NOTIFY_indication = &beaconNotifyFrame;
     cascoda_register_callbacks(&callbacks);
     
 }
@@ -626,7 +629,7 @@ exit:
 }
 
 
-void scanConfirmFrame(struct MLME_SCAN_confirm_pset *params)   //Async
+/*void scanConfirmFrame(struct MLME_SCAN_confirm_pset *params)   //Async
 {
 	struct PanDescriptor * curStruct = params + 7;
 	for (int i = 0; i < params->ResultListSize; i++){
@@ -647,6 +650,35 @@ void scanConfirmFrame(struct MLME_SCAN_confirm_pset *params)   //Async
 		scanCallback(&resultStruct);
 
 		curStruct += 32;
+	}
+
+exit:
+    return;
+}*/
+
+void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
+{
+	otActiveScanResult resultStruct;
+	uint8_t shortaddrs  = *(params + 33) & 7;
+	uint8_t extaddrs = (*(params + 33) & 112) >> 4;
+
+	if ((params->PanDescriptor.Coord.AddressMode) == 3) {
+		memcpy(resultStruct.mExtAddress.m8, params->PanDescriptor.Coord.Address, 8);
+	} else {
+		assert(false);
+	}
+	resultStruct.mPanId = GETLE16(params->PanDescriptor.Coord.PANId);
+	resultStruct.mChannel = params->PanDescriptor.LogicalChannel;
+	resultStruct.mRssi = -20;
+	resultStruct.mLqi = params->PanDescriptor.LinkQuality;
+	uint8_t * sduLength = params + (34 + 2 * shortaddrs + 8 * extaddrs);
+	if (*sduLength > 0) {
+		uint8_t * Sdu = params + (35 + 2 * shortaddrs + 8 * extaddrs);
+		if(*Sdu == 3 && (*(Sdu + 1) == 1)) {
+			resultStruct.mNetworkName = Sdu + 4;
+			resultStruct.mExtPanId = Sdu + 20;
+			scanCallback(&resultStruct);
+		}
 	}
 
 exit:
