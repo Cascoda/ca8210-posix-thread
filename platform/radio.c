@@ -85,6 +85,8 @@ static uint8_t sChannel = 0;
 static uint8_t sTransmitPsdu[IEEE802154_MAX_LENGTH];
 static uint8_t sReceivePsdu[IEEE802154_MAX_LENGTH];
 
+static uint8_t mBeaconPayload[32] = {3, 0x98};
+
 pthread_mutex_t receiveFrame_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t receiveFrame_cond = PTHREAD_COND_INITIALIZER;
 
@@ -137,6 +139,29 @@ ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandl
                                              reinterpret_cast<void *>(aCallback));*/
 }
 
+ThreadError *otGetNetworkName() {
+
+	return mBeaconPayload + 4;
+}
+
+ThreadError otSetNetworkName(){
+
+	uint8_t payloadLength = 32;
+
+	MLME_SET_request_sync(
+			macBeaconPayload,
+			0,
+			payloadLength,
+			mBeaconPayload,
+			pDeviceRef);
+	MLME_SET_request_sync(
+			macBeaconPayloadLength,
+			0,
+			1,
+			&payloadLength,
+			pDeviceRef);
+
+}
 
 ThreadError otPlatRadioSetPanId(uint16_t panid)
 {
