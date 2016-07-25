@@ -202,7 +202,7 @@ void PlatformRadioInit(void)
     callbacks.MCPS_DATA_confirm = &readConfirmFrame;
     callbacks.MLME_SCAN_confirm = &scanConfirmFrame;
     cascoda_register_callbacks(&callbacks);
-    otSetStateChangedCallback(&keyChangedCallback);
+    otSetStateChangedCallback(&keyChangedCallback, NULL);
     
     uint8_t enable = 1;	//enable security
 	MLME_SET_request_sync(
