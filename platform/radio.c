@@ -139,27 +139,43 @@ ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandl
                                              reinterpret_cast<void *>(aCallback));*/
 }
 
-ThreadError *otGetNetworkName() {
-
-	return mBeaconPayload + 4;
-}
-
-ThreadError otSetNetworkName(){
+ThreadError otPlatSetNetworkName(const char *aNetworkName){
 
 	uint8_t payloadLength = 32;
-
+	memcpy(mBeaconPayload + 4, aNetworkName, 16);
 	MLME_SET_request_sync(
 			macBeaconPayload,
 			0,
 			payloadLength,
 			mBeaconPayload,
 			pDeviceRef);
+
 	MLME_SET_request_sync(
 			macBeaconPayloadLength,
 			0,
 			1,
 			&payloadLength,
 			pDeviceRef);
+}
+
+ThreadError otPlatSetExtendedPanId(const uint8_t *aExtPanId) {
+
+	uint8_t payloadLength = 32;
+		memcpy(mBeaconPayload + 20, aExtPanId, 8);
+		MLME_SET_request_sync(
+				macBeaconPayload,
+				0,
+				payloadLength,
+				mBeaconPayload,
+				pDeviceRef);
+
+		MLME_SET_request_sync(
+				macBeaconPayloadLength,
+				0,
+				1,
+				&payloadLength,
+				pDeviceRef);
+
 
 }
 
