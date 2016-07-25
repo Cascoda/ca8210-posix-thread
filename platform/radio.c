@@ -202,7 +202,6 @@ void PlatformRadioInit(void)
     callbacks.MCPS_DATA_confirm = &readConfirmFrame;
     callbacks.MLME_SCAN_confirm = &scanConfirmFrame;
     cascoda_register_callbacks(&callbacks);
-    otSetStateChangedCallback(&keyChangedCallback, NULL);
     
     uint8_t enable = 1;	//enable security
 	MLME_SET_request_sync(
@@ -220,6 +219,10 @@ void PlatformRadioInit(void)
 		&enable,
 		pDeviceRef);
 
+}
+
+void posixPlatformPostInit(void){
+	otSetStateChangedCallback(&keyChangedCallback, NULL);
 }
 
 void keyChangedCallback(uint32_t aFlags, void *aContext){
@@ -253,6 +256,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 					);
 
 		}
+
 		MLME_SET_request_sync(
 				macDeviceTableEntries,
 				0,
@@ -310,14 +314,6 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 			pDeviceRef
 			);
 
-	}
-
-	if((aFlags & OT_THREAD_CHILD_ADDED) || (aFlags & OT_THREAD_CHILD_REMOVED)){
-		//TODO: Update device table
-	}
-
-	if((aFlags & OT_THREAD_CHILD_ADDED) || (aFlags & OT_THREAD_CHILD_REMOVED)){
-		//TODO: Update device table
 	}
 }
 
