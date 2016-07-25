@@ -135,8 +135,6 @@ ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandl
 	scanCallback = aCallback;
 
 	return MLME_SCAN_request(1, aScanChannels, ScanDuration, &pSecurity, pDeviceRef);
-    /*return sThreadNetif->GetMac().ActiveScan(aScanChannels, aScanDuration, &HandleActiveScanResult,
-                                             reinterpret_cast<void *>(aCallback));*/
 }
 
 ThreadError otPlatSetNetworkName(const char *aNetworkName){
@@ -692,9 +690,9 @@ void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
 	resultStruct.mChannel = params->PanDescriptor.LogicalChannel;
 	resultStruct.mRssi = -20;
 	resultStruct.mLqi = params->PanDescriptor.LinkQuality;
-	uint8_t * sduLength = params + (34 + 2 * shortaddrs + 8 * extaddrs);
+	uint8_t *sduLength = params + (34 + 2 * shortaddrs + 8 * extaddrs);
 	if (*sduLength > 0) {
-		uint8_t * Sdu = params + (35 + 2 * shortaddrs + 8 * extaddrs);
+		uint8_t *Sdu = params + (35 + 2 * shortaddrs + 8 * extaddrs);
 		if(*Sdu == 3 && (*(Sdu + 1) == 1)) {
 			resultStruct.mNetworkName = Sdu + 4;
 			resultStruct.mExtPanId = Sdu + 20;
