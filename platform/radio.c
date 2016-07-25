@@ -141,6 +141,7 @@ ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandl
 
 ThreadError otPlatSetNetworkName(const char *aNetworkName){
 
+	//things
 	uint8_t payloadLength = 32;
 	memcpy(mBeaconPayload + 4, aNetworkName, 16);
 	MLME_SET_request_sync(
