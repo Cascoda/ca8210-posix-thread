@@ -141,43 +141,52 @@ ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandl
 
 ThreadError otPlatSetNetworkName(const char *aNetworkName){
 
-	//things
 	uint8_t payloadLength = 32;
 	memcpy(mBeaconPayload + 4, aNetworkName, 16);
-	MLME_SET_request_sync(
+	if ((MLME_SET_request_sync(
 			macBeaconPayload,
 			0,
 			payloadLength,
 			mBeaconPayload,
-			pDeviceRef);
-
-	MLME_SET_request_sync(
+			pDeviceRef) == MAC_SUCCESS) &&
+		(MLME_SET_request_sync(
 			macBeaconPayloadLength,
 			0,
 			1,
 			&payloadLength,
-			pDeviceRef);
+			pDeviceRef) == MAC_SUCCESS))
+        return kThreadError_None;
+
+else return kThreadError_Failed;
 }
 
 ThreadError otPlatSetExtendedPanId(const uint8_t *aExtPanId) {
 
 	uint8_t payloadLength = 32;
 		memcpy(mBeaconPayload + 20, aExtPanId, 8);
-		MLME_SET_request_sync(
+		if ((MLME_SET_request_sync(
 				macBeaconPayload,
 				0,
 				payloadLength,
 				mBeaconPayload,
-				pDeviceRef);
+				pDeviceRef) == MAC_SUCCESS) &&
+			(MLME_SET_request_sync(
+				macBeaconPayloadLength,
+				0,
+				1,
+				&payloadLength,
+				pDeviceRef) == MAC_SUCCESS))
+            return kThreadError_None;
 
-		MLME_SET_request_sync(
+    else return kThreadError_Failed;
+
+		/*MLME_SET_request_sync(
 				macBeaconPayloadLength,
 				0,
 				1,
 				&payloadLength,
 				pDeviceRef);
-
-
+		*/
 }
 
 ThreadError otPlatRadioSetPanId(uint16_t panid)
