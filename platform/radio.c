@@ -680,8 +680,8 @@ exit:
 void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
 {
 	otActiveScanResult resultStruct;
-	uint8_t shortaddrs  = (uint8_t)(*(params + 33)) & 7;
-	uint8_t extaddrs = ((uint8_t)(*(params + 33)) & 112) >> 4;
+	uint8_t shortaddrs  = *((uint8_t*)params + 33) & 7;
+	uint8_t extaddrs = (*((uint8_t*)params + 33) & 112) >> 4;
 
 	if ((params->PanDescriptor.Coord.AddressMode) == 3) {
 		memcpy(resultStruct.mExtAddress.m8, params->PanDescriptor.Coord.Address, 8);
