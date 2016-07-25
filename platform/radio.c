@@ -226,7 +226,7 @@ void posixPlatformPostInit(void){
 }
 
 void keyChangedCallback(uint32_t aFlags, void *aContext){
-	if((aFlags & OT_NET_KEY_SEQUENCE) || (aFlags & OT_THREAD_CHILD_ADDED) || (aFlags & OT_THREAD_CHILD_REMOVED)){	//The thrKeySequenceCounter has changed
+	if((aFlags & OT_NET_KEY_SEQUENCE) || (aFlags & OT_THREAD_CHILD_ADDED) || (aFlags & OT_THREAD_CHILD_REMOVED) || (aFlags & OT_NET_ROLE)){	//The thrKeySequenceCounter has changed
 		//Therefore update the keys stored in the macKeytable
 
 		uint32_t tKeySeq = otGetKeySequenceCounter() - 1;
@@ -235,6 +235,15 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 		for(uint8_t i = 0; i < 5; i++){
 			otChildInfo tChildInfo;
 			otGetChildInfoByIndex(i, &tChildInfo);
+
+			//Do not register invalid devices
+			uint8_t isValid = 0;
+			for(int j = 0; j < 8; j++){
+				if(tChildInfo.mExtAddress.m8[j] != 0){
+					isValid = 1;
+				}
+			}
+			if(!isValid) continue;
 
 			struct M_DeviceDescriptor tDeviceDescriptor;
 
