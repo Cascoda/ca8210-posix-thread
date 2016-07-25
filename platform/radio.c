@@ -236,8 +236,11 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 
 			PUTLE16(otGetPanId() ,tDeviceDescriptor.PANId);
 			PUTLE16(otGetShortAddress(), tDeviceDescriptor.ShortAddress);
-			memcpy(tDeviceDescriptor.ExtAddress, otGetExtendedAddress());
-			tDeviceDescriptor.FrameCounter = 0;	//TODO: Figure out how to do frame counter properly - this method is temporarily breaking replay protection as replays using previous key will still be successful
+			memcpy(tDeviceDescriptor.ExtAddress, otGetExtendedAddress(), 8);
+			tDeviceDescriptor.FrameCounter[0] = 0;	//TODO: Figure out how to do frame counter properly - this method is temporarily breaking replay protection as replays using previous key will still be successful
+			tDeviceDescriptor.FrameCounter[1] = 0;
+			tDeviceDescriptor.FrameCounter[2] = 0;
+			tDeviceDescriptor.FrameCounter[3] = 0;
 			tDeviceDescriptor.Exempt = 0;
 
 			MLME_SET_request_sync(
