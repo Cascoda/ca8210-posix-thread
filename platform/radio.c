@@ -222,26 +222,12 @@ void PlatformRadioInit(void)
 }
 
 void keyChangedCallback(uint32_t aFlags, void *aContext){
-	if(aFlags & OT_NET_KEY_SEQUENCE){	//The thrKeySequenceCounter has changed
+	if((aFlags & OT_NET_KEY_SEQUENCE) || (aFlags & OT_THREAD_CHILD_ADDED) || (aFlags & OT_THREAD_CHILD_REMOVED)){	//The thrKeySequenceCounter has changed
 		//Therefore update the keys stored in the macKeytable
 
 		uint32_t tKeySeq = otGetKeySequenceCounter() - 1;
 
-		struct M_KeyTableEntryFixed tKeyDescriptor;	//Table 7-5 in section 7.2.2.2.1 of thread spec
-		tKeyDescriptor.KeyIdLookupListEntries = 1;
-		tKeyDescriptor.KeyUsageListEntries = 2;
-
-		//Flags according to Cascoda API 5.3.1
-		uint8_t tKeyUsageData = (MAC_FC_FT_DATA & KUD_FrameTypeMask);
-		uint8_t tKeyUsageDataReq = (MAC_FC_FT_COMMAND & KUD_FrameTypeMask) | ((CMD_DATA_REQ << KUD_CommandFrameIdentifierShift) & KUD_CommandFrameIdentifierMask);
-
-		struct M_KeyIdLookupDesc tLookupDesc;
-		tLookupDesc.LookupDataSizeCode = 9;
-		//This sets the MSB of the lookUpData to equal defaultKeySource as is required by 7.5.8.2.2 of IEEE 15.4 spec
-		tLookupDesc.LookupData[8] = 0xFF;	//Set lookup data to the macDefaultKeySource to be right concatenated to the individual keyIndex param
-		for(int i = 0; i < 8; i++) tLookupDesc.LookupData[i] = 0;
-
-		uint8_t count = 0;
+		uint8_t count = 0;	//Update device list
 		for(uint8_t i = 0; i < 5; i++){
 			otChildInfo tChildInfo;
 			otGetChildInfoByIndex(i, &tChildInfo);
@@ -251,24 +237,74 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 			PUTLE16(otGetPanId() ,tDeviceDescriptor.PANId);
 			PUTLE16(otGetShortAddress(), tDeviceDescriptor.ShortAddress);
 			memcpy(tDeviceDescriptor.ExtAddress, otGetExtendedAddress());
-			tDeviceDescriptor.	//TODO: Figure out how to do frame counter
+			tDeviceDescriptor.FrameCounter = 0;	//TODO: Figure out how to do frame counter properly - this method is temporarily breaking replay protection as replays using previous key will still be successful
+			tDeviceDescriptor.Exempt = 0;
 
 			MLME_SET_request_sync(
 					macDeviceTable,
-					count,
+					count++,
+					sizeof(tDeviceDescriptor),
+					&tDeviceDescriptor,
+					pDeviceRef
 					);
 
 		}
+		MLME_SET_request_sync(
+				macDeviceTableEntries,
+				0,
+				1,
+				&count,
+				pDeviceRef
+				);
+
+		struct M_KeyDescriptor_thread {
+			struct M_KeyTableEntryFixed    Fixed;
+			struct M_KeyIdLookupDesc       KeyIdLookupList[1];
+			struct M_KeyDeviceDesc         KeyDeviceList[count];
+			struct M_KeyUsageDesc          KeyUsageList[2];
+		}tKeyDescriptor;
+
+
+		//Table 7-5 in section 7.2.2.2.1 of thread spec
+		tKeyDescriptor.Fixed.KeyIdLookupListEntries = 1;
+		tKeyDescriptor.Fixed.KeyUsageListEntries = 2;
+		tKeyDescriptor.Fixed.KeyDeviceListEntries = count;
+
+		//Flags according to Cascoda API 5.3.1
+		tKeyDescriptor.KeyUsageList[0].Flags = (MAC_FC_FT_DATA & KUD_FrameTypeMask);	//data usage
+		tKeyDescriptor.KeyUsageList[1].Flags = (MAC_FC_FT_COMMAND & KUD_FrameTypeMask) | ((CMD_DATA_REQ << KUD_CommandFrameIdentifierShift) & KUD_CommandFrameIdentifierMask);	//Data req usage
+
+		tKeyDescriptor.KeyIdLookupList[0].LookupDataSizeCode = 9;
+		//This sets the MSB of the lookUpData to equal defaultKeySource as is required by 7.5.8.2.2 of IEEE 15.4 spec
+		tKeyDescriptor.KeyIdLookupList[0].LookupData[8] = 0xFF;	//Set lookup data to the macDefaultKeySource to be right concatenated to the individual keyIndex param
+		for(int i = 0; i < 8; i++) tKeyDescriptor.KeyIdLookupList[0].LookupData[i] = 0;
+
+		//Fill the deviceListEntries
+		for(int i = 0; i < count; i++){
+			tKeyDescriptor.KeyDeviceList[i].Flags = i;
+		}
 
 		//Generate and store the keys for the current, previous, and next rotations
+		count = 0;
 		for(uint8_t i = 0; i < 3; i++){
-			if(tKeySeq + i > 0){	//0 is invalid key sequence
+			if((tKeySeq + i) > 0){	//0 is invalid key sequence
+				memcpy(tKeyDescriptor.Fixed.Key, getMacKeyFromSequenceCounter(tKeySeq + i), 16);
 				MLME_SET_request_sync(
-						macKeyTable,
-						i,
-						);
+					macKeyTable,
+					count++,
+					sizeof(tKeyDescriptor),
+					&tKeyDescriptor,
+					pDeviceRef
+					);
 			}
 		}
+		MLME_SET_request_sync(
+			macKeyTableEntries,
+			0,
+			1,
+			&count,
+			pDeviceRef
+			);
 
 	}
 
