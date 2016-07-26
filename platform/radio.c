@@ -269,7 +269,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 		}
 		else{
 			otRouterInfo tParentInfo;
-			if(otGetParent(tParentInfo) == kThreadError_None){
+			if(otGetParent(&tParentInfo) == kThreadError_None){
 				struct M_DeviceDescriptor tDeviceDescriptor;
 
 				PUTLE16(otGetPanId() ,tDeviceDescriptor.PANId);
