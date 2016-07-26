@@ -211,12 +211,12 @@ void PlatformRadioInit(void)
 		&enable,
 		pDeviceRef);
 
-	uint8_t * defaultKeySource = {0, 0, 0, 0, 0, 0, 0, 0xFF};	//set the defaultKeySource as defined in 7.2.2.1 of thread spec
+	uint8_t defaultKeySource[8] = {0, 0, 0, 0, 0, 0, 0, 0xFF};	//set the defaultKeySource as defined in 7.2.2.1 of thread spec
 	MLME_SET_request_sync(
 		macDefaultKeySource,
 		0,
-		sizeof(enable),
-		&enable,
+		8,
+		defaultKeySource,
 		pDeviceRef);
 
 }
