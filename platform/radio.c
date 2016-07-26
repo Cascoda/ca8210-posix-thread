@@ -264,7 +264,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 				tDeviceDescriptor.Exempt = 0;
 
 				fprintf(stderr, "-Device Descriptor: ");
-				for(int j = 0; j < sizeof(tDeviceDescriptor); j++)fprintf(stderr, "%#x", ((uint8_t*)tDeviceDescriptor)[j]);
+				for(int j = 0; j < sizeof(tDeviceDescriptor); j++)fprintf(stderr, "%#x", ((uint8_t*)&tDeviceDescriptor)[j]);
 
 				fprintf(stderr, "\n\r-Error: %#x", MLME_SET_request_sync(
 						macDeviceTable,
@@ -294,7 +294,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 				tDeviceDescriptor.Exempt = 0;
 
 				fprintf(stderr, "-Device Descriptor: ");
-				for(int j = 0; j < sizeof(tDeviceDescriptor); j++)fprintf(stderr, "%#x", ((uint8_t*)tDeviceDescriptor)[j]);
+				for(int j = 0; j < sizeof(tDeviceDescriptor); j++)fprintf(stderr, "%#x", ((uint8_t*)&tDeviceDescriptor)[j]);
 
 				fprintf(stderr, "\n\r-Error: %#x", MLME_SET_request_sync(
 						macDeviceTable,
