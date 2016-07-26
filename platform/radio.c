@@ -587,9 +587,10 @@ ThreadError otPlatRadioTransmit(void)
 			memcpy(curSecSpec.KeySource, sTransmitFrame.mPsdu + ASHloc, 8);
 			ASHloc += 8;
 		}
-    	//curSecSpec.KeyIndex = sTransmitFrame.mPsdu[ASHloc++];
-    	ASHloc++;
-    	curSecSpec.KeyIndex = (otGetKeySequenceCounter() & 0x7F) + 1;
+    	curSecSpec.KeyIndex = sTransmitFrame.mPsdu[ASHloc++];
+    	//ASHloc++;
+    	//curSecSpec.KeyIndex = (otGetKeySequenceCounter() & 0x7F) + 1;
+    	fprintf(stderr, "\r\nKeyIndex: %#04x\r\n", curSecSpec.KeyIndex);
     	headerLength = ASHloc;
     }
 
