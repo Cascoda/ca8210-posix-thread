@@ -232,38 +232,63 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 		uint32_t tKeySeq = otGetKeySequenceCounter() - 1;
 
 		uint8_t count = 0;	//Update device list
-		for(uint8_t i = 0; i < 5; i++){
-			otChildInfo tChildInfo;
-			otGetChildInfoByIndex(i, &tChildInfo);
+		if(otGetDeviceRole() != kDeviceRoleChild){
+			for(uint8_t i = 0; i < 5; i++){
+				otChildInfo tChildInfo;
+				otGetChildInfoByIndex(i, &tChildInfo);
 
-			//Do not register invalid devices
-			uint8_t isValid = 0;
-			for(int j = 0; j < 8; j++){
-				if(tChildInfo.mExtAddress.m8[j] != 0){
-					isValid = 1;
+				//Do not register invalid devices
+				uint8_t isValid = 0;
+				for(int j = 0; j < 8; j++){
+					if(tChildInfo.mExtAddress.m8[j] != 0){
+						isValid = 1;
+					}
 				}
+				if(!isValid) continue;
+
+				struct M_DeviceDescriptor tDeviceDescriptor;
+
+				PUTLE16(otGetPanId() ,tDeviceDescriptor.PANId);
+				PUTLE16(tChildInfo.mRloc16, tDeviceDescriptor.ShortAddress);
+				memcpy(tDeviceDescriptor.ExtAddress, tChildInfo.mExtAddress.m8, 8);
+				tDeviceDescriptor.FrameCounter[0] = 0;	//TODO: Figure out how to do frame counter properly - this method is temporarily breaking replay protection as replays using previous key will still be successful
+				tDeviceDescriptor.FrameCounter[1] = 0;
+				tDeviceDescriptor.FrameCounter[2] = 0;
+				tDeviceDescriptor.FrameCounter[3] = 0;
+				tDeviceDescriptor.Exempt = 0;
+
+				MLME_SET_request_sync(
+						macDeviceTable,
+						count++,
+						sizeof(tDeviceDescriptor),
+						&tDeviceDescriptor,
+						pDeviceRef
+						);
+
 			}
-			if(!isValid) continue;
+		}
+		else{
+			otRouterInfo tParentInfo;
+			if(otGetParent(tParentInfo) == kThreadError_None){
+				struct M_DeviceDescriptor tDeviceDescriptor;
 
-			struct M_DeviceDescriptor tDeviceDescriptor;
+				PUTLE16(otGetPanId() ,tDeviceDescriptor.PANId);
+				PUTLE16(tParentInfo.mRloc16, tDeviceDescriptor.ShortAddress);
+				memcpy(tDeviceDescriptor.ExtAddress, tParentInfo.mExtAddress.m8, 8);
+				tDeviceDescriptor.FrameCounter[0] = 0;	//TODO: Figure out how to do frame counter properly - this method is temporarily breaking replay protection as replays using previous key will still be successful
+				tDeviceDescriptor.FrameCounter[1] = 0;
+				tDeviceDescriptor.FrameCounter[2] = 0;
+				tDeviceDescriptor.FrameCounter[3] = 0;
+				tDeviceDescriptor.Exempt = 0;
 
-			PUTLE16(otGetPanId() ,tDeviceDescriptor.PANId);
-			PUTLE16(otGetShortAddress(), tDeviceDescriptor.ShortAddress);
-			memcpy(tDeviceDescriptor.ExtAddress, otGetExtendedAddress(), 8);
-			tDeviceDescriptor.FrameCounter[0] = 0;	//TODO: Figure out how to do frame counter properly - this method is temporarily breaking replay protection as replays using previous key will still be successful
-			tDeviceDescriptor.FrameCounter[1] = 0;
-			tDeviceDescriptor.FrameCounter[2] = 0;
-			tDeviceDescriptor.FrameCounter[3] = 0;
-			tDeviceDescriptor.Exempt = 0;
-
-			MLME_SET_request_sync(
-					macDeviceTable,
-					count++,
-					sizeof(tDeviceDescriptor),
-					&tDeviceDescriptor,
-					pDeviceRef
-					);
-
+				MLME_SET_request_sync(
+						macDeviceTable,
+						count++,
+						sizeof(tDeviceDescriptor),
+						&tDeviceDescriptor,
+						pDeviceRef
+						);
+			}
 		}
 
 		MLME_SET_request_sync(
