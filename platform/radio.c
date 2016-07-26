@@ -41,6 +41,8 @@
 #include <common/code_utils.hpp>
 #include <platform/radio.h>
 #include <cascoda_api.h>
+#include <kernel_exchange.h>
+#include <string.h>
 #include <mac_messages.h>
 #include "posix-platform.h"
 #include <ieee_802_15_4.h>
@@ -242,6 +244,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 				for(int j = 0; j < 8; j++){
 					if(tChildInfo.mExtAddress.m8[j] != 0){
 						isValid = 1;
+						break;
 					}
 				}
 				if(!isValid) continue;
@@ -289,6 +292,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 						pDeviceRef
 						);
 			}
+			else fprintf(stderr, "\n\rError retrieving parent!\n\r");
 		}
 
 		MLME_SET_request_sync(
