@@ -231,6 +231,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 	if((aFlags & OT_NET_KEY_SEQUENCE) || (aFlags & OT_THREAD_CHILD_ADDED) || (aFlags & OT_THREAD_CHILD_REMOVED) || (aFlags & OT_NET_ROLE)){	//The thrKeySequenceCounter has changed
 		//Therefore update the keys stored in the macKeytable
 		fprintf(stderr, "\n\rUpdating keys\n\r");
+		if(otGetKeySequenceCounter() == 0) otSetKeySequenceCounter(1);
 		uint32_t tKeySeq = otGetKeySequenceCounter() - 1;
 		fprintf(stderr, "-Key Sequence = %#x\n\r", tKeySeq);
 
@@ -264,7 +265,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 				tDeviceDescriptor.Exempt = 0;
 
 				fprintf(stderr, "-Device Descriptor: ");
-				for(int j = 0; j < sizeof(tDeviceDescriptor); j++)fprintf(stderr, "%#x", ((uint8_t*)&tDeviceDescriptor)[j]);
+				for(int j = 0; j < sizeof(tDeviceDescriptor); j++)fprintf(stderr, "%2x", ((uint8_t*)&tDeviceDescriptor)[j]);
 
 				fprintf(stderr, "\n\r-Error: %#x", MLME_SET_request_sync(
 						macDeviceTable,
@@ -294,7 +295,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 				tDeviceDescriptor.Exempt = 0;
 
 				fprintf(stderr, "-Device Descriptor: ");
-				for(int j = 0; j < sizeof(tDeviceDescriptor); j++)fprintf(stderr, "%#x", ((uint8_t*)&tDeviceDescriptor)[j]);
+				for(int j = 0; j < sizeof(tDeviceDescriptor); j++)fprintf(stderr, "%2x", ((uint8_t*)&tDeviceDescriptor)[j]);
 
 				fprintf(stderr, "\n\r-Error: %#x", MLME_SET_request_sync(
 						macDeviceTable,
@@ -338,7 +339,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 		tKeyDescriptor.KeyIdLookupList[0].LookupData[7] = 0xFF;	//Set lookup data to the macDefaultKeySource to be right concatenated to the individual keyIndex param
 
 		fprintf(stderr, "-Lookup Data: ");
-		for(int j = 0; j < 9; j++)fprintf(stderr, "%#x", tKeyDescriptor.KeyIdLookupList[0].LookupData[j]);
+		for(int j = 0; j < 9; j++)fprintf(stderr, "%2x", tKeyDescriptor.KeyIdLookupList[0].LookupData[j]);
 		fprintf(stderr, "\n\r");
 
 
@@ -354,8 +355,9 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 				memcpy(tKeyDescriptor.Fixed.Key, getMacKeyFromSequenceCounter(tKeySeq + i), 16);
 				tKeyDescriptor.KeyIdLookupList[0].LookupData[8] = ((tKeySeq + i) & 0x7F) + 1;
 
-				fprintf(stderr, "-Key %d is", i);
+				fprintf(stderr, "-Key %d is", tKeySeq + i);
 				for(int j = 0; j < 16; j++)fprintf(stderr, "%#x", tKeyDescriptor.Fixed.Key[j]);
+				fprintf(stderr, "\n\r");
 
 				MLME_SET_request_sync(
 					macKeyTable,
