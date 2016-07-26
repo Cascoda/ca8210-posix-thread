@@ -588,6 +588,7 @@ ThreadError otPlatRadioTransmit(void)
 			ASHloc += 8;
 		}
     	//curSecSpec.KeyIndex = sTransmitFrame.mPsdu[ASHloc++];
+    	ASHloc++;
     	curSecSpec.KeyIndex = (otGetKeySequenceCounter() & 0x7F) + 1;
     	headerLength = ASHloc;
     }
