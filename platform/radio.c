@@ -130,6 +130,7 @@ void disableReceiver(void)
 
 ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandleActiveScanResult aCallback)
 {
+	printf("I'm executing otActiveScan");
 	//uint16_t aScanDuration = aBaseSuperframeDuration * (pow(2,ScanDuration) +1);
 	uint8_t ScanDuration = log2((aScanDuration/aBaseSuperframeDuration) -1);
 	struct SecSpec pSecurity = {0};
@@ -141,6 +142,7 @@ ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandl
 
 ThreadError otPlatSetNetworkName(const char *aNetworkName){
 
+	printf("I'm setting the network name");
 	uint8_t payloadLength = 32;
 	memcpy(mBeaconPayload + 4, aNetworkName, 16);
 	if ((MLME_SET_request_sync(
@@ -799,7 +801,7 @@ exit:
 void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
 {
 	otActiveScanResult resultStruct;
-	printf("I'm doing things");
+	printf("I'm getting a beaconNotifyFrame");
 	uint8_t shortaddrs  = *((uint8_t*)params + 33) & 7;
 	uint8_t extaddrs = (*((uint8_t*)params + 33) & 112) >> 4;
 
