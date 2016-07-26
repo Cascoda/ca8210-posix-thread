@@ -230,11 +230,13 @@ void posixPlatformPostInit(void){
 void keyChangedCallback(uint32_t aFlags, void *aContext){
 	if((aFlags & OT_NET_KEY_SEQUENCE) || (aFlags & OT_THREAD_CHILD_ADDED) || (aFlags & OT_THREAD_CHILD_REMOVED) || (aFlags & OT_NET_ROLE)){	//The thrKeySequenceCounter has changed
 		//Therefore update the keys stored in the macKeytable
-
+		fprintf(stderr, "\n\rUpdating keys\n\r");
 		uint32_t tKeySeq = otGetKeySequenceCounter() - 1;
+		fprintf(stderr, "-Key Sequence = %#x\n\r", tKeySeq);
 
 		uint8_t count = 0;	//Update device list
 		if(otGetDeviceRole() != kDeviceRoleChild){
+			fprintf(stderr, "-Looking for children\n\r");
 			for(uint8_t i = 0; i < 5; i++){
 				otChildInfo tChildInfo;
 				otGetChildInfoByIndex(i, &tChildInfo);
@@ -248,6 +250,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 					}
 				}
 				if(!isValid) continue;
+				fprintf(stderr, "-Found Valid Child\n\r");
 
 				struct M_DeviceDescriptor tDeviceDescriptor;
 
@@ -260,20 +263,26 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 				tDeviceDescriptor.FrameCounter[3] = 0;
 				tDeviceDescriptor.Exempt = 0;
 
-				MLME_SET_request_sync(
+				fprintf(stderr, "-Device Descriptor: ");
+				for(int j = 0; j < sizeof(tDeviceDescriptor); j++)fprintf(stderr, "%#x", ((uint8_t*)tDeviceDescriptor)[j]);
+
+				fprintf(stderr, "\n\r-Error: %#x", MLME_SET_request_sync(
 						macDeviceTable,
 						count++,
 						sizeof(tDeviceDescriptor),
 						&tDeviceDescriptor,
 						pDeviceRef
-						);
+						));
 
 			}
 		}
 		else{
 			otRouterInfo tParentInfo;
+			fprintf(stderr, "-Looking for parent\n\r");
 			if(otGetParent(&tParentInfo) == kThreadError_None){
 				struct M_DeviceDescriptor tDeviceDescriptor;
+
+				fprintf(stderr, "-Found Parent\n\r");
 
 				PUTLE16(otGetPanId() ,tDeviceDescriptor.PANId);
 				PUTLE16(tParentInfo.mRloc16, tDeviceDescriptor.ShortAddress);
@@ -284,15 +293,18 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 				tDeviceDescriptor.FrameCounter[3] = 0;
 				tDeviceDescriptor.Exempt = 0;
 
-				MLME_SET_request_sync(
+				fprintf(stderr, "-Device Descriptor: ");
+				for(int j = 0; j < sizeof(tDeviceDescriptor); j++)fprintf(stderr, "%#x", ((uint8_t*)tDeviceDescriptor)[j]);
+
+				fprintf(stderr, "\n\r-Error: %#x", MLME_SET_request_sync(
 						macDeviceTable,
 						count++,
 						sizeof(tDeviceDescriptor),
 						&tDeviceDescriptor,
 						pDeviceRef
-						);
+						));
 			}
-			else fprintf(stderr, "\n\rError retrieving parent!\n\r");
+			else fprintf(stderr, "\n\r-Error retrieving parent!\n\r");
 		}
 
 		MLME_SET_request_sync(
@@ -322,8 +334,12 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 
 		tKeyDescriptor.KeyIdLookupList[0].LookupDataSizeCode = 9;
 		//This sets the MSB of the lookUpData to equal defaultKeySource as is required by 7.5.8.2.2 of IEEE 15.4 spec
-		for(int i = 0; i < 8; i++) tKeyDescriptor.KeyIdLookupList[0].LookupData[i] = 0;
+		for(int i = 0; i < 9; i++) tKeyDescriptor.KeyIdLookupList[0].LookupData[i] = 0;
 		tKeyDescriptor.KeyIdLookupList[0].LookupData[7] = 0xFF;	//Set lookup data to the macDefaultKeySource to be right concatenated to the individual keyIndex param
+
+		fprintf(stderr, "-Lookup Data: ");
+		for(int j = 0; j < 9; j++)fprintf(stderr, "%#x", tKeyDescriptor.KeyIdLookupList[0].LookupData[j]);
+		fprintf(stderr, "\n\r");
 
 
 		//Fill the deviceListEntries
@@ -337,6 +353,9 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 			if((tKeySeq + i) > 0){	//0 is invalid key sequence
 				memcpy(tKeyDescriptor.Fixed.Key, getMacKeyFromSequenceCounter(tKeySeq + i), 16);
 				tKeyDescriptor.KeyIdLookupList[0].LookupData[8] = ((tKeySeq + i) & 0x7F) + 1;
+
+				fprintf(stderr, "-Key %d is", i);
+				for(int j = 0; j < 16; j++)fprintf(stderr, "%#x", tKeyDescriptor.Fixed.Key[j]);
 
 				MLME_SET_request_sync(
 					macKeyTable,
