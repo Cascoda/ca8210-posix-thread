@@ -69,6 +69,7 @@ void readFrame(struct MCPS_DATA_indication_pset *params);
 void readConfirmFrame(struct MCPS_DATA_confirm_pset *params);
 
 void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params);
+int genericDispatchFrame(const uint8_t *buf, size_t len);
 void keyChangedCallback(uint32_t aFlags, void *aContext);
 
 
@@ -256,6 +257,7 @@ void PlatformRadioInit(void)
     callbacks.MCPS_DATA_indication = &readFrame;
     callbacks.MCPS_DATA_confirm = &readConfirmFrame;
     callbacks.MLME_BEACON_NOTIFY_indication = &beaconNotifyFrame;
+    callbacks.generic_dispatch = &genericDispatchFrame;
     cascoda_register_callbacks(&callbacks);
     
     uint8_t enable = 1;	//enable security
@@ -828,6 +830,13 @@ void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
 
 exit:
     return;
+}
+
+int genericDispatchFrame(const uint8_t *buf, size_t len) {
+	fprintf(stderr, "\n\rGoing into a for loop now\n\r");
+	for(int i = 0; i < len; i++) {
+		fprintf(stderr, " %x ", buf[i]);
+	}
 }
 
 int PlatformRadioProcess(void)    //TODO: port - This should be the callback in future for data receive
