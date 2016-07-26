@@ -359,13 +359,13 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 				for(int j = 0; j < 9; j++)fprintf(stderr, "%02x", tKeyDescriptor.KeyIdLookupList[0].LookupData[j]);
 				fprintf(stderr, "\n\r");
 
-				MLME_SET_request_sync(
+				fprintf(stderr, "\n\r-Error: %#x\n\r", MLME_SET_request_sync(
 					macKeyTable,
 					count++,
 					sizeof(tKeyDescriptor),
 					&tKeyDescriptor,
 					pDeviceRef
-					);
+					));
 			}
 		}
 		MLME_SET_request_sync(
@@ -588,8 +588,6 @@ ThreadError otPlatRadioTransmit(void)
 			ASHloc += 8;
 		}
     	curSecSpec.KeyIndex = sTransmitFrame.mPsdu[ASHloc++];
-    	//ASHloc++;
-    	//curSecSpec.KeyIndex = (otGetKeySequenceCounter() & 0x7F) + 1;
     	fprintf(stderr, "\r\nKeyIndex: %#04x\r\n", curSecSpec.KeyIndex);
     	headerLength = ASHloc;
     }
