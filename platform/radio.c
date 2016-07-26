@@ -265,7 +265,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 				tDeviceDescriptor.Exempt = 0;
 
 				fprintf(stderr, "-Device Descriptor: ");
-				for(int j = 0; j < sizeof(tDeviceDescriptor); j++)fprintf(stderr, "%2x", ((uint8_t*)&tDeviceDescriptor)[j]);
+				for(int j = 0; j < sizeof(tDeviceDescriptor); j++)fprintf(stderr, "%02x", ((uint8_t*)&tDeviceDescriptor)[j]);
 
 				fprintf(stderr, "\n\r-Error: %#x", MLME_SET_request_sync(
 						macDeviceTable,
@@ -295,9 +295,9 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 				tDeviceDescriptor.Exempt = 0;
 
 				fprintf(stderr, "-Device Descriptor: ");
-				for(int j = 0; j < sizeof(tDeviceDescriptor); j++)fprintf(stderr, "%2x", ((uint8_t*)&tDeviceDescriptor)[j]);
+				for(int j = 0; j < sizeof(tDeviceDescriptor); j++)fprintf(stderr, "%02x", ((uint8_t*)&tDeviceDescriptor)[j]);
 
-				fprintf(stderr, "\n\r-Error: %#x", MLME_SET_request_sync(
+				fprintf(stderr, "\n\r-Error: %#x\n\r", MLME_SET_request_sync(
 						macDeviceTable,
 						count++,
 						sizeof(tDeviceDescriptor),
@@ -338,10 +338,6 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 		for(int i = 0; i < 9; i++) tKeyDescriptor.KeyIdLookupList[0].LookupData[i] = 0;
 		tKeyDescriptor.KeyIdLookupList[0].LookupData[7] = 0xFF;	//Set lookup data to the macDefaultKeySource to be right concatenated to the individual keyIndex param
 
-		fprintf(stderr, "-Lookup Data: ");
-		for(int j = 0; j < 9; j++)fprintf(stderr, "%2x", tKeyDescriptor.KeyIdLookupList[0].LookupData[j]);
-		fprintf(stderr, "\n\r");
-
 
 		//Fill the deviceListEntries
 		for(int i = 0; i < count; i++){
@@ -356,7 +352,11 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 				tKeyDescriptor.KeyIdLookupList[0].LookupData[8] = ((tKeySeq + i) & 0x7F) + 1;
 
 				fprintf(stderr, "-Key %d is", tKeySeq + i);
-				for(int j = 0; j < 16; j++)fprintf(stderr, "%#x", tKeyDescriptor.Fixed.Key[j]);
+				for(int j = 0; j < 16; j++)fprintf(stderr, "%02x ", tKeyDescriptor.Fixed.Key[j]);
+				fprintf(stderr, "\n\r");
+
+				fprintf(stderr, "-Lookup Data: ");
+				for(int j = 0; j < 9; j++)fprintf(stderr, "%02x", tKeyDescriptor.KeyIdLookupList[0].LookupData[j]);
 				fprintf(stderr, "\n\r");
 
 				MLME_SET_request_sync(
