@@ -132,7 +132,8 @@ ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandl
 {
 	printf("I'm executing otActiveScan");
 	//uint16_t aScanDuration = aBaseSuperframeDuration * (pow(2,ScanDuration) +1);
-	uint8_t ScanDuration = log2((aScanDuration/aBaseSuperframeDuration) -1);
+	//uint8_t ScanDuration = log2((aScanDuration/aBaseSuperframeDuration) -1);
+	uint8_t ScanDuration = 7;
 	struct SecSpec pSecurity = {0};
 
 	scanCallback = aCallback;
