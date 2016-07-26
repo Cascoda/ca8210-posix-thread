@@ -322,8 +322,9 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 
 		tKeyDescriptor.KeyIdLookupList[0].LookupDataSizeCode = 9;
 		//This sets the MSB of the lookUpData to equal defaultKeySource as is required by 7.5.8.2.2 of IEEE 15.4 spec
-		tKeyDescriptor.KeyIdLookupList[0].LookupData[8] = 0xFF;	//Set lookup data to the macDefaultKeySource to be right concatenated to the individual keyIndex param
 		for(int i = 0; i < 8; i++) tKeyDescriptor.KeyIdLookupList[0].LookupData[i] = 0;
+		tKeyDescriptor.KeyIdLookupList[0].LookupData[7] = 0xFF;	//Set lookup data to the macDefaultKeySource to be right concatenated to the individual keyIndex param
+
 
 		//Fill the deviceListEntries
 		for(int i = 0; i < count; i++){
@@ -335,7 +336,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 		for(uint8_t i = 0; i < 3; i++){
 			if((tKeySeq + i) > 0){	//0 is invalid key sequence
 				memcpy(tKeyDescriptor.Fixed.Key, getMacKeyFromSequenceCounter(tKeySeq + i), 16);
-				tKeyDescriptor.KeyIdLookupList[0].LookupData[0] = ((tKeySeq + i) & 0x7F) + 1;
+				tKeyDescriptor.KeyIdLookupList[0].LookupData[8] = ((tKeySeq + i) & 0x7F) + 1;
 
 				MLME_SET_request_sync(
 					macKeyTable,
