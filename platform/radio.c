@@ -331,7 +331,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 		for(uint8_t i = 0; i < 3; i++){
 			if((tKeySeq + i) > 0){	//0 is invalid key sequence
 				memcpy(tKeyDescriptor.Fixed.Key, getMacKeyFromSequenceCounter(tKeySeq + i), 16);
-				tKeyDescriptor.KeyIdLookupList[0].LookupData[0] = (tKeySeq + i) + 1;
+				tKeyDescriptor.KeyIdLookupList[0].LookupData[0] = ((tKeySeq + i) & 0x7F) + 1;
 
 				MLME_SET_request_sync(
 					macKeyTable,
