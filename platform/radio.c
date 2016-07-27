@@ -69,8 +69,11 @@ enum
 
 void readFrame(struct MCPS_DATA_indication_pset *params);
 void readConfirmFrame(struct MCPS_DATA_confirm_pset *params);
-void scanConfirmFrame(struct MLME_SCAN_confirm_pset *params);
+
+void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params);
+int genericDispatchFrame(const uint8_t *buf, size_t len);
 void keyChangedCallback(uint32_t aFlags, void *aContext);
+
 
 static struct MAC_Message response;
 static RadioPacket sTransmitFrame;
@@ -86,6 +89,8 @@ static uint8_t sChannel = 0;
 
 static uint8_t sTransmitPsdu[IEEE802154_MAX_LENGTH];
 static uint8_t sReceivePsdu[IEEE802154_MAX_LENGTH];
+
+static uint8_t mBeaconPayload[32] = {3, 0x98};
 
 pthread_mutex_t receiveFrame_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t receiveFrame_cond = PTHREAD_COND_INITIALIZER;
@@ -128,17 +133,60 @@ void disableReceiver(void)
 
 ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandleActiveScanResult aCallback)
 {
+	fprintf(stderr, "\n I'm executing otActiveScan \n");
 	//uint16_t aScanDuration = aBaseSuperframeDuration * (pow(2,ScanDuration) +1);
-	uint8_t ScanDuration = log2((aScanDuration/aBaseSuperframeDuration) -1);
+	//uint8_t ScanDuration = log2((aScanDuration/aBaseSuperframeDuration) -1);
+	uint8_t ScanDuration = 8;
 	struct SecSpec pSecurity = {0};
 
 	scanCallback = aCallback;
-
-	return MLME_SCAN_request(1, aScanChannels, ScanDuration, &pSecurity, pDeviceRef);
-    /*return sThreadNetif->GetMac().ActiveScan(aScanChannels, aScanDuration, &HandleActiveScanResult,
-                                             reinterpret_cast<void *>(aCallback));*/
+	uint8_t scanRequest = MLME_SCAN_request(1, aScanChannels, ScanDuration, &pSecurity, pDeviceRef);
+	fprintf(stderr, "\n %x \n", scanRequest);
+	return scanRequest;
 }
 
+ThreadError otPlatSetNetworkName(const char *aNetworkName) {
+
+	fprintf(stderr,"I'm setting the network name");
+	uint8_t payloadLength = 32;
+	memcpy(mBeaconPayload + 4, aNetworkName, 16);
+	if ((MLME_SET_request_sync(
+			macBeaconPayload,
+			0,
+			payloadLength,
+			mBeaconPayload,
+			pDeviceRef) == MAC_SUCCESS) &&
+		(MLME_SET_request_sync(
+			macBeaconPayloadLength,
+			0,
+			1,
+			&payloadLength,
+			pDeviceRef) == MAC_SUCCESS))
+        return kThreadError_None;
+
+	else return kThreadError_Failed;
+}
+
+ThreadError otPlatSetExtendedPanId(const uint8_t *aExtPanId) {
+
+	uint8_t payloadLength = 32;
+	memcpy(mBeaconPayload + 20, aExtPanId, 8);
+	if ((MLME_SET_request_sync(
+			macBeaconPayload,
+			0,
+			payloadLength,
+			mBeaconPayload,
+			pDeviceRef) == MAC_SUCCESS) &&
+		(MLME_SET_request_sync(
+			macBeaconPayloadLength,
+			0,
+			1,
+			&payloadLength,
+			pDeviceRef) == MAC_SUCCESS))
+           return kThreadError_None;
+
+	else return kThreadError_Failed;
+}
 
 ThreadError otPlatRadioSetPanId(uint16_t panid)
 {
@@ -202,7 +250,8 @@ void PlatformRadioInit(void)
     struct cascoda_api_callbacks callbacks = {0};
     callbacks.MCPS_DATA_indication = &readFrame;
     callbacks.MCPS_DATA_confirm = &readConfirmFrame;
-    callbacks.MLME_SCAN_confirm = &scanConfirmFrame;
+    callbacks.MLME_BEACON_NOTIFY_indication = &beaconNotifyFrame;
+    callbacks.generic_dispatch = &genericDispatchFrame;
     cascoda_register_callbacks(&callbacks);
     
     uint8_t enable = 1;	//enable security
@@ -805,32 +854,41 @@ exit:
     return;
 }
 
-
-void scanConfirmFrame(struct MLME_SCAN_confirm_pset *params)   //Async
+void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
 {
-	struct PanDescriptor * curStruct = params + 7;
-	for (int i = 0; i < params->ResultListSize; i++){
+	otActiveScanResult resultStruct;
+	fprintf(stderr,"I'm getting a beaconNotifyFrame");
+	uint8_t shortaddrs  = *((uint8_t*)params + 33) & 7;
+	uint8_t extaddrs = (*((uint8_t*)params + 33) & 112) >> 4;
 
-		otActiveScanResult resultStruct;
-
-		if ((curStruct->Coord.AddressMode) == 3) {
-			memcpy(resultStruct.mExtAddress.m8, curStruct->Coord.Address, 2);
-		} else {
-			//cause scan to fail
-			assert(false);
+	if ((params->PanDescriptor.Coord.AddressMode) == 3) {
+		memcpy(resultStruct.mExtAddress.m8, params->PanDescriptor.Coord.Address, 8);
+	} else {
+		assert(false);
+	}
+	resultStruct.mPanId = GETLE16(params->PanDescriptor.Coord.PANId);
+	resultStruct.mChannel = params->PanDescriptor.LogicalChannel;
+	resultStruct.mRssi = -20;
+	resultStruct.mLqi = params->PanDescriptor.LinkQuality;
+	uint8_t *sduLength = params + (34 + 2 * shortaddrs + 8 * extaddrs);
+	if (*sduLength > 0) {
+		uint8_t *Sdu = params + (35 + 2 * shortaddrs + 8 * extaddrs);
+		if(*Sdu == 3 && (*(Sdu + 1) == 1)) {
+			resultStruct.mNetworkName = Sdu + 4;
+			resultStruct.mExtPanId = Sdu + 20;
+			scanCallback(&resultStruct);
 		}
-		resultStruct.mPanId = GETLE16(curStruct->Coord.PANId);
-		resultStruct.mChannel = curStruct->LogicalChannel;
-		resultStruct.mRssi = -20;
-		resultStruct.mLqi = curStruct->LinkQuality;
-
-		scanCallback(&resultStruct);
-
-		curStruct += 32;
 	}
 
 exit:
     return;
+}
+
+int genericDispatchFrame(const uint8_t *buf, size_t len) {
+	fprintf(stderr, "\n\rGoing into a for loop now\n\r");
+	for(int i = 0; i < len; i++) {
+		fprintf(stderr, " %x ", buf[i]);
+	}
 }
 
 int PlatformRadioProcess(void)    //TODO: port - This should be the callback in future for data receive
