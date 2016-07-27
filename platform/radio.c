@@ -134,7 +134,7 @@ ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandl
 	fprintf(stderr, "\n I'm executing otActiveScan \n");
 	//uint16_t aScanDuration = aBaseSuperframeDuration * (pow(2,ScanDuration) +1);
 	//uint8_t ScanDuration = log2((aScanDuration/aBaseSuperframeDuration) -1);
-	uint8_t ScanDuration = 7;
+	uint8_t ScanDuration = 8;
 	struct SecSpec pSecurity = {0};
 
 	scanCallback = aCallback;
@@ -143,7 +143,7 @@ ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandl
 	return scanRequest;
 }
 
-ThreadError otPlatSetNetworkName(const char *aNetworkName){
+ThreadError otPlatSetNetworkName(const char *aNetworkName) {
 
 	fprintf(stderr,"I'm setting the network name");
 	uint8_t payloadLength = 32;
@@ -162,36 +162,28 @@ ThreadError otPlatSetNetworkName(const char *aNetworkName){
 			pDeviceRef) == MAC_SUCCESS))
         return kThreadError_None;
 
-else return kThreadError_Failed;
+	else return kThreadError_Failed;
 }
 
 ThreadError otPlatSetExtendedPanId(const uint8_t *aExtPanId) {
 
 	uint8_t payloadLength = 32;
-		memcpy(mBeaconPayload + 20, aExtPanId, 8);
-		if ((MLME_SET_request_sync(
-				macBeaconPayload,
-				0,
-				payloadLength,
-				mBeaconPayload,
-				pDeviceRef) == MAC_SUCCESS) &&
-			(MLME_SET_request_sync(
-				macBeaconPayloadLength,
-				0,
-				1,
-				&payloadLength,
-				pDeviceRef) == MAC_SUCCESS))
-            return kThreadError_None;
+	memcpy(mBeaconPayload + 20, aExtPanId, 8);
+	if ((MLME_SET_request_sync(
+			macBeaconPayload,
+			0,
+			payloadLength,
+			mBeaconPayload,
+			pDeviceRef) == MAC_SUCCESS) &&
+		(MLME_SET_request_sync(
+			macBeaconPayloadLength,
+			0,
+			1,
+			&payloadLength,
+			pDeviceRef) == MAC_SUCCESS))
+           return kThreadError_None;
 
-    else return kThreadError_Failed;
-
-		/*MLME_SET_request_sync(
-				macBeaconPayloadLength,
-				0,
-				1,
-				&payloadLength,
-				pDeviceRef);
-		*/
+	else return kThreadError_Failed;
 }
 
 ThreadError otPlatRadioSetPanId(uint16_t panid)
