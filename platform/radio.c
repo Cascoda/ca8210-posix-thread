@@ -315,8 +315,9 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 
 				fprintf(stderr, "-Device Descriptor: ");
 				for(int j = 0; j < sizeof(tDeviceDescriptor); j++)fprintf(stderr, "%02x", ((uint8_t*)&tDeviceDescriptor)[j]);
+				fprintf(stderr, "\n\r");
 
-				fprintf(stderr, "\n\r-Error: %#x", MLME_SET_request_sync(
+				fprintf(stderr, "-Error: %#x", MLME_SET_request_sync(
 						macDeviceTable,
 						count++,
 						sizeof(tDeviceDescriptor),
@@ -345,8 +346,9 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 
 				fprintf(stderr, "-Device Descriptor: ");
 				for(int j = 0; j < sizeof(tDeviceDescriptor); j++)fprintf(stderr, "%02x", ((uint8_t*)&tDeviceDescriptor)[j]);
+				fprintf(stderr, "\n\r");
 
-				fprintf(stderr, "\n\r-Error: %#x\n\r", MLME_SET_request_sync(
+				fprintf(stderr, "-Error: %#x\n\r", MLME_SET_request_sync(
 						macDeviceTable,
 						count++,
 						sizeof(tDeviceDescriptor),
@@ -406,6 +408,10 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 
 				fprintf(stderr, "-Lookup Data: ");
 				for(int j = 0; j < 9; j++)fprintf(stderr, "%02x", tKeyDescriptor.KeyIdLookupList[0].LookupData[j]);
+				fprintf(stderr, "\n\r");
+
+				fprintf(stderr, "-Key Descriptor: ");
+				for(int j = 0; j < sizeof(tKeyDescriptor); j++)fprintf(stderr, "%02x", ((uint8_t*)&tDeviceDescriptor)[j]);
 				fprintf(stderr, "\n\r");
 
 				fprintf(stderr, "-Error: %#x\n\r", MLME_SET_request_sync(
