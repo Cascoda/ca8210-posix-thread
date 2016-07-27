@@ -325,6 +325,20 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 						pDeviceRef
 						));
 
+				uint8_t buf[255];
+				uint8_t buflen = 0;
+
+				fprintf(stderr, "-Error: %#x\n\r", MLME_GET_request_sync(
+						macDeviceTable,
+						count - 1,
+						&buflen,
+						buf,
+						pDeviceRef
+						));
+
+				fprintf(stderr, "macDeviceTable entry %d: ", count-1);
+				for(int x = 0; x < buflen; x++) fprintf(stderr, "%02x ", buf[x]);
+
 			}
 		}
 		else{
@@ -355,6 +369,20 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 						&tDeviceDescriptor,
 						pDeviceRef
 						));
+
+				uint8_t buf[255];
+				uint8_t buflen = 0;
+
+				fprintf(stderr, "-Error: %#x\n\r", MLME_GET_request_sync(
+						macDeviceTable,
+						count - 1,
+						&buflen,
+						buf,
+						pDeviceRef
+						));
+
+				fprintf(stderr, "macDeviceTable entry %d: ", count-1);
+				for(int x = 0; x < buflen; x++) fprintf(stderr, "%02x ", buf[x]);
 			}
 			else fprintf(stderr, "\n\r-Error retrieving parent!\n\r");
 		}
@@ -421,6 +449,20 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 					&tKeyDescriptor,
 					pDeviceRef
 					));
+
+				uint8_t buf[255];
+				uint8_t buflen = 0;
+
+				fprintf(stderr, "-Error: %#x\n\r", MLME_GET_request_sync(
+						macKeyTable,
+						count - 1,
+						&buflen,
+						buf,
+						pDeviceRef
+						));
+
+				fprintf(stderr, "macKeyTable entry %d: ", count-1);
+				for(int x = 0; x < buflen; x++) fprintf(stderr, "%02x ", buf[x]);
 			}
 		}
 		MLME_SET_request_sync(
