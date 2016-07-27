@@ -199,7 +199,7 @@ void PlatformRadioInit(void)
 
     kernel_exchange_init();
 
-    struct cascoda_api_callbacks callbacks;
+    struct cascoda_api_callbacks callbacks = {0};
     callbacks.MCPS_DATA_indication = &readFrame;
     callbacks.MCPS_DATA_confirm = &readConfirmFrame;
     callbacks.MLME_SCAN_confirm = &scanConfirmFrame;
