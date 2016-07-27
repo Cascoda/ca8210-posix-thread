@@ -41,6 +41,8 @@
 #include <common/code_utils.hpp>
 #include <platform/radio.h>
 #include <cascoda_api.h>
+#include <kernel_exchange.h>
+#include <string.h>
 #include <mac_messages.h>
 #include "posix-platform.h"
 #include <ieee_802_15_4.h>
@@ -197,7 +199,7 @@ void PlatformRadioInit(void)
 
     kernel_exchange_init();
 
-    struct cascoda_api_callbacks callbacks;
+    struct cascoda_api_callbacks callbacks = {0};
     callbacks.MCPS_DATA_indication = &readFrame;
     callbacks.MCPS_DATA_confirm = &readConfirmFrame;
     callbacks.MLME_SCAN_confirm = &scanConfirmFrame;
@@ -211,47 +213,101 @@ void PlatformRadioInit(void)
 		&enable,
 		pDeviceRef);
 
-	uint8_t * defaultKeySource = {0, 0, 0, 0, 0, 0, 0, 0xFF};	//set the defaultKeySource as defined in 7.2.2.1 of thread spec
+	uint8_t defaultKeySource[8] = {0, 0, 0, 0, 0, 0, 0, 0xFF};	//set the defaultKeySource as defined in 7.2.2.1 of thread spec
 	MLME_SET_request_sync(
 		macDefaultKeySource,
 		0,
-		sizeof(enable),
-		&enable,
+		8,
+		defaultKeySource,
 		pDeviceRef);
 
 }
 
-void keyChangedCallback(uint32_t aFlags, void *aContext){
-	if((aFlags & OT_NET_KEY_SEQUENCE) || (aFlags & OT_THREAD_CHILD_ADDED) || (aFlags & OT_THREAD_CHILD_REMOVED)){	//The thrKeySequenceCounter has changed
-		//Therefore update the keys stored in the macKeytable
+void posixPlatformPostInit(void){
+	otSetStateChangedCallback(&keyChangedCallback, NULL);
+}
 
+void keyChangedCallback(uint32_t aFlags, void *aContext){
+	if((aFlags & OT_NET_KEY_SEQUENCE) || (aFlags & OT_THREAD_CHILD_ADDED) || (aFlags & OT_THREAD_CHILD_REMOVED) || (aFlags & OT_NET_ROLE)){	//The thrKeySequenceCounter has changed
+		//Therefore update the keys stored in the macKeytable
+		fprintf(stderr, "\n\rUpdating keys\n\r");
+		if(otGetKeySequenceCounter() == 0) otSetKeySequenceCounter(2);
 		uint32_t tKeySeq = otGetKeySequenceCounter() - 1;
+		fprintf(stderr, "-Key Sequence = %#x\n\r", tKeySeq);
 
 		uint8_t count = 0;	//Update device list
-		for(uint8_t i = 0; i < 5; i++){
-			otChildInfo tChildInfo;
-			otGetChildInfoByIndex(i, &tChildInfo);
+		if(otGetDeviceRole() != kDeviceRoleChild){
+			fprintf(stderr, "-Looking for children\n\r");
+			for(uint8_t i = 0; i < 5; i++){
+				otChildInfo tChildInfo;
+				otGetChildInfoByIndex(i, &tChildInfo);
 
-			struct M_DeviceDescriptor tDeviceDescriptor;
+				//Do not register invalid devices
+				uint8_t isValid = 0;
+				for(int j = 0; j < 8; j++){
+					if(tChildInfo.mExtAddress.m8[j] != 0){
+						isValid = 1;
+						break;
+					}
+				}
+				if(!isValid) continue;
+				fprintf(stderr, "-Found Valid Child\n\r");
 
-			PUTLE16(otGetPanId() ,tDeviceDescriptor.PANId);
-			PUTLE16(otGetShortAddress(), tDeviceDescriptor.ShortAddress);
-			memcpy(tDeviceDescriptor.ExtAddress, otGetExtendedAddress(), 8);
-			tDeviceDescriptor.FrameCounter[0] = 0;	//TODO: Figure out how to do frame counter properly - this method is temporarily breaking replay protection as replays using previous key will still be successful
-			tDeviceDescriptor.FrameCounter[1] = 0;
-			tDeviceDescriptor.FrameCounter[2] = 0;
-			tDeviceDescriptor.FrameCounter[3] = 0;
-			tDeviceDescriptor.Exempt = 0;
+				struct M_DeviceDescriptor tDeviceDescriptor;
 
-			MLME_SET_request_sync(
-					macDeviceTable,
-					count++,
-					sizeof(tDeviceDescriptor),
-					&tDeviceDescriptor,
-					pDeviceRef
-					);
+				PUTLE16(otGetPanId() ,tDeviceDescriptor.PANId);
+				PUTLE16(tChildInfo.mRloc16, tDeviceDescriptor.ShortAddress);
+				memcpy(tDeviceDescriptor.ExtAddress, tChildInfo.mExtAddress.m8, 8);
+				tDeviceDescriptor.FrameCounter[0] = 0;	//TODO: Figure out how to do frame counter properly - this method is temporarily breaking replay protection as replays using previous key will still be successful
+				tDeviceDescriptor.FrameCounter[1] = 0;
+				tDeviceDescriptor.FrameCounter[2] = 0;
+				tDeviceDescriptor.FrameCounter[3] = 0;
+				tDeviceDescriptor.Exempt = 0;
 
+				fprintf(stderr, "-Device Descriptor: ");
+				for(int j = 0; j < sizeof(tDeviceDescriptor); j++)fprintf(stderr, "%02x", ((uint8_t*)&tDeviceDescriptor)[j]);
+
+				fprintf(stderr, "\n\r-Error: %#x", MLME_SET_request_sync(
+						macDeviceTable,
+						count++,
+						sizeof(tDeviceDescriptor),
+						&tDeviceDescriptor,
+						pDeviceRef
+						));
+
+			}
 		}
+		else{
+			otRouterInfo tParentInfo;
+			fprintf(stderr, "-Looking for parent\n\r");
+			if(otGetParent(&tParentInfo) == kThreadError_None){
+				struct M_DeviceDescriptor tDeviceDescriptor;
+
+				fprintf(stderr, "-Found Parent\n\r");
+
+				PUTLE16(otGetPanId(), tDeviceDescriptor.PANId);
+				PUTLE16(tParentInfo.mRloc16, tDeviceDescriptor.ShortAddress);
+				memcpy(tDeviceDescriptor.ExtAddress, tParentInfo.mExtAddress.m8, 8);
+				tDeviceDescriptor.FrameCounter[0] = 0;	//TODO: Figure out how to do frame counter properly - this method is temporarily breaking replay protection as replays using previous key will still be successful
+				tDeviceDescriptor.FrameCounter[1] = 0;
+				tDeviceDescriptor.FrameCounter[2] = 0;
+				tDeviceDescriptor.FrameCounter[3] = 0;
+				tDeviceDescriptor.Exempt = 0;
+
+				fprintf(stderr, "-Device Descriptor: ");
+				for(int j = 0; j < sizeof(tDeviceDescriptor); j++)fprintf(stderr, "%02x", ((uint8_t*)&tDeviceDescriptor)[j]);
+
+				fprintf(stderr, "\n\r-Error: %#x\n\r", MLME_SET_request_sync(
+						macDeviceTable,
+						count++,
+						sizeof(tDeviceDescriptor),
+						&tDeviceDescriptor,
+						pDeviceRef
+						));
+			}
+			else fprintf(stderr, "\n\r-Error retrieving parent!\n\r");
+		}
+
 		MLME_SET_request_sync(
 				macDeviceTableEntries,
 				0,
@@ -277,10 +333,11 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 		tKeyDescriptor.KeyUsageList[0].Flags = (MAC_FC_FT_DATA & KUD_FrameTypeMask);	//data usage
 		tKeyDescriptor.KeyUsageList[1].Flags = (MAC_FC_FT_COMMAND & KUD_FrameTypeMask) | ((CMD_DATA_REQ << KUD_CommandFrameIdentifierShift) & KUD_CommandFrameIdentifierMask);	//Data req usage
 
-		tKeyDescriptor.KeyIdLookupList[0].LookupDataSizeCode = 9;
+		tKeyDescriptor.KeyIdLookupList[0].LookupDataSizeCode = 1; //1 means length 9
 		//This sets the MSB of the lookUpData to equal defaultKeySource as is required by 7.5.8.2.2 of IEEE 15.4 spec
+		for(int i = 0; i < 9; i++) tKeyDescriptor.KeyIdLookupList[0].LookupData[i] = 0;
 		tKeyDescriptor.KeyIdLookupList[0].LookupData[8] = 0xFF;	//Set lookup data to the macDefaultKeySource to be right concatenated to the individual keyIndex param
-		for(int i = 0; i < 8; i++) tKeyDescriptor.KeyIdLookupList[0].LookupData[i] = 0;
+
 
 		//Fill the deviceListEntries
 		for(int i = 0; i < count; i++){
@@ -292,13 +349,23 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 		for(uint8_t i = 0; i < 3; i++){
 			if((tKeySeq + i) > 0){	//0 is invalid key sequence
 				memcpy(tKeyDescriptor.Fixed.Key, getMacKeyFromSequenceCounter(tKeySeq + i), 16);
-				MLME_SET_request_sync(
+				tKeyDescriptor.KeyIdLookupList[0].LookupData[0] = ((tKeySeq + i) & 0x7F) + 1;
+
+				fprintf(stderr, "-Key %d i s", tKeySeq + i);
+				for(int j = 0; j < 16; j++)fprintf(stderr, "%02x ", tKeyDescriptor.Fixed.Key[j]);
+				fprintf(stderr, "\n\r");
+
+				fprintf(stderr, "-Lookup Data: ");
+				for(int j = 0; j < 9; j++)fprintf(stderr, "%02x", tKeyDescriptor.KeyIdLookupList[0].LookupData[j]);
+				fprintf(stderr, "\n\r");
+
+				fprintf(stderr, "-Error: %#x\n\r", MLME_SET_request_sync(
 					macKeyTable,
 					count++,
 					sizeof(tKeyDescriptor),
 					&tKeyDescriptor,
 					pDeviceRef
-					);
+					));
 			}
 		}
 		MLME_SET_request_sync(
@@ -309,14 +376,6 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 			pDeviceRef
 			);
 
-	}
-
-	if((aFlags & OT_THREAD_CHILD_ADDED) || (aFlags & OT_THREAD_CHILD_REMOVED)){
-		//TODO: Update device table
-	}
-
-	if((aFlags & OT_THREAD_CHILD_ADDED) || (aFlags & OT_THREAD_CHILD_REMOVED)){
-		//TODO: Update device table
 	}
 }
 
@@ -529,6 +588,7 @@ ThreadError otPlatRadioTransmit(void)
 			ASHloc += 8;
 		}
     	curSecSpec.KeyIndex = sTransmitFrame.mPsdu[ASHloc++];
+    	fprintf(stderr, "\r\nKeyIndex: %#04x\r\n", curSecSpec.KeyIndex);
     	headerLength = ASHloc;
     }
 
