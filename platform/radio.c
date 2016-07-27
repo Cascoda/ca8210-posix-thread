@@ -333,7 +333,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 		tKeyDescriptor.KeyUsageList[0].Flags = (MAC_FC_FT_DATA & KUD_FrameTypeMask);	//data usage
 		tKeyDescriptor.KeyUsageList[1].Flags = (MAC_FC_FT_COMMAND & KUD_FrameTypeMask) | ((CMD_DATA_REQ << KUD_CommandFrameIdentifierShift) & KUD_CommandFrameIdentifierMask);	//Data req usage
 
-		tKeyDescriptor.KeyIdLookupList[0].LookupDataSizeCode = 9;
+		tKeyDescriptor.KeyIdLookupList[0].LookupDataSizeCode = 1; //1 means length 9
 		//This sets the MSB of the lookUpData to equal defaultKeySource as is required by 7.5.8.2.2 of IEEE 15.4 spec
 		for(int i = 0; i < 9; i++) tKeyDescriptor.KeyIdLookupList[0].LookupData[i] = 0;
 		tKeyDescriptor.KeyIdLookupList[0].LookupData[7] = 0xFF;	//Set lookup data to the macDefaultKeySource to be right concatenated to the individual keyIndex param
@@ -359,7 +359,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 				for(int j = 0; j < 9; j++)fprintf(stderr, "%02x", tKeyDescriptor.KeyIdLookupList[0].LookupData[j]);
 				fprintf(stderr, "\n\r");
 
-				fprintf(stderr, "\n\r-Error: %#x\n\r", MLME_SET_request_sync(
+				fprintf(stderr, "-Error: %#x\n\r", MLME_SET_request_sync(
 					macKeyTable,
 					count++,
 					sizeof(tKeyDescriptor),
