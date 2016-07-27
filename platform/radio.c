@@ -325,21 +325,6 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 						pDeviceRef
 						));
 
-				uint8_t buf[255];
-				uint8_t buflen = 0;
-
-				fprintf(stderr, "-Error: %#x\n\r", MLME_GET_request_sync(
-						macDeviceTable,
-						count - 1,
-						&buflen,
-						buf,
-						pDeviceRef
-						));
-
-				fprintf(stderr, "macDeviceTable entry %d: ", count-1);
-				for(int x = 0; x < buflen; x++) fprintf(stderr, "%02x ", buf[x]);
-				fprintf(stderr, "\n\r");
-
 			}
 		}
 		else{
@@ -370,21 +355,6 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 						&tDeviceDescriptor,
 						pDeviceRef
 						));
-
-				uint8_t buf[255];
-				uint8_t buflen = 0;
-
-				fprintf(stderr, "-Error: %#x\n\r", MLME_GET_request_sync(
-						macDeviceTable,
-						count - 1,
-						&buflen,
-						buf,
-						pDeviceRef
-						));
-
-				fprintf(stderr, "macDeviceTable entry %d: ", count-1);
-				for(int x = 0; x < buflen; x++) fprintf(stderr, "%02x ", buf[x]);
-				fprintf(stderr, "\n\r");
 			}
 			else fprintf(stderr, "\n\r-Error retrieving parent!\n\r");
 		}
@@ -396,6 +366,23 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 				&count,
 				pDeviceRef
 				);
+
+		for(int y = 0; y < count; y++){
+			uint8_t buf[255];
+			uint8_t buflen = 0;
+
+			fprintf(stderr, "-Error: %#x\n\r", MLME_GET_request_sync(
+					macDeviceTable,
+					y,
+					&buflen,
+					buf,
+					pDeviceRef
+					));
+
+			fprintf(stderr, "macDeviceTable entry %d: ", y);
+			for(int x = 0; x < buflen; x++) fprintf(stderr, "%02x ", buf[x]);
+			fprintf(stderr, "\n\r");
+		}
 
 		struct M_KeyDescriptor_thread {
 			struct M_KeyTableEntryFixed    Fixed;
@@ -432,7 +419,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 				memcpy(tKeyDescriptor.Fixed.Key, getMacKeyFromSequenceCounter(tKeySeq + i), 16);
 				tKeyDescriptor.KeyIdLookupList[0].LookupData[0] = ((tKeySeq + i) & 0x7F) + 1;
 
-				fprintf(stderr, "-Key %d i s", tKeySeq + i);
+				fprintf(stderr, "-Key %d is ", tKeySeq + i);
 				for(int j = 0; j < 16; j++)fprintf(stderr, "%02x ", tKeyDescriptor.Fixed.Key[j]);
 				fprintf(stderr, "\n\r");
 
