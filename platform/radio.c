@@ -411,7 +411,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 				fprintf(stderr, "\n\r");
 
 				fprintf(stderr, "-Key Descriptor: ");
-				for(int j = 0; j < sizeof(tKeyDescriptor); j++)fprintf(stderr, "%02x", ((uint8_t*)&tDeviceDescriptor)[j]);
+				for(int j = 0; j < sizeof(tKeyDescriptor); j++)fprintf(stderr, "%02x", ((uint8_t*)&tKeyDescriptor)[j]);
 				fprintf(stderr, "\n\r");
 
 				fprintf(stderr, "-Error: %#x\n\r", MLME_SET_request_sync(
