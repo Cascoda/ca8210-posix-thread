@@ -885,10 +885,11 @@ exit:
 }
 
 int genericDispatchFrame(const uint8_t *buf, size_t len) {
-	fprintf(stderr, "\n\rGoing into a for loop now\n\r");
+	fprintf(stderr, "\n\rUnhandled frame: ");
 	for(int i = 0; i < len; i++) {
-		fprintf(stderr, " %x ", buf[i]);
+		fprintf(stderr, "%02x ", buf[i]);
 	}
+	fprintf(stderr, "\n\r");
 }
 
 int PlatformRadioProcess(void)    //TODO: port - This should be the callback in future for data receive
