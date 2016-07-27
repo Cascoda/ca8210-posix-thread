@@ -231,7 +231,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 	if((aFlags & OT_NET_KEY_SEQUENCE) || (aFlags & OT_THREAD_CHILD_ADDED) || (aFlags & OT_THREAD_CHILD_REMOVED) || (aFlags & OT_NET_ROLE)){	//The thrKeySequenceCounter has changed
 		//Therefore update the keys stored in the macKeytable
 		fprintf(stderr, "\n\rUpdating keys\n\r");
-		if(otGetKeySequenceCounter() == 0) otSetKeySequenceCounter(1);
+		if(otGetKeySequenceCounter() == 0) otSetKeySequenceCounter(2);
 		uint32_t tKeySeq = otGetKeySequenceCounter() - 1;
 		fprintf(stderr, "-Key Sequence = %#x\n\r", tKeySeq);
 
@@ -285,7 +285,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 
 				fprintf(stderr, "-Found Parent\n\r");
 
-				PUTLE16(otGetPanId() ,tDeviceDescriptor.PANId);
+				PUTLE16(otGetPanId(), tDeviceDescriptor.PANId);
 				PUTLE16(tParentInfo.mRloc16, tDeviceDescriptor.ShortAddress);
 				memcpy(tDeviceDescriptor.ExtAddress, tParentInfo.mExtAddress.m8, 8);
 				tDeviceDescriptor.FrameCounter[0] = 0;	//TODO: Figure out how to do frame counter properly - this method is temporarily breaking replay protection as replays using previous key will still be successful
@@ -336,7 +336,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 		tKeyDescriptor.KeyIdLookupList[0].LookupDataSizeCode = 1; //1 means length 9
 		//This sets the MSB of the lookUpData to equal defaultKeySource as is required by 7.5.8.2.2 of IEEE 15.4 spec
 		for(int i = 0; i < 9; i++) tKeyDescriptor.KeyIdLookupList[0].LookupData[i] = 0;
-		tKeyDescriptor.KeyIdLookupList[0].LookupData[7] = 0xFF;	//Set lookup data to the macDefaultKeySource to be right concatenated to the individual keyIndex param
+		tKeyDescriptor.KeyIdLookupList[0].LookupData[8] = 0xFF;	//Set lookup data to the macDefaultKeySource to be right concatenated to the individual keyIndex param
 
 
 		//Fill the deviceListEntries
@@ -349,9 +349,9 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 		for(uint8_t i = 0; i < 3; i++){
 			if((tKeySeq + i) > 0){	//0 is invalid key sequence
 				memcpy(tKeyDescriptor.Fixed.Key, getMacKeyFromSequenceCounter(tKeySeq + i), 16);
-				tKeyDescriptor.KeyIdLookupList[0].LookupData[8] = ((tKeySeq + i) & 0x7F) + 1;
+				tKeyDescriptor.KeyIdLookupList[0].LookupData[0] = ((tKeySeq + i) & 0x7F) + 1;
 
-				fprintf(stderr, "-Key %d is", tKeySeq + i);
+				fprintf(stderr, "-Key %d i s", tKeySeq + i);
 				for(int j = 0; j < 16; j++)fprintf(stderr, "%02x ", tKeyDescriptor.Fixed.Key[j]);
 				fprintf(stderr, "\n\r");
 
