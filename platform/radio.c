@@ -206,17 +206,11 @@ ThreadError otPlatRadioSetPanId(uint16_t panid)
 
 ThreadError otPlatRadioSetExtendedAddress(uint8_t *address)
 {
-
-	uint8_t tempAddr[8];
-
-	//TODO: standardise the endianness across openthread
-	for(int i = 0; i < 8; i++) tempAddr[i] = address[7-i];
-
     if ( MLME_SET_request_sync(
         nsIEEEAddress,
         0,
         OT_EXT_ADDRESS_SIZE, 
-		tempAddr,
+        address,
         pDeviceRef) == MAC_SUCCESS){
 
         return kThreadError_None;
@@ -314,7 +308,8 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 
 				PUTLE16(otGetPanId() ,tDeviceDescriptor.PANId);
 				PUTLE16(tChildInfo.mRloc16, tDeviceDescriptor.ShortAddress);
-				memcpy(tDeviceDescriptor.ExtAddress, tChildInfo.mExtAddress.m8, 8);
+				//memcpy(tDeviceDescriptor.ExtAddress, tChildInfo.mExtAddress.m8, 8);
+				for(int j = 0; j < 8; j++) tDeviceDescriptor.ExtAddress[j] = tChildInfo.mExtAddress.m8[7-j];	//Flip endian
 				tDeviceDescriptor.FrameCounter[0] = 0;	//TODO: Figure out how to do frame counter properly - this method is temporarily breaking replay protection as replays using previous key will still be successful
 				tDeviceDescriptor.FrameCounter[1] = 0;
 				tDeviceDescriptor.FrameCounter[2] = 0;
@@ -345,7 +340,8 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 
 				PUTLE16(otGetPanId(), tDeviceDescriptor.PANId);
 				PUTLE16(tParentInfo.mRloc16, tDeviceDescriptor.ShortAddress);
-				memcpy(tDeviceDescriptor.ExtAddress, tParentInfo.mExtAddress.m8, 8);
+				//memcpy(tDeviceDescriptor.ExtAddress, tParentInfo.mExtAddress.m8, 8);
+				for(int j = 0; j < 8; j++) tDeviceDescriptor.ExtAddress[j] = tParentInfo.mExtAddress.m8[7-j];	//Flip endian
 				tDeviceDescriptor.FrameCounter[0] = 0;	//TODO: Figure out how to do frame counter properly - this method is temporarily breaking replay protection as replays using previous key will still be successful
 				tDeviceDescriptor.FrameCounter[1] = 0;
 				tDeviceDescriptor.FrameCounter[2] = 0;
