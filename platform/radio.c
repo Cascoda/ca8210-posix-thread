@@ -206,27 +206,18 @@ ThreadError otPlatRadioSetPanId(uint16_t panid)
 
 ThreadError otPlatRadioSetExtendedAddress(uint8_t *address)
 {
+
+	uint8_t tempAddr[8];
+
+	//TODO: standardise the endianness across openthread
+	for(int i = 0; i < 8; i++) tempAddr[i] = address[7-i];
+
     if ( MLME_SET_request_sync(
         nsIEEEAddress,
         0,
         OT_EXT_ADDRESS_SIZE, 
-        address,
+		tempAddr,
         pDeviceRef) == MAC_SUCCESS){
-
-    	uint8_t buf[255];
-		uint8_t buflen = 0;
-
-		MLME_GET_request_sync(
-				nsIEEEAddress,
-				0,
-				&buflen,
-				buf,
-				pDeviceRef
-				);
-
-		fprintf(stderr, "Extended Address: ");
-		for(int x = 0; x < buflen; x++) fprintf(stderr, "%02x ", buf[x]);
-		fprintf(stderr, "\n\r");
 
         return kThreadError_None;
     }
