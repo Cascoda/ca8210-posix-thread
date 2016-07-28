@@ -73,6 +73,7 @@ void readConfirmFrame(struct MCPS_DATA_confirm_pset *params);
 void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params);
 int genericDispatchFrame(const uint8_t *buf, size_t len);
 void keyChangedCallback(uint32_t aFlags, void *aContext);
+void coordChangedCallback(uint32_t aFlags, void *aContext);
 
 
 static struct MAC_Message response;
@@ -86,6 +87,8 @@ static otHandleActiveScanResult scanCallback;
 static void* pDeviceRef = NULL;
 
 static uint8_t sChannel = 0;
+
+static isCoord = 0;
 
 static uint8_t sTransmitPsdu[IEEE802154_MAX_LENGTH];
 static uint8_t sReceivePsdu[IEEE802154_MAX_LENGTH];
@@ -133,7 +136,7 @@ void disableReceiver(void)
 
 ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandleActiveScanResult aCallback)
 {
-	fprintf(stderr, "\n I'm executing otActiveScan \n");
+	fprintf(stderr, "\n\r I'm executing otActiveScan \n\r");
 	//uint16_t aScanDuration = aBaseSuperframeDuration * (pow(2,ScanDuration) +1);
 	//uint8_t ScanDuration = log2((aScanDuration/aBaseSuperframeDuration) -1);
 	uint8_t ScanDuration = 8;
@@ -147,7 +150,7 @@ ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandl
 
 ThreadError otPlatSetNetworkName(const char *aNetworkName) {
 
-	fprintf(stderr,"I'm setting the network name");
+	fprintf(stderr,"\n\r I'm setting the network name \n\r");
 	uint8_t payloadLength = 32;
 	memcpy(mBeaconPayload + 4, aNetworkName, 16);
 	if ((MLME_SET_request_sync(
@@ -274,6 +277,44 @@ void PlatformRadioInit(void)
 
 void posixPlatformPostInit(void){
 	otSetStateChangedCallback(&keyChangedCallback, NULL);
+	otSetStateChangedCallback(&coordChangedCallback, NULL);
+}
+
+void coordChangedCallback(uint32_t aFlags, void *aContext) {
+	if(aFlags & OT_NET_ROLE){
+		struct setSpec securityLevel = {0};
+		if(otGetDeviceRole() == (kDeviceRoleRouter || kDeviceRoleLeader)){
+			if(!isCoord) {
+				MLME_START_request_sync(
+						otGetPanId(),
+						sChannel,
+						15,
+						15,
+						1,
+						0,
+						0,
+						&securityLevel,
+						&securityLevel,
+						pDeviceRef);
+
+				isCoord = 1;
+			}
+		} else if (isCoord) {
+			MLME_START_request_sync(
+					otGetPanId(),
+					sChannel,
+					15,
+					15,
+					0,
+					0,
+					0,
+					&securityLevel,
+					&securityLevel,
+					pDeviceRef);
+
+			isCoord = 0;
+		}
+	}
 }
 
 void keyChangedCallback(uint32_t aFlags, void *aContext){
