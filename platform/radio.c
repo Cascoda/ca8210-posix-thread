@@ -281,6 +281,7 @@ void posixPlatformPostInit(void){
 }
 
 void coordChangedCallback(uint32_t aFlags, void *aContext) {
+	fprintf(stderr,"\n\r Executing coordChangeCallback \n\r");
 	if(aFlags & OT_NET_ROLE){
 		struct SecSpec securityLevel = {0};
 		if(otGetDeviceRole() == (kDeviceRoleRouter || kDeviceRoleLeader)){
@@ -296,7 +297,7 @@ void coordChangedCallback(uint32_t aFlags, void *aContext) {
 						&securityLevel,
 						&securityLevel,
 						pDeviceRef);
-
+				fprintf(stderr,"\n\r Changed Coord \n\r");
 				isCoord = 1;
 			}
 		} else if (isCoord) {
