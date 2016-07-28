@@ -150,7 +150,6 @@ ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandl
 
 ThreadError otPlatSetNetworkName(const char *aNetworkName) {
 
-	fprintf(stderr,"\n\r I'm setting the network name \n\r");
 	uint8_t payloadLength = 32;
 	memcpy(mBeaconPayload + 4, aNetworkName, 16);
 	if ((MLME_SET_request_sync(
@@ -296,7 +295,7 @@ void coordChangedCallback(uint32_t aFlags, void *aContext) {
 						&securityLevel,
 						&securityLevel,
 						pDeviceRef);
-				fprintf(stderr,"\n\r %x \n\r", scanRequest);
+				fprintf(stderr,"\n\r scan request error: %02x \n\r", scanRequest);
 				isCoord = 1;
 			}
 		} else if (isCoord) {
