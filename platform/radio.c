@@ -141,6 +141,7 @@ ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandl
 	//uint8_t ScanDuration = log2((aScanDuration/aBaseSuperframeDuration) -1);
 	uint8_t ScanDuration = 7;
 	struct SecSpec pSecurity = {0};
+	if (aScanChannels == 0) aScanChannels = 0x07fff800; //11 to 26
 	fprintf(stderr, "\n %x \n", aScanChannels);
 	scanCallback = aCallback;
 	uint8_t scanRequest = MLME_SCAN_request(1, aScanChannels, ScanDuration, &pSecurity, pDeviceRef);
