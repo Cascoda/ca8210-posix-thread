@@ -279,7 +279,7 @@ void posixPlatformPostInit(void){
 }
 
 void keyChangedCallback(uint32_t aFlags, void *aContext){
-	if((aFlags & (OT_NET_KEY_SEQUENCE | OT_THREAD_CHILD_ADDED | OT_THREAD_CHILD_REMOVED | OT_NET_ROLE | OT_THREAD_CHILD_MODIFIED)) ){	//The thrKeySequenceCounter has changed or device descriptors need updating
+	if((aFlags & (OT_NET_KEY_SEQUENCE | OT_THREAD_CHILD_ADDED | OT_THREAD_CHILD_REMOVED | OT_NET_ROLE | OT_THREAD_CHILD_MODIFIED))){	//The thrKeySequenceCounter has changed or device descriptors need updating
 		//Therefore update the keys stored in the macKeytable
 		fprintf(stderr, "\n\rUpdating keys\n\r");
 		if(otGetKeySequenceCounter() == 0) otSetKeySequenceCounter(2);
@@ -329,6 +329,39 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 						));
 
 			}
+			fprintf(stderr, "-Looking for Router Neighbors\n\r");
+
+			uint8_t maxRouters = 5 - count;
+			otRouterInfo routers[maxRouters];
+			uint8_t numRouters;
+			otGetNeighborRouterInfo(routers, &numRouters, maxRouters);
+
+			for(int i = 0; i < numRouters; i++){
+				struct M_DeviceDescriptor tDeviceDescriptor;
+
+				PUTLE16(otGetPanId() ,tDeviceDescriptor.PANId);
+				PUTLE16(routers[i].mRloc16, tDeviceDescriptor.ShortAddress);
+				//memcpy(tDeviceDescriptor.ExtAddress, tChildInfo.mExtAddress.m8, 8);
+				for(int j = 0; j < 8; j++) tDeviceDescriptor.ExtAddress[j] = routers[i].mExtAddress.m8[7-j];	//Flip endian
+				tDeviceDescriptor.FrameCounter[0] = 0;	//TODO: Figure out how to do frame counter properly - this method is temporarily breaking replay protection as replays using previous key will still be successful
+				tDeviceDescriptor.FrameCounter[1] = 0;
+				tDeviceDescriptor.FrameCounter[2] = 0;
+				tDeviceDescriptor.FrameCounter[3] = 0;
+				tDeviceDescriptor.Exempt = 0;
+
+				fprintf(stderr, "-Device Descriptor: ");
+				for(int j = 0; j < sizeof(tDeviceDescriptor); j++)fprintf(stderr, "%02x", ((uint8_t*)&tDeviceDescriptor)[j]);
+				fprintf(stderr, "\n\r");
+
+				fprintf(stderr, "-Error: %#x", MLME_SET_request_sync(
+						macDeviceTable,
+						count++,
+						sizeof(tDeviceDescriptor),
+						&tDeviceDescriptor,
+						pDeviceRef
+						));
+			}
+
 		}
 		else{
 			otRouterInfo tParentInfo;
