@@ -282,7 +282,7 @@ void posixPlatformPostInit(void){
 
 void coordChangedCallback(uint32_t aFlags, void *aContext) {
 	if(aFlags & OT_NET_ROLE){
-		struct secSpec securityLevel = {0};
+		struct SecSpec securityLevel = {0};
 		if(otGetDeviceRole() == (kDeviceRoleRouter || kDeviceRoleLeader)){
 			if(!isCoord) {
 				MLME_START_request_sync(
