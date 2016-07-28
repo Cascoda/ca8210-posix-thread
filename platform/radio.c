@@ -139,7 +139,7 @@ ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandl
 	fprintf(stderr, "\n\r I'm executing otActiveScan \n\r");
 	//uint16_t aScanDuration = aBaseSuperframeDuration * (pow(2,ScanDuration) +1);
 	//uint8_t ScanDuration = log2((aScanDuration/aBaseSuperframeDuration) -1);
-	uint8_t ScanDuration = 7;
+	uint8_t ScanDuration = 5;
 	struct SecSpec pSecurity = {0};
 	if (aScanChannels == 0) aScanChannels = 0x07fff800; //11 to 26
 	fprintf(stderr, "\n %x \n", aScanChannels);
@@ -900,7 +900,7 @@ void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
 	otActiveScanResult resultStruct;
 
 	fprintf(stderr, "\n\rBeaconotify frame: ");
-	for(int i = 0; i < sizeof(struct MLME_BEACON_NOTIFY_indication_pset); i++) {
+	for(int i = 0; i < 255; i++) {
 		fprintf(stderr, " %x ", ((uint8_t*)params)[i]);
 	}
 
