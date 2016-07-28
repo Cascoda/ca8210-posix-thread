@@ -898,7 +898,12 @@ exit:
 void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
 {
 	otActiveScanResult resultStruct;
-	fprintf(stderr,"I'm getting a beaconNotifyFrame");
+
+	fprintf(stderr, "\n\rBeaconotify frame: ");
+	for(int i = 0; i < sizeof(struct MLME_BEACON_NOTIFY_indication_pset); i++) {
+		fprintf(stderr, " %x ", ((uint8_t*)params)[i]);
+	}
+
 	uint8_t shortaddrs  = *((uint8_t*)params + 33) & 7;
 	uint8_t extaddrs = (*((uint8_t*)params + 33) & 112) >> 4;
 
@@ -926,7 +931,7 @@ exit:
 }
 
 int genericDispatchFrame(const uint8_t *buf, size_t len) {
-	fprintf(stderr, "\n\rGoing into a for loop now\n\r");
+	fprintf(stderr, "\n\rUnhandled frame: ");
 	for(int i = 0; i < len; i++) {
 		fprintf(stderr, " %x ", buf[i]);
 	}
