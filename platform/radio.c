@@ -211,8 +211,25 @@ ThreadError otPlatRadioSetExtendedAddress(uint8_t *address)
         0,
         OT_EXT_ADDRESS_SIZE, 
         address,
-        pDeviceRef) == MAC_SUCCESS)
-            return kThreadError_None;
+        pDeviceRef) == MAC_SUCCESS){
+
+    	uint8_t buf[255];
+		uint8_t buflen = 0;
+
+		MLME_GET_request_sync(
+				nsIEEEAddress,
+				0,
+				&buflen,
+				buf,
+				pDeviceRef
+				);
+
+		fprintf(stderr, "Extended Address: ");
+		for(int x = 0; x < buflen; x++) fprintf(stderr, "%02x ", buf[x]);
+		fprintf(stderr, "\n\r");
+
+        return kThreadError_None;
+    }
 
     else return kThreadError_Failed;
 }
