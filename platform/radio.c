@@ -283,9 +283,12 @@ void posixPlatformPostInit(void){
 void coordChangedCallback(uint32_t aFlags, void *aContext) {
 	fprintf(stderr,"\n\r Executing coordChangeCallback \n\r");
 	if(aFlags & OT_NET_ROLE){
+		fprintf(stderr,"\n\r got past role \n\r");
 		struct SecSpec securityLevel = {0};
 		if(otGetDeviceRole() == (kDeviceRoleRouter || kDeviceRoleLeader)){
+			fprintf(stderr,"\n\r I'm a leader or Router \n\r");
 			if(!isCoord) {
+				fprintf(stderr,"\n\r Changed Coord \n\r");
 				MLME_START_request_sync(
 						otGetPanId(),
 						sChannel,
@@ -297,7 +300,7 @@ void coordChangedCallback(uint32_t aFlags, void *aContext) {
 						&securityLevel,
 						&securityLevel,
 						pDeviceRef);
-				fprintf(stderr,"\n\r Changed Coord \n\r");
+
 				isCoord = 1;
 			}
 		} else if (isCoord) {
