@@ -76,7 +76,6 @@ void keyChangedCallback(uint32_t aFlags, void *aContext);
 void coordChangedCallback(uint32_t aFlags, void *aContext);
 
 
-static struct MAC_Message response;
 static RadioPacket sTransmitFrame;
 static RadioPacket sReceiveFrame;
 static ThreadError sTransmitError;
@@ -88,7 +87,7 @@ static void* pDeviceRef = NULL;
 
 static uint8_t sChannel = 0;
 
-static isCoord = 0;
+static uint8_t isCoord = 0;
 
 static uint8_t sTransmitPsdu[IEEE802154_MAX_LENGTH];
 static uint8_t sReceivePsdu[IEEE802154_MAX_LENGTH];
@@ -616,7 +615,6 @@ RadioPacket *otPlatRadioGetTransmitBuffer(void)
 ThreadError otPlatRadioTransmit(void)
 {
     ThreadError error = kThreadError_None;
-    int i;
     static uint8_t handle = 0;
     handle++;
 
@@ -701,7 +699,7 @@ ThreadError otPlatRadioTransmit(void)
         curPacket.SrcAddrMode,
         curPacket.Dst.AddressMode,
         GETLE16(curPacket.Dst.PANId),
-        curPacket.Dst.Address,
+        (union MacAddr*) curPacket.Dst.Address,
         curPacket.MsduLength,
         curPacket.Msdu,
         curPacket.MsduHandle,
@@ -756,11 +754,8 @@ void otPlatRadioSetPromiscuous(bool aEnable)
 
 }
 
-void readFrame(struct MCPS_DATA_indication_pset *params)   //Async
+int readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 {
-
-
-    //VerifyOrExit(sState == kStateListen, fputs("\r\nNot Listening!\r\n", stderr));
 
     pthread_mutex_lock(&receiveFrame_mutex);
 	//wait until the main thread is free to process the frame
@@ -870,15 +865,11 @@ void readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 
     PlatformRadioProcess();
 
-exit:
-    return;
+    return 0;
 }
 
-void readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
+int readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
 {
-
-
-    //VerifyOrExit(sState == kStateTransmit, ;);
 
     if(params->Status == MAC_SUCCESS){
     	otPlatRadioTransmitDone(false, sTransmitError);
@@ -896,11 +887,10 @@ void readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
 
     PlatformRadioProcess();
 
-exit:
-    return;
+    return 0;
 }
 
-void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
+int beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
 {
 	otActiveScanResult resultStruct;
 
@@ -928,14 +918,14 @@ void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
 		uint8_t *Sdu = (uint8_t*)params + (25 + 2 * shortaddrs + 8 * extaddrs);
 		uint8_t version = (*((uint8_t*)Sdu + 1) & 15);
 		if(*Sdu == 3 && version == 1) {
-			resultStruct.mNetworkName = Sdu + 4;
+			resultStruct.mNetworkName = ((char*)Sdu) + 4;
 			resultStruct.mExtPanId = Sdu + 20;
 			scanCallback(&resultStruct);
 		}
 	}
 
 exit:
-    return;
+    return 0;
 }
 
 int genericDispatchFrame(const uint8_t *buf, size_t len) {
@@ -944,6 +934,7 @@ int genericDispatchFrame(const uint8_t *buf, size_t len) {
 		fprintf(stderr, "%02x ", buf[i]);
 	}
 	fprintf(stderr, "\n\r");
+	return 0;
 }
 
 int PlatformRadioProcess(void)    //TODO: port - This should be the callback in future for data receive
