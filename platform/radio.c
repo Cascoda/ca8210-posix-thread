@@ -904,8 +904,8 @@ void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
 		fprintf(stderr, " %x ", ((uint8_t*)params)[i]);
 	}
 
-	uint8_t shortaddrs  = *((uint8_t*)params + 33) & 7;
-	uint8_t extaddrs = (*((uint8_t*)params + 33) & 112) >> 4;
+	uint8_t shortaddrs  = *((uint8_t*)params + 24) & 7;
+	uint8_t extaddrs = (*((uint8_t*)params + 24) & 112) >> 4;
 
 	if ((params->PanDescriptor.Coord.AddressMode) == 3) {
 		memcpy(resultStruct.mExtAddress.m8, params->PanDescriptor.Coord.Address, 8);
@@ -916,9 +916,12 @@ void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
 	resultStruct.mChannel = params->PanDescriptor.LogicalChannel;
 	resultStruct.mRssi = -20;
 	resultStruct.mLqi = params->PanDescriptor.LinkQuality;
-	uint8_t *sduLength = params + (34 + 2 * shortaddrs + 8 * extaddrs);
+
+	VerifyOrExit(params->PanDescriptor.Security.SecurityLevel == 0,;);
+	//Asset security = 0
+	uint8_t *sduLength = params + (25 + 2 * shortaddrs + 8 * extaddrs);
 	if (*sduLength > 0) {
-		uint8_t *Sdu = params + (35 + 2 * shortaddrs + 8 * extaddrs);
+		uint8_t *Sdu = params + (26 + 2 * shortaddrs + 8 * extaddrs);
 		if(*Sdu == 3 && (*(Sdu + 1) == 1)) {
 			resultStruct.mNetworkName = Sdu + 4;
 			resultStruct.mExtPanId = Sdu + 20;
