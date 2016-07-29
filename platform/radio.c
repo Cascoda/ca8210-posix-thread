@@ -907,18 +907,20 @@ void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
 
 	uint8_t shortaddrs  = *((uint8_t*)params + 23) & 7;
 	uint8_t extaddrs = (*((uint8_t*)params + 23) & 112) >> 4;
-
+	fprintf(stderr,"[0]");
 	if ((params->PanDescriptor.Coord.AddressMode) == 3) {
 		memcpy(resultStruct.mExtAddress.m8, params->PanDescriptor.Coord.Address, 8);
 	} else {
 		assert(false);
 	}
+	fprintf(stderr,"[1]");
 	resultStruct.mPanId = GETLE16(params->PanDescriptor.Coord.PANId);
 	resultStruct.mChannel = params->PanDescriptor.LogicalChannel;
 	resultStruct.mRssi = -20;
 	resultStruct.mLqi = params->PanDescriptor.LinkQuality;
-
+	fprintf(stderr,"[2]");
 	VerifyOrExit(params->PanDescriptor.Security.SecurityLevel == 0,;);
+	fprintf(stderr,"[3]");
 	//Asset security = 0
 	uint8_t *sduLength = params + (24 + 2 * shortaddrs + 8 * extaddrs);
 	fprintf(stderr, "\r\n SduLength: %d \r\n", *sduLength);
