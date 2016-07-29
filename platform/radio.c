@@ -93,7 +93,7 @@ static isCoord = 0;
 static uint8_t sTransmitPsdu[IEEE802154_MAX_LENGTH];
 static uint8_t sReceivePsdu[IEEE802154_MAX_LENGTH];
 
-static uint8_t mBeaconPayload[32] = {3, 0x98};
+static uint8_t mBeaconPayload[32] = {3, 0x91};
 
 pthread_mutex_t receiveFrame_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t receiveFrame_cond = PTHREAD_COND_INITIALIZER;
@@ -922,7 +922,8 @@ void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
 	uint8_t *sduLength = params + (25 + 2 * shortaddrs + 8 * extaddrs);
 	if (*sduLength > 0) {
 		uint8_t *Sdu = params + (26 + 2 * shortaddrs + 8 * extaddrs);
-		if(*Sdu == 3 && (*(Sdu + 1) == 1)) {
+		uint8_t version = (*((uint8_t*)Sdu + 1) & 15);
+		if(*Sdu == 3 && version == 1) {
 			resultStruct.mNetworkName = Sdu + 4;
 			resultStruct.mExtPanId = Sdu + 20;
 			scanCallback(&resultStruct);
