@@ -254,7 +254,7 @@ void PlatformRadioInit(void)
     callbacks.MCPS_DATA_indication = &readFrame;
     callbacks.MCPS_DATA_confirm = &readConfirmFrame;
     callbacks.MLME_BEACON_NOTIFY_indication = &beaconNotifyFrame;
-    callbacks.generic_dispatch = &genericDispatchFrame;
+    //callbacks.generic_dispatch = &genericDispatchFrame;
     cascoda_register_callbacks(&callbacks);
     
     uint8_t enable = 1;	//enable security
