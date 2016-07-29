@@ -906,10 +906,10 @@ void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
 {
 	otActiveScanResult resultStruct;
 
-	/*fprintf(stderr, "\n\rBeaconotify frame: ");
-	for(int i = 0; i < 25; i++) {
+	fprintf(stderr, "\n\rBeaconotify frame: ");
+	for(int i = 0; i < 38; i++) {
 		fprintf(stderr, " %x ", ((uint8_t*)params)[i]);
-	}*/
+	}
 
 
 	uint8_t shortaddrs  = *((uint8_t*)params + 23) & 7;
