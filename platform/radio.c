@@ -905,8 +905,8 @@ void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
 	}
 	*/
 
-	uint8_t shortaddrs  = *((uint8_t*)params + 24) & 7;
-	uint8_t extaddrs = (*((uint8_t*)params + 24) & 112) >> 4;
+	uint8_t shortaddrs  = *((uint8_t*)params + 23) & 7;
+	uint8_t extaddrs = (*((uint8_t*)params + 23) & 112) >> 4;
 
 	if ((params->PanDescriptor.Coord.AddressMode) == 3) {
 		memcpy(resultStruct.mExtAddress.m8, params->PanDescriptor.Coord.Address, 8);
@@ -920,9 +920,9 @@ void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
 
 	VerifyOrExit(params->PanDescriptor.Security.SecurityLevel == 0,;);
 	//Asset security = 0
-	uint8_t *sduLength = params + (25 + 2 * shortaddrs + 8 * extaddrs);
+	uint8_t *sduLength = params + (24 + 2 * shortaddrs + 8 * extaddrs);
 	if (*sduLength > 0) {
-		uint8_t *Sdu = params + (26 + 2 * shortaddrs + 8 * extaddrs);
+		uint8_t *Sdu = params + (25 + 2 * shortaddrs + 8 * extaddrs);
 		uint8_t version = (*((uint8_t*)Sdu + 1) & 15);
 		fprintf(stderr, "\r\n Version: %d \r\n", version);
 		if(*Sdu == 3 && version == 1) {
