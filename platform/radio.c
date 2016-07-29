@@ -143,6 +143,7 @@ ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandl
 	if (aScanChannels == 0) aScanChannels = 0x07fff800; //11 to 26
 	scanCallback = aCallback;
 	uint8_t scanRequest = MLME_SCAN_request(1, aScanChannels, ScanDuration, &pSecurity, pDeviceRef);
+	fprintf(stderr, "\n\r\nScanning request: %x\n\r\n", scanRequest);
 	return scanRequest;
 }
 
@@ -162,9 +163,11 @@ ThreadError otPlatSetNetworkName(const char *aNetworkName) {
 			1,
 			&payloadLength,
 			pDeviceRef) == MAC_SUCCESS))
+
         return kThreadError_None;
 
 	else return kThreadError_Failed;
+	fprintf(stderr, "\n\r\nSetting the payload: %x\n\r\n", mBeaconPayload);
 }
 
 ThreadError otPlatSetExtendedPanId(const uint8_t *aExtPanId) {
@@ -186,6 +189,7 @@ ThreadError otPlatSetExtendedPanId(const uint8_t *aExtPanId) {
            return kThreadError_None;
 
 	else return kThreadError_Failed;
+	fprintf(stderr, "\n\r\nSetting the payload: %x\n\r\n", mBeaconPayload);
 }
 
 ThreadError otPlatRadioSetPanId(uint16_t panid)
@@ -906,10 +910,10 @@ void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
 {
 	otActiveScanResult resultStruct;
 
-	fprintf(stderr, "\n\rBeaconotify frame: ");
+	/*fprintf(stderr, "\n\rBeaconotify frame: ");
 	for(int i = 0; i < 38; i++) {
 		fprintf(stderr, " %x ", ((uint8_t*)params)[i]);
-	}
+	}*/
 
 
 	uint8_t shortaddrs  = *((uint8_t*)params + 23) & 7;
