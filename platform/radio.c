@@ -925,7 +925,7 @@ void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
 	uint8_t *sduLength = (uint8_t*)params + (24 + (2 * shortaddrs) + (8 * extaddrs));
 	fprintf(stderr, "\r\n SduLength: %d \r\n", *sduLength);
 	if (*sduLength > 0) {
-		uint8_t *Sdu = params + (25 + 2 * shortaddrs + 8 * extaddrs);
+		uint8_t *Sdu = (uint8_t*)params + (25 + 2 * shortaddrs + 8 * extaddrs);
 		uint8_t version = (*((uint8_t*)Sdu + 1) & 15);
 		fprintf(stderr, "\r\n Version: %d \r\n", version);
 		if(*Sdu == 3 && version == 1) {
