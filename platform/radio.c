@@ -898,11 +898,12 @@ exit:
 void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
 {
 	otActiveScanResult resultStruct;
-
+	/*
 	fprintf(stderr, "\n\rBeaconotify frame: ");
 	for(int i = 0; i < 58; i++) {
 		fprintf(stderr, " %x ", ((uint8_t*)params)[i]);
 	}
+	*/
 
 	uint8_t shortaddrs  = *((uint8_t*)params + 24) & 7;
 	uint8_t extaddrs = (*((uint8_t*)params + 24) & 112) >> 4;
@@ -923,7 +924,9 @@ void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
 	if (*sduLength > 0) {
 		uint8_t *Sdu = params + (26 + 2 * shortaddrs + 8 * extaddrs);
 		uint8_t version = (*((uint8_t*)Sdu + 1) & 15);
+		fprintf(stderr, "\r\n Version: %d \r\n", version);
 		if(*Sdu == 3 && version == 1) {
+			fprintf(stderr, "\r\n i hope this works \z\n");
 			resultStruct.mNetworkName = Sdu + 4;
 			resultStruct.mExtPanId = Sdu + 20;
 			scanCallback(&resultStruct);
