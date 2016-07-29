@@ -898,12 +898,12 @@ exit:
 void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
 {
 	otActiveScanResult resultStruct;
-	/*
+
 	fprintf(stderr, "\n\rBeaconotify frame: ");
-	for(int i = 0; i < 58; i++) {
+	for(int i = 0; i < 25; i++) {
 		fprintf(stderr, " %x ", ((uint8_t*)params)[i]);
 	}
-	*/
+
 
 	uint8_t shortaddrs  = *((uint8_t*)params + 23) & 7;
 	uint8_t extaddrs = (*((uint8_t*)params + 23) & 112) >> 4;
@@ -922,7 +922,7 @@ void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
 	VerifyOrExit(params->PanDescriptor.Security.SecurityLevel == 0,;);
 	fprintf(stderr,"[3]");
 	//Asset security = 0
-	uint8_t *sduLength = params + (24 + 2 * shortaddrs + 8 * extaddrs);
+	uint8_t *sduLength = params + (24 + (2 * shortaddrs) + (8 * extaddrs));
 	fprintf(stderr, "\r\n SduLength: %d \r\n", *sduLength);
 	if (*sduLength > 0) {
 		uint8_t *Sdu = params + (25 + 2 * shortaddrs + 8 * extaddrs);
