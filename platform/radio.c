@@ -296,7 +296,7 @@ void coordChangedCallback(uint32_t aFlags, void *aContext) {
 						&securityLevel,
 						&securityLevel,
 						pDeviceRef);
-				fprintf(stderr, "I'm a Coord");
+				fprintf(stderr, "\n\r\n!!! I'm a Coord !!!\n\r\n");
 				isCoord = 1;
 			}
 		} else if (isCoord) {
@@ -311,7 +311,7 @@ void coordChangedCallback(uint32_t aFlags, void *aContext) {
 					&securityLevel,
 					&securityLevel,
 					pDeviceRef);
-
+			fprintf(stderr, "\n\r\n*** NOT a Coord ***\n\r\n");
 			isCoord = 0;
 		}
 	}
