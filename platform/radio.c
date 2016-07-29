@@ -273,9 +273,9 @@ void PlatformRadioInit(void)
 
 }
 
-void posixPlatformPostInit(void){
-	otSetStateChangedCallback(&keyChangedCallback, NULL);
-	otSetStateChangedCallback(&coordChangedCallback, NULL);
+void otHardMacStateChangeCallback(uint32_t aFlags, void *aContext){
+	keyChangedCallback(aFlags, aContext);
+	coordChangedCallback(aFlags, aContext);
 }
 
 void coordChangedCallback(uint32_t aFlags, void *aContext) {

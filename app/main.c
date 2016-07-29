@@ -49,7 +49,6 @@ int main(int argc, char *argv[])
     posixPlatformInit();
     otInit();
     otCliUartInit();
-    posixPlatformPostInit();
 
     while (1)
     {
