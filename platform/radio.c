@@ -211,8 +211,10 @@ ThreadError otPlatRadioSetExtendedAddress(uint8_t *address)
         0,
         OT_EXT_ADDRESS_SIZE, 
         address,
-        pDeviceRef) == MAC_SUCCESS)
-            return kThreadError_None;
+        pDeviceRef) == MAC_SUCCESS){
+
+        return kThreadError_None;
+    }
 
     else return kThreadError_Failed;
 }
@@ -315,7 +317,7 @@ void coordChangedCallback(uint32_t aFlags, void *aContext) {
 }
 
 void keyChangedCallback(uint32_t aFlags, void *aContext){
-	if((aFlags & OT_NET_KEY_SEQUENCE) || (aFlags & OT_THREAD_CHILD_ADDED) || (aFlags & OT_THREAD_CHILD_REMOVED) || (aFlags & OT_NET_ROLE)){	//The thrKeySequenceCounter has changed
+	if((aFlags & (OT_NET_KEY_SEQUENCE | OT_THREAD_CHILD_ADDED | OT_THREAD_CHILD_REMOVED | OT_NET_ROLE | OT_THREAD_LINK_ACCEPT))){	//The thrKeySequenceCounter has changed or device descriptors need updating
 		//Therefore update the keys stored in the macKeytable
 		fprintf(stderr, "\n\rUpdating keys\n\r");
 		if(otGetKeySequenceCounter() == 0) otSetKeySequenceCounter(2);
@@ -344,7 +346,8 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 
 				PUTLE16(otGetPanId() ,tDeviceDescriptor.PANId);
 				PUTLE16(tChildInfo.mRloc16, tDeviceDescriptor.ShortAddress);
-				memcpy(tDeviceDescriptor.ExtAddress, tChildInfo.mExtAddress.m8, 8);
+				//memcpy(tDeviceDescriptor.ExtAddress, tChildInfo.mExtAddress.m8, 8);
+				for(int j = 0; j < 8; j++) tDeviceDescriptor.ExtAddress[j] = tChildInfo.mExtAddress.m8[7-j];	//Flip endian
 				tDeviceDescriptor.FrameCounter[0] = 0;	//TODO: Figure out how to do frame counter properly - this method is temporarily breaking replay protection as replays using previous key will still be successful
 				tDeviceDescriptor.FrameCounter[1] = 0;
 				tDeviceDescriptor.FrameCounter[2] = 0;
@@ -353,8 +356,9 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 
 				fprintf(stderr, "-Device Descriptor: ");
 				for(int j = 0; j < sizeof(tDeviceDescriptor); j++)fprintf(stderr, "%02x", ((uint8_t*)&tDeviceDescriptor)[j]);
+				fprintf(stderr, "\n\r");
 
-				fprintf(stderr, "\n\r-Error: %#x", MLME_SET_request_sync(
+				fprintf(stderr, "-Error: %#x", MLME_SET_request_sync(
 						macDeviceTable,
 						count++,
 						sizeof(tDeviceDescriptor),
@@ -363,6 +367,39 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 						));
 
 			}
+			fprintf(stderr, "-Looking for Router Neighbors\n\r");
+
+			uint8_t maxRouters = 5 - count;
+			otRouterInfo routers[maxRouters];
+			uint8_t numRouters;
+			otGetNeighborRouterInfo(routers, &numRouters, maxRouters);
+
+			for(int i = 0; i < numRouters; i++){
+				struct M_DeviceDescriptor tDeviceDescriptor;
+
+				PUTLE16(otGetPanId() ,tDeviceDescriptor.PANId);
+				PUTLE16(routers[i].mRloc16, tDeviceDescriptor.ShortAddress);
+				//memcpy(tDeviceDescriptor.ExtAddress, tChildInfo.mExtAddress.m8, 8);
+				for(int j = 0; j < 8; j++) tDeviceDescriptor.ExtAddress[j] = routers[i].mExtAddress.m8[7-j];	//Flip endian
+				tDeviceDescriptor.FrameCounter[0] = 0;	//TODO: Figure out how to do frame counter properly - this method is temporarily breaking replay protection as replays using previous key will still be successful
+				tDeviceDescriptor.FrameCounter[1] = 0;
+				tDeviceDescriptor.FrameCounter[2] = 0;
+				tDeviceDescriptor.FrameCounter[3] = 0;
+				tDeviceDescriptor.Exempt = 0;
+
+				fprintf(stderr, "-Device Descriptor: ");
+				for(int j = 0; j < sizeof(tDeviceDescriptor); j++)fprintf(stderr, "%02x", ((uint8_t*)&tDeviceDescriptor)[j]);
+				fprintf(stderr, "\n\r");
+
+				fprintf(stderr, "-Error: %#x", MLME_SET_request_sync(
+						macDeviceTable,
+						count++,
+						sizeof(tDeviceDescriptor),
+						&tDeviceDescriptor,
+						pDeviceRef
+						));
+			}
+
 		}
 		else{
 			otRouterInfo tParentInfo;
@@ -374,7 +411,8 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 
 				PUTLE16(otGetPanId(), tDeviceDescriptor.PANId);
 				PUTLE16(tParentInfo.mRloc16, tDeviceDescriptor.ShortAddress);
-				memcpy(tDeviceDescriptor.ExtAddress, tParentInfo.mExtAddress.m8, 8);
+				//memcpy(tDeviceDescriptor.ExtAddress, tParentInfo.mExtAddress.m8, 8);
+				for(int j = 0; j < 8; j++) tDeviceDescriptor.ExtAddress[j] = tParentInfo.mExtAddress.m8[7-j];	//Flip endian
 				tDeviceDescriptor.FrameCounter[0] = 0;	//TODO: Figure out how to do frame counter properly - this method is temporarily breaking replay protection as replays using previous key will still be successful
 				tDeviceDescriptor.FrameCounter[1] = 0;
 				tDeviceDescriptor.FrameCounter[2] = 0;
@@ -383,8 +421,9 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 
 				fprintf(stderr, "-Device Descriptor: ");
 				for(int j = 0; j < sizeof(tDeviceDescriptor); j++)fprintf(stderr, "%02x", ((uint8_t*)&tDeviceDescriptor)[j]);
+				fprintf(stderr, "\n\r");
 
-				fprintf(stderr, "\n\r-Error: %#x\n\r", MLME_SET_request_sync(
+				fprintf(stderr, "-Error: %#x\n\r", MLME_SET_request_sync(
 						macDeviceTable,
 						count++,
 						sizeof(tDeviceDescriptor),
@@ -402,6 +441,23 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 				&count,
 				pDeviceRef
 				);
+
+		for(int y = 0; y < count; y++){
+			uint8_t buf[255];
+			uint8_t buflen = 0;
+
+			fprintf(stderr, "-Error: %#x\n\r", MLME_GET_request_sync(
+					macDeviceTable,
+					y,
+					&buflen,
+					buf,
+					pDeviceRef
+					));
+
+			fprintf(stderr, "macDeviceTable entry %d: ", y);
+			for(int x = 0; x < buflen; x++) fprintf(stderr, "%02x ", buf[x]);
+			fprintf(stderr, "\n\r");
+		}
 
 		struct M_KeyDescriptor_thread {
 			struct M_KeyTableEntryFixed    Fixed;
@@ -438,12 +494,16 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 				memcpy(tKeyDescriptor.Fixed.Key, getMacKeyFromSequenceCounter(tKeySeq + i), 16);
 				tKeyDescriptor.KeyIdLookupList[0].LookupData[0] = ((tKeySeq + i) & 0x7F) + 1;
 
-				fprintf(stderr, "-Key %d i s", tKeySeq + i);
+				fprintf(stderr, "-Key %d is ", tKeySeq + i);
 				for(int j = 0; j < 16; j++)fprintf(stderr, "%02x ", tKeyDescriptor.Fixed.Key[j]);
 				fprintf(stderr, "\n\r");
 
 				fprintf(stderr, "-Lookup Data: ");
 				for(int j = 0; j < 9; j++)fprintf(stderr, "%02x", tKeyDescriptor.KeyIdLookupList[0].LookupData[j]);
+				fprintf(stderr, "\n\r");
+
+				fprintf(stderr, "-Key Descriptor: ");
+				for(int j = 0; j < sizeof(tKeyDescriptor); j++)fprintf(stderr, "%02x", ((uint8_t*)&tKeyDescriptor)[j]);
 				fprintf(stderr, "\n\r");
 
 				fprintf(stderr, "-Error: %#x\n\r", MLME_SET_request_sync(
@@ -453,6 +513,21 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 					&tKeyDescriptor,
 					pDeviceRef
 					));
+
+				uint8_t buf[255];
+				uint8_t buflen = 0;
+
+				fprintf(stderr, "-Error: %#x\n\r", MLME_GET_request_sync(
+						macKeyTable,
+						count - 1,
+						&buflen,
+						buf,
+						pDeviceRef
+						));
+
+				fprintf(stderr, "macKeyTable entry %d: ", count-1);
+				for(int x = 0; x < buflen; x++) fprintf(stderr, "%02x ", buf[x]);
+				fprintf(stderr, "\n\r");
 			}
 		}
 		MLME_SET_request_sync(
@@ -612,13 +687,13 @@ ThreadError otPlatRadioTransmit(void)
     uint16_t frameControl = GETLE16(sTransmitFrame.mPsdu);
     VerifyOrExit((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_DATA, error = kThreadError_Abort);
 
-    /*
+/*
     fputs("\r\nTransmit:",stderr);
     for(i = 0; i < sTransmitFrame.mLength; i++){
     	fprintf(stderr, " %#04x", sTransmitFrame.mPsdu[i]);
     }
     fputs("\r\n",stderr);
-    */
+*/
 
     sState = kStateTransmit;
     sTransmitError = kThreadError_None;
@@ -847,13 +922,13 @@ void readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 	sReceiveFrame.mChannel = sChannel;
 	sReceiveFrame.mPower = -20;
 
-	/*
+/*
 	fputs("\r\nReceived:",stderr);
 	for(int i = 0; i < sReceiveFrame.mLength; i++){
 		fprintf(stderr, " %#04x", sReceiveFrame.mPsdu[i]);
 	}
 	fputs("\r\n",stderr);
-	*/
+*/
 
     pthread_mutex_unlock(&receiveFrame_mutex);
 
@@ -933,8 +1008,9 @@ exit:
 int genericDispatchFrame(const uint8_t *buf, size_t len) {
 	fprintf(stderr, "\n\rUnhandled frame: ");
 	for(int i = 0; i < len; i++) {
-		fprintf(stderr, " %x ", buf[i]);
+		fprintf(stderr, "%02x ", buf[i]);
 	}
+	fprintf(stderr, "\n\r");
 }
 
 int PlatformRadioProcess(void)    //TODO: port - This should be the callback in future for data receive
