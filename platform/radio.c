@@ -899,37 +899,30 @@ void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
 {
 	otActiveScanResult resultStruct;
 
-	fprintf(stderr, "\n\rBeaconotify frame: ");
+	/*fprintf(stderr, "\n\rBeaconotify frame: ");
 	for(int i = 0; i < 25; i++) {
 		fprintf(stderr, " %x ", ((uint8_t*)params)[i]);
-	}
+	}*/
 
 
 	uint8_t shortaddrs  = *((uint8_t*)params + 23) & 7;
 	uint8_t extaddrs = (*((uint8_t*)params + 23) & 112) >> 4;
-	fprintf(stderr,"[0]");
 	if ((params->PanDescriptor.Coord.AddressMode) == 3) {
 		memcpy(resultStruct.mExtAddress.m8, params->PanDescriptor.Coord.Address, 8);
 	} else {
 		assert(false);
 	}
-	fprintf(stderr,"[1]");
 	resultStruct.mPanId = GETLE16(params->PanDescriptor.Coord.PANId);
 	resultStruct.mChannel = params->PanDescriptor.LogicalChannel;
 	resultStruct.mRssi = -20;
 	resultStruct.mLqi = params->PanDescriptor.LinkQuality;
-	fprintf(stderr,"[2]");
 	VerifyOrExit(params->PanDescriptor.Security.SecurityLevel == 0,;);
-	fprintf(stderr,"[3]");
 	//Asset security = 0
 	uint8_t *sduLength = (uint8_t*)params + (24 + (2 * shortaddrs) + (8 * extaddrs));
-	fprintf(stderr, "\r\n SduLength: %d \r\n", *sduLength);
 	if (*sduLength > 0) {
 		uint8_t *Sdu = (uint8_t*)params + (25 + 2 * shortaddrs + 8 * extaddrs);
 		uint8_t version = (*((uint8_t*)Sdu + 1) & 15);
-		fprintf(stderr, "\r\n Version: %d \r\n", version);
 		if(*Sdu == 3 && version == 1) {
-			fprintf(stderr, "\r\n i hope this works \z\n");
 			resultStruct.mNetworkName = Sdu + 4;
 			resultStruct.mExtPanId = Sdu + 20;
 			scanCallback(&resultStruct);
