@@ -162,12 +162,11 @@ ThreadError otPlatSetNetworkName(const char *aNetworkName) {
 			0,
 			1,
 			&payloadLength,
-			pDeviceRef) == MAC_SUCCESS))
-
+			pDeviceRef) == MAC_SUCCESS)) {
+		fprintf(stderr, "\n\r\nSetting the payload: %x\n\r\n", mBeaconPayload);
         return kThreadError_None;
-
+	}
 	else return kThreadError_Failed;
-	fprintf(stderr, "\n\r\nSetting the payload: %x\n\r\n", mBeaconPayload);
 }
 
 ThreadError otPlatSetExtendedPanId(const uint8_t *aExtPanId) {
@@ -185,11 +184,12 @@ ThreadError otPlatSetExtendedPanId(const uint8_t *aExtPanId) {
 			0,
 			1,
 			&payloadLength,
-			pDeviceRef) == MAC_SUCCESS))
-           return kThreadError_None;
+			pDeviceRef) == MAC_SUCCESS)) {
+		fprintf(stderr, "\n\r\nSetting the payload: %x\n\r\n", mBeaconPayload);
+		return kThreadError_None;
+	}
 
 	else return kThreadError_Failed;
-	fprintf(stderr, "\n\r\nSetting the payload: %x\n\r\n", mBeaconPayload);
 }
 
 ThreadError otPlatRadioSetPanId(uint16_t panid)
