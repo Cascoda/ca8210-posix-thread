@@ -73,6 +73,7 @@ void readConfirmFrame(struct MCPS_DATA_confirm_pset *params);
 void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params);
 int genericDispatchFrame(const uint8_t *buf, size_t len);
 void keyChangedCallback(uint32_t aFlags, void *aContext);
+void coordChangedCallback(uint32_t aFlags, void *aContext);
 
 
 static struct MAC_Message response;
@@ -87,10 +88,12 @@ static void* pDeviceRef = NULL;
 
 static uint8_t sChannel = 0;
 
+static isCoord = 0;
+
 static uint8_t sTransmitPsdu[IEEE802154_MAX_LENGTH];
 static uint8_t sReceivePsdu[IEEE802154_MAX_LENGTH];
 
-static uint8_t mBeaconPayload[32] = {3, 0x98};
+static uint8_t mBeaconPayload[32] = {3, 0x91};
 
 pthread_mutex_t receiveFrame_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t receiveFrame_cond = PTHREAD_COND_INITIALIZER;
@@ -133,12 +136,13 @@ void disableReceiver(void)
 
 ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandleActiveScanResult aCallback)
 {
-	fprintf(stderr, "\n I'm executing otActiveScan \n");
+	fprintf(stderr, "\n\r I'm executing otActiveScan \n\r");
 	//uint16_t aScanDuration = aBaseSuperframeDuration * (pow(2,ScanDuration) +1);
 	//uint8_t ScanDuration = log2((aScanDuration/aBaseSuperframeDuration) -1);
-	uint8_t ScanDuration = 8;
+	uint8_t ScanDuration = 5;
 	struct SecSpec pSecurity = {0};
-
+	if (aScanChannels == 0) aScanChannels = 0x07fff800; //11 to 26
+	fprintf(stderr, "\n %x \n", aScanChannels);
 	scanCallback = aCallback;
 	uint8_t scanRequest = MLME_SCAN_request(1, aScanChannels, ScanDuration, &pSecurity, pDeviceRef);
 	fprintf(stderr, "\n %x \n", scanRequest);
@@ -147,7 +151,6 @@ ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandl
 
 ThreadError otPlatSetNetworkName(const char *aNetworkName) {
 
-	fprintf(stderr,"I'm setting the network name");
 	uint8_t payloadLength = 32;
 	memcpy(mBeaconPayload + 4, aNetworkName, 16);
 	if ((MLME_SET_request_sync(
@@ -253,7 +256,7 @@ void PlatformRadioInit(void)
     callbacks.MCPS_DATA_indication = &readFrame;
     callbacks.MCPS_DATA_confirm = &readConfirmFrame;
     callbacks.MLME_BEACON_NOTIFY_indication = &beaconNotifyFrame;
-    callbacks.generic_dispatch = &genericDispatchFrame;
+    //callbacks.generic_dispatch = &genericDispatchFrame;
     cascoda_register_callbacks(&callbacks);
     
     uint8_t enable = 1;	//enable security
@@ -276,6 +279,44 @@ void PlatformRadioInit(void)
 
 void posixPlatformPostInit(void){
 	otSetStateChangedCallback(&keyChangedCallback, NULL);
+	otSetStateChangedCallback(&coordChangedCallback, NULL);
+}
+
+void coordChangedCallback(uint32_t aFlags, void *aContext) {
+	if(aFlags & OT_NET_ROLE){
+		struct SecSpec securityLevel = {0};
+		if(otGetDeviceRole() == kDeviceRoleRouter || otGetDeviceRole() == kDeviceRoleLeader){
+			if(!isCoord) {
+				uint8_t scanRequest = MLME_START_request_sync(
+						otGetPanId(),
+						sChannel,
+						15,
+						15,
+						1,
+						0,
+						0,
+						&securityLevel,
+						&securityLevel,
+						pDeviceRef);
+				fprintf(stderr,"\n\r scan request error: %02x \n\r", scanRequest);
+				isCoord = 1;
+			}
+		} else if (isCoord) {
+			MLME_START_request_sync(
+					otGetPanId(),
+					sChannel,
+					15,
+					15,
+					0,
+					0,
+					0,
+					&securityLevel,
+					&securityLevel,
+					pDeviceRef);
+
+			isCoord = 0;
+		}
+	}
 }
 
 void keyChangedCallback(uint32_t aFlags, void *aContext){
@@ -932,10 +973,15 @@ exit:
 void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
 {
 	otActiveScanResult resultStruct;
-	fprintf(stderr,"I'm getting a beaconNotifyFrame");
-	uint8_t shortaddrs  = *((uint8_t*)params + 33) & 7;
-	uint8_t extaddrs = (*((uint8_t*)params + 33) & 112) >> 4;
 
+	/*fprintf(stderr, "\n\rBeaconotify frame: ");
+	for(int i = 0; i < 25; i++) {
+		fprintf(stderr, " %x ", ((uint8_t*)params)[i]);
+	}*/
+
+
+	uint8_t shortaddrs  = *((uint8_t*)params + 23) & 7;
+	uint8_t extaddrs = (*((uint8_t*)params + 23) & 112) >> 4;
 	if ((params->PanDescriptor.Coord.AddressMode) == 3) {
 		memcpy(resultStruct.mExtAddress.m8, params->PanDescriptor.Coord.Address, 8);
 	} else {
@@ -945,10 +991,13 @@ void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
 	resultStruct.mChannel = params->PanDescriptor.LogicalChannel;
 	resultStruct.mRssi = -20;
 	resultStruct.mLqi = params->PanDescriptor.LinkQuality;
-	uint8_t *sduLength = params + (34 + 2 * shortaddrs + 8 * extaddrs);
+	VerifyOrExit(params->PanDescriptor.Security.SecurityLevel == 0,;);
+	//Asset security = 0
+	uint8_t *sduLength = (uint8_t*)params + (24 + (2 * shortaddrs) + (8 * extaddrs));
 	if (*sduLength > 0) {
-		uint8_t *Sdu = params + (35 + 2 * shortaddrs + 8 * extaddrs);
-		if(*Sdu == 3 && (*(Sdu + 1) == 1)) {
+		uint8_t *Sdu = (uint8_t*)params + (25 + 2 * shortaddrs + 8 * extaddrs);
+		uint8_t version = (*((uint8_t*)Sdu + 1) & 15);
+		if(*Sdu == 3 && version == 1) {
 			resultStruct.mNetworkName = Sdu + 4;
 			resultStruct.mExtPanId = Sdu + 20;
 			scanCallback(&resultStruct);
