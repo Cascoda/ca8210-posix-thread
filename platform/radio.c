@@ -70,10 +70,10 @@ enum
 void readFrame(struct MCPS_DATA_indication_pset *params);
 void readConfirmFrame(struct MCPS_DATA_confirm_pset *params);
 
-void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params);
+int beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params);
 int genericDispatchFrame(const uint8_t *buf, size_t len);
-void keyChangedCallback(uint32_t aFlags, void *aContext);
-void coordChangedCallback(uint32_t aFlags, void *aContext);
+int keyChangedCallback(uint32_t aFlags, void *aContext);
+int coordChangedCallback(uint32_t aFlags, void *aContext);
 
 
 static RadioPacket sTransmitFrame;
@@ -282,7 +282,7 @@ void coordChangedCallback(uint32_t aFlags, void *aContext) {
 		struct SecSpec securityLevel = {0};
 		if(otGetDeviceRole() == kDeviceRoleRouter || otGetDeviceRole() == kDeviceRoleLeader){
 			if(!isCoord) {
-				uint8_t scanRequest = MLME_START_request_sync(
+				MLME_START_request_sync(
 						otGetPanId(),
 						sChannel,
 						15,
