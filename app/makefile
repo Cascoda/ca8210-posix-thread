@@ -6,6 +6,7 @@ CC = gcc
 INCLUDEDIRS := ./\
 	../openthread/include/cli/\
 	../openthread/include/\
+	../openthread/src/core/\
 	./include/\
 	../platform/\
 	../cascoda/include/
