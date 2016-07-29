@@ -67,13 +67,14 @@ enum
     IEEE802154_DSN_OFFSET = 2,
 };
 
-void readFrame(struct MCPS_DATA_indication_pset *params);
-void readConfirmFrame(struct MCPS_DATA_confirm_pset *params);
+int readFrame(struct MCPS_DATA_indication_pset *params);
+int readConfirmFrame(struct MCPS_DATA_confirm_pset *params);
 
 int beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params);
 int genericDispatchFrame(const uint8_t *buf, size_t len);
-int keyChangedCallback(uint32_t aFlags, void *aContext);
-int coordChangedCallback(uint32_t aFlags, void *aContext);
+
+void keyChangedCallback(uint32_t aFlags, void *aContext);
+void coordChangedCallback(uint32_t aFlags, void *aContext);
 
 
 static RadioPacket sTransmitFrame;
