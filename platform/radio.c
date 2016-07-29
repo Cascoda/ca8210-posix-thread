@@ -900,7 +900,7 @@ void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
 	otActiveScanResult resultStruct;
 
 	fprintf(stderr, "\n\rBeaconotify frame: ");
-	for(int i = 0; i < 255; i++) {
+	for(int i = 0; i < 58; i++) {
 		fprintf(stderr, " %x ", ((uint8_t*)params)[i]);
 	}
 
