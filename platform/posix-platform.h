@@ -61,13 +61,6 @@ extern uint32_t WELLKNOWN_NODE_ID;
  */
 void posixPlatformInit(void);
 
-
-/**
- * This method performs all platform-specific initialization which uses the openthread API.
- *
- */
-void posixPlatformPostInit(void);
-
 /**
  * This method performs all platform-specific processing.
  *
