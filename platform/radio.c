@@ -922,7 +922,7 @@ void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
 	VerifyOrExit(params->PanDescriptor.Security.SecurityLevel == 0,;);
 	fprintf(stderr,"[3]");
 	//Asset security = 0
-	uint8_t *sduLength = params + (24 + (2 * shortaddrs) + (8 * extaddrs));
+	uint8_t *sduLength = (uint8_t*)params + (24 + (2 * shortaddrs) + (8 * extaddrs));
 	fprintf(stderr, "\r\n SduLength: %d \r\n", *sduLength);
 	if (*sduLength > 0) {
 		uint8_t *Sdu = params + (25 + 2 * shortaddrs + 8 * extaddrs);
