@@ -135,16 +135,13 @@ void disableReceiver(void)
 
 ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandleActiveScanResult aCallback)
 {
-	fprintf(stderr, "\n\r I'm executing otActiveScan \n\r");
 	//uint16_t aScanDuration = aBaseSuperframeDuration * (pow(2,ScanDuration) +1);
 	//uint8_t ScanDuration = log2((aScanDuration/aBaseSuperframeDuration) -1);
-	uint8_t ScanDuration = 5;
+	uint8_t ScanDuration = 4;
 	struct SecSpec pSecurity = {0};
 	if (aScanChannels == 0) aScanChannels = 0x07fff800; //11 to 26
-	fprintf(stderr, "\n %x \n", aScanChannels);
 	scanCallback = aCallback;
 	uint8_t scanRequest = MLME_SCAN_request(1, aScanChannels, ScanDuration, &pSecurity, pDeviceRef);
-	fprintf(stderr, "\n %x \n", scanRequest);
 	return scanRequest;
 }
 
@@ -297,7 +294,7 @@ void coordChangedCallback(uint32_t aFlags, void *aContext) {
 						&securityLevel,
 						&securityLevel,
 						pDeviceRef);
-				fprintf(stderr,"\n\r scan request error: %02x \n\r", scanRequest);
+
 				isCoord = 1;
 			}
 		} else if (isCoord) {
