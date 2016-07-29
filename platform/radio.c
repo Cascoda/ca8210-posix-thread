@@ -120,7 +120,6 @@ void setChannel(uint8_t channel)
     	        &channel,
     	        pDeviceRef);
         sChannel = channel;
-        fprintf(stderr, "\n\rChannel: %d\n\r", sChannel);
     }
 }
 
@@ -325,11 +324,9 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 		fprintf(stderr, "\n\rUpdating keys\n\r");
 		if(otGetKeySequenceCounter() == 0) otSetKeySequenceCounter(2);
 		uint32_t tKeySeq = otGetKeySequenceCounter() - 1;
-		fprintf(stderr, "-Key Sequence = %#x\n\r", tKeySeq);
 
 		uint8_t count = 0;	//Update device list
 		if(otGetDeviceRole() != kDeviceRoleChild){
-			fprintf(stderr, "-Looking for children\n\r");
 			for(uint8_t i = 0; i < 5; i++){
 				otChildInfo tChildInfo;
 				otGetChildInfoByIndex(i, &tChildInfo);
@@ -343,7 +340,6 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 					}
 				}
 				if(!isValid) continue;
-				fprintf(stderr, "-Found Valid Child\n\r");
 
 				struct M_DeviceDescriptor tDeviceDescriptor;
 
@@ -357,20 +353,16 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 				tDeviceDescriptor.FrameCounter[3] = 0;
 				tDeviceDescriptor.Exempt = 0;
 
-				fprintf(stderr, "-Device Descriptor: ");
-				for(int j = 0; j < sizeof(tDeviceDescriptor); j++)fprintf(stderr, "%02x", ((uint8_t*)&tDeviceDescriptor)[j]);
-				fprintf(stderr, "\n\r");
 
-				fprintf(stderr, "-Error: %#x", MLME_SET_request_sync(
+				MLME_SET_request_sync(
 						macDeviceTable,
 						count++,
 						sizeof(tDeviceDescriptor),
 						&tDeviceDescriptor,
 						pDeviceRef
-						));
+						);
 
 			}
-			fprintf(stderr, "-Looking for Router Neighbors\n\r");
 
 			uint8_t maxRouters = 5 - count;
 			otRouterInfo routers[maxRouters];
@@ -390,27 +382,20 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 				tDeviceDescriptor.FrameCounter[3] = 0;
 				tDeviceDescriptor.Exempt = 0;
 
-				fprintf(stderr, "-Device Descriptor: ");
-				for(int j = 0; j < sizeof(tDeviceDescriptor); j++)fprintf(stderr, "%02x", ((uint8_t*)&tDeviceDescriptor)[j]);
-				fprintf(stderr, "\n\r");
-
-				fprintf(stderr, "-Error: %#x", MLME_SET_request_sync(
+				MLME_SET_request_sync(
 						macDeviceTable,
 						count++,
 						sizeof(tDeviceDescriptor),
 						&tDeviceDescriptor,
 						pDeviceRef
-						));
+						);
 			}
 
 		}
 		else{
 			otRouterInfo tParentInfo;
-			fprintf(stderr, "-Looking for parent\n\r");
 			if(otGetParent(&tParentInfo) == kThreadError_None){
 				struct M_DeviceDescriptor tDeviceDescriptor;
-
-				fprintf(stderr, "-Found Parent\n\r");
 
 				PUTLE16(otGetPanId(), tDeviceDescriptor.PANId);
 				PUTLE16(tParentInfo.mRloc16, tDeviceDescriptor.ShortAddress);
@@ -422,17 +407,13 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 				tDeviceDescriptor.FrameCounter[3] = 0;
 				tDeviceDescriptor.Exempt = 0;
 
-				fprintf(stderr, "-Device Descriptor: ");
-				for(int j = 0; j < sizeof(tDeviceDescriptor); j++)fprintf(stderr, "%02x", ((uint8_t*)&tDeviceDescriptor)[j]);
-				fprintf(stderr, "\n\r");
-
-				fprintf(stderr, "-Error: %#x\n\r", MLME_SET_request_sync(
+				MLME_SET_request_sync(
 						macDeviceTable,
 						count++,
 						sizeof(tDeviceDescriptor),
 						&tDeviceDescriptor,
 						pDeviceRef
-						));
+						);
 			}
 			else fprintf(stderr, "\n\r-Error retrieving parent!\n\r");
 		}
@@ -444,23 +425,6 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 				&count,
 				pDeviceRef
 				);
-
-		for(int y = 0; y < count; y++){
-			uint8_t buf[255];
-			uint8_t buflen = 0;
-
-			fprintf(stderr, "-Error: %#x\n\r", MLME_GET_request_sync(
-					macDeviceTable,
-					y,
-					&buflen,
-					buf,
-					pDeviceRef
-					));
-
-			fprintf(stderr, "macDeviceTable entry %d: ", y);
-			for(int x = 0; x < buflen; x++) fprintf(stderr, "%02x ", buf[x]);
-			fprintf(stderr, "\n\r");
-		}
 
 		struct M_KeyDescriptor_thread {
 			struct M_KeyTableEntryFixed    Fixed;
@@ -497,40 +461,13 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 				memcpy(tKeyDescriptor.Fixed.Key, getMacKeyFromSequenceCounter(tKeySeq + i), 16);
 				tKeyDescriptor.KeyIdLookupList[0].LookupData[0] = ((tKeySeq + i) & 0x7F) + 1;
 
-				fprintf(stderr, "-Key %d is ", tKeySeq + i);
-				for(int j = 0; j < 16; j++)fprintf(stderr, "%02x ", tKeyDescriptor.Fixed.Key[j]);
-				fprintf(stderr, "\n\r");
-
-				fprintf(stderr, "-Lookup Data: ");
-				for(int j = 0; j < 9; j++)fprintf(stderr, "%02x", tKeyDescriptor.KeyIdLookupList[0].LookupData[j]);
-				fprintf(stderr, "\n\r");
-
-				fprintf(stderr, "-Key Descriptor: ");
-				for(int j = 0; j < sizeof(tKeyDescriptor); j++)fprintf(stderr, "%02x", ((uint8_t*)&tKeyDescriptor)[j]);
-				fprintf(stderr, "\n\r");
-
-				fprintf(stderr, "-Error: %#x\n\r", MLME_SET_request_sync(
+				MLME_SET_request_sync(
 					macKeyTable,
 					count++,
 					sizeof(tKeyDescriptor),
 					&tKeyDescriptor,
 					pDeviceRef
-					));
-
-				uint8_t buf[255];
-				uint8_t buflen = 0;
-
-				fprintf(stderr, "-Error: %#x\n\r", MLME_GET_request_sync(
-						macKeyTable,
-						count - 1,
-						&buflen,
-						buf,
-						pDeviceRef
-						));
-
-				fprintf(stderr, "macKeyTable entry %d: ", count-1);
-				for(int x = 0; x < buflen; x++) fprintf(stderr, "%02x ", buf[x]);
-				fprintf(stderr, "\n\r");
+					);
 			}
 		}
 		MLME_SET_request_sync(
@@ -737,11 +674,8 @@ ThreadError otPlatRadioTransmit(void)
     if(frameControl & MAC_FC_SEC_ENA){	//if security is required
     	uint8_t ASHloc = MAC_BASEHEADERLENGTH + addressFieldLength;
     	uint8_t securityControl = *(uint8_t*)(sTransmitFrame.mPsdu + ASHloc);
-    	fprintf(stderr, "\r\nSecurity Control: %#04x", securityControl);
     	curSecSpec.SecurityLevel = MAC_SC_SECURITYLEVEL(securityControl);
-    	fprintf(stderr, "\r\nSecurity Level: %#04x", curSecSpec.SecurityLevel);
     	curSecSpec.KeyIdMode = MAC_SC_KEYIDMODE(securityControl);
-    	fprintf(stderr, "\r\nKeyIDMode: %#04x\r\n", curSecSpec.KeyIdMode);
 
     	ASHloc += 5;//skip to key identifier
     	if(curSecSpec.KeyIdMode == 0x02){//Table 96
@@ -753,7 +687,6 @@ ThreadError otPlatRadioTransmit(void)
 			ASHloc += 8;
 		}
     	curSecSpec.KeyIndex = sTransmitFrame.mPsdu[ASHloc++];
-    	fprintf(stderr, "\r\nKeyIndex: %#04x\r\n", curSecSpec.KeyIndex);
     	headerLength = ASHloc;
     }
 
