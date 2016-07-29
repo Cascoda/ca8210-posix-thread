@@ -71,6 +71,7 @@ void readFrame(struct MCPS_DATA_indication_pset *params);
 void readConfirmFrame(struct MCPS_DATA_confirm_pset *params);
 
 void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params);
+void scanConfirmCheck(struct MLME_SCAN_confirm_pset *params);
 int genericDispatchFrame(const uint8_t *buf, size_t len);
 void keyChangedCallback(uint32_t aFlags, void *aContext);
 void coordChangedCallback(uint32_t aFlags, void *aContext);
@@ -252,6 +253,7 @@ void PlatformRadioInit(void)
     callbacks.MCPS_DATA_indication = &readFrame;
     callbacks.MCPS_DATA_confirm = &readConfirmFrame;
     callbacks.MLME_BEACON_NOTIFY_indication = &beaconNotifyFrame;
+    callbacks.MLME_SCAN_confirm = &scanConfirmCheck;
     //callbacks.generic_dispatch = &genericDispatchFrame;
     cascoda_register_callbacks(&callbacks);
     
@@ -936,6 +938,15 @@ void beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
 
 exit:
     return;
+}
+
+void scanConfirmCheck(struct MLME_SCAN_confirm_pset *params) {
+	otActiveScanResult resultStruct;
+	if (params->Status != MAC_SCAN_IN_PROGRESS) {
+		scanCallback(NULL);
+	}
+exit:
+	return;
 }
 
 int genericDispatchFrame(const uint8_t *buf, size_t len) {
