@@ -300,7 +300,7 @@ void coordChangedCallback(uint32_t aFlags, void *aContext) {
 						&securityLevel,
 						&securityLevel,
 						pDeviceRef);
-				fprintf(stderr, "\n\r\n!!! I'm a Coord !!!\n\r\n");
+				fprintf(stderr, "\n\r\n!!! I'm a Coord: %d !!!\n\r\n", scanRequest);
 				isCoord = 1;
 			}
 		} else if (isCoord) {
