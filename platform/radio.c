@@ -54,6 +54,7 @@
 #define MAC_SC_KEYIDMODE(sc) ((sc>>3)&0x03)
 #define MAC_KEYIDMODE_SC(keyidmode) ((keyidmode&0x03)<<3)
 #define MAC_BASEHEADERLENGTH 3
+#define EXECUTE_MODE 1
 
 enum
 {
