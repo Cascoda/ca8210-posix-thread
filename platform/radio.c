@@ -494,11 +494,12 @@ ThreadError otPlatRadioEnable(void)    //TODO:(lowpriority) port
     sState = kStateSleep;
 
 	#ifdef EXECUTE_MODE
-    	uint8_t HWMEAttVal = 0; //0x00
+    	//uint8_t HWMEAttVal = 0; //0x00
+    	uint8_t HWMEAttVal[5] = {00, 00, 00, 00, 00 };
     	if (HWME_SET_request_sync (
     		HWME_POWERCON,
-    		1,
-    		&HWMEAttVal,
+    		5,
+    		HWMEAttVal,
     		pDeviceRef
     		) == HWME_SUCCESS)
     		return kThreadError_None;
@@ -520,11 +521,12 @@ ThreadError otPlatRadioDisable(void)    //TODO:(lowpriority) port
 
     //should sleep until restarted
 	#ifdef EXECUTE_MODE
-    	uint8_t HWMEAttVal = 10; //0x0A
+    	//uint8_t HWMEAttVal = 10; //0x0A
+    	uint8_t HWMEAttVal[5] = {0x0A, 00, 00, 00, 00 };
     	if (HWME_SET_request_sync (
     		HWME_POWERCON,
-    		1,
-    		&HWMEAttVal,
+    		5,
+    		HWMEAttVal,
     		pDeviceRef
     		) == HWME_SUCCESS)
 	    	return kThreadError_None;
@@ -544,11 +546,12 @@ ThreadError otPlatRadioSleep(void)    //TODO:(lowpriority) port
     sState = kStateSleep;
 
 	#ifdef EXECUTE_MODE
-    	uint8_t HWMEAttVal = 42; //0x2A
+    	//uint8_t HWMEAttVal = 42; //0x2A
+    	uint8_t HWMEAttVal[5] = {0x2A, 00, 00, 00, 00 };
 		if (HWME_SET_request_sync (
 			HWME_POWERCON,
-			1,
-			&HWMEAttVal,
+			5,
+			HWMEAttVal,
 			pDeviceRef
 			) == HWME_SUCCESS)
 			return kThreadError_None;
@@ -586,10 +589,11 @@ ThreadError otPlatRadioIdle(void)    //TODO:(lowpriority) port
     }
 
 	#ifdef EXECUTE_MODE
-    	uint8_t HWMEAttVal = 36; //0x24
+    	//uint8_t HWMEAttVal = 36; //0x24
+    	uint8_t HWMEAttVal[5] = {0x24, 00, 00, 00, 00 };
 		if (HWME_GET_request_sync (
 			HWME_POWERCON,
-			1,
+			5,
 			&HWMEAttVal,
 			pDeviceRef
 			) == HWME_SUCCESS)
