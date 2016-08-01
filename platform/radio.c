@@ -121,6 +121,7 @@ void setChannel(uint8_t channel)
     	        &channel,
     	        pDeviceRef);
         sChannel = channel;
+        fprintf(stderr, "\n\rCurrent channel changed to: %d\n\r", sChannel);
     }
 }
 
