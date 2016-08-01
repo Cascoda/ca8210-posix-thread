@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
     NODE_ID = atoi(argv[1]);
 
     posixPlatformInit();
-    otInit();
+    otEnable();
     otCliUartInit();
 
     while (1)
