@@ -71,6 +71,7 @@ int readFrame(struct MCPS_DATA_indication_pset *params);
 int readConfirmFrame(struct MCPS_DATA_confirm_pset *params);
 
 int beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params);
+int scanConfirmCheck(struct MLME_SCAN_confirm_pset *params);
 int genericDispatchFrame(const uint8_t *buf, size_t len);
 
 void keyChangedCallback(uint32_t aFlags, void *aContext);
@@ -120,6 +121,7 @@ void setChannel(uint8_t channel)
     	        &channel,
     	        pDeviceRef);
         sChannel = channel;
+        //fprintf(stderr, "\n\rCurrent channel changed to: %d\n\r", sChannel);
     }
 }
 
@@ -137,11 +139,12 @@ ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandl
 {
 	//uint16_t aScanDuration = aBaseSuperframeDuration * (pow(2,ScanDuration) +1);
 	//uint8_t ScanDuration = log2((aScanDuration/aBaseSuperframeDuration) -1);
-	uint8_t ScanDuration = 4;
+	uint8_t ScanDuration = 5; //0 to 14
 	struct SecSpec pSecurity = {0};
 	if (aScanChannels == 0) aScanChannels = 0x07fff800; //11 to 26
 	scanCallback = aCallback;
 	uint8_t scanRequest = MLME_SCAN_request(1, aScanChannels, ScanDuration, &pSecurity, pDeviceRef);
+	//fprintf(stderr, "\n\r\nScanning request: %x\n\r\n", scanRequest);
 	return scanRequest;
 }
 
@@ -160,9 +163,10 @@ ThreadError otPlatSetNetworkName(const char *aNetworkName) {
 			0,
 			1,
 			&payloadLength,
-			pDeviceRef) == MAC_SUCCESS))
+			pDeviceRef) == MAC_SUCCESS)) {
+		//fprintf(stderr, "\n\r\nSetting the payload: %x\n\r\n", mBeaconPayload);
         return kThreadError_None;
-
+	}
 	else return kThreadError_Failed;
 }
 
@@ -181,8 +185,10 @@ ThreadError otPlatSetExtendedPanId(const uint8_t *aExtPanId) {
 			0,
 			1,
 			&payloadLength,
-			pDeviceRef) == MAC_SUCCESS))
-           return kThreadError_None;
+			pDeviceRef) == MAC_SUCCESS)) {
+		//fprintf(stderr, "\n\r\nSetting the payload: %x\n\r\n", mBeaconPayload);
+		return kThreadError_None;
+	}
 
 	else return kThreadError_Failed;
 }
@@ -252,6 +258,7 @@ void PlatformRadioInit(void)
     callbacks.MCPS_DATA_indication = &readFrame;
     callbacks.MCPS_DATA_confirm = &readConfirmFrame;
     callbacks.MLME_BEACON_NOTIFY_indication = &beaconNotifyFrame;
+    callbacks.MLME_SCAN_confirm = &scanConfirmCheck;
     //callbacks.generic_dispatch = &genericDispatchFrame;
     cascoda_register_callbacks(&callbacks);
     
@@ -294,7 +301,7 @@ void coordChangedCallback(uint32_t aFlags, void *aContext) {
 						&securityLevel,
 						&securityLevel,
 						pDeviceRef);
-
+				//fprintf(stderr, "\n\r\n!!! I'm a Coord: %d !!!\n\r\n", scanRequest);
 				isCoord = 1;
 			}
 		} else if (isCoord) {
@@ -309,7 +316,7 @@ void coordChangedCallback(uint32_t aFlags, void *aContext) {
 					&securityLevel,
 					&securityLevel,
 					pDeviceRef);
-
+			//fprintf(stderr, "\n\r\n*** NOT a Coord ***\n\r\n");
 			isCoord = 0;
 		}
 	}
@@ -899,7 +906,7 @@ int beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params) //Async
 	otActiveScanResult resultStruct;
 
 	/*fprintf(stderr, "\n\rBeaconotify frame: ");
-	for(int i = 0; i < 25; i++) {
+	for(int i = 0; i < 38; i++) {
 		fprintf(stderr, " %x ", ((uint8_t*)params)[i]);
 	}*/
 
@@ -930,6 +937,21 @@ int beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params) //Async
 
 exit:
     return 0;
+}
+
+int scanConfirmCheck(struct MLME_SCAN_confirm_pset *params) {
+	otActiveScanResult resultStruct;
+	if (params->Status != MAC_SCAN_IN_PROGRESS) {
+		scanCallback(NULL);
+		MLME_SET_request_sync(
+		    			phyCurrentChannel,
+		    	        0,
+		    	        sizeof(sChannel),
+		    	        &sChannel,
+		    	        pDeviceRef);
+	}
+exit:
+	return 0;
 }
 
 int genericDispatchFrame(const uint8_t *buf, size_t len) { //Async
