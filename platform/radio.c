@@ -948,6 +948,12 @@ void scanConfirmCheck(struct MLME_SCAN_confirm_pset *params) {
 	otActiveScanResult resultStruct;
 	if (params->Status != MAC_SCAN_IN_PROGRESS) {
 		scanCallback(NULL);
+		MLME_SET_request_sync(
+		    			phyCurrentChannel,
+		    	        0,
+		    	        sizeof(sChannel),
+		    	        &sChannel,
+		    	        pDeviceRef);
 	}
 exit:
 	return;
