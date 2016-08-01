@@ -846,6 +846,9 @@ int readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 	footerLength += 2; //MFR length
 
 	sReceiveFrame.mLength = params->MsduLength + footerLength + headerLength;
+
+	assert(sReceiveFrame.mLength <= aMaxPHYPacketSize);
+
 	memcpy(sReceiveFrame.mPsdu + headerLength, params->Msdu, params->MsduLength);
 	sReceiveFrame.mLqi = params->MpduLinkQuality;
 	sReceiveFrame.mChannel = sChannel;
@@ -891,7 +894,7 @@ int readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
     return 0;
 }
 
-int beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params)
+int beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params) //Async
 {
 	otActiveScanResult resultStruct;
 
@@ -929,7 +932,7 @@ exit:
     return 0;
 }
 
-int genericDispatchFrame(const uint8_t *buf, size_t len) {
+int genericDispatchFrame(const uint8_t *buf, size_t len) { //Async
 	fprintf(stderr, "\n\rUnhandled frame: ");
 	for(int i = 0; i < len; i++) {
 		fprintf(stderr, "%02x ", buf[i]);
