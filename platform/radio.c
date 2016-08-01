@@ -99,16 +99,6 @@ static uint8_t mBeaconPayload[32] = {3, 0x91};
 pthread_mutex_t receiveFrame_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t receiveFrame_cond = PTHREAD_COND_INITIALIZER;
 
-typedef enum PhyState
-{
-    kStateDisabled = 0,
-    kStateSleep,
-    kStateIdle,
-    kStateListen,
-    kStateReceive,
-    kStateTransmit,
-} PhyState;
-
 static PhyState sState;
 
 void setChannel(uint8_t channel)
@@ -514,7 +504,7 @@ ThreadError otPlatRadioDisable(void)    //TODO:(lowpriority) port
 {
     ThreadError error = kThreadError_None;
 
-    VerifyOrExit(sState == kStateIdle, error = kThreadError_Busy);
+    VerifyOrExit(sState != kStateDisabled, error = kThreadError_Busy);
     sState = kStateDisabled;
 
     //should sleep until restarted
@@ -539,7 +529,7 @@ ThreadError otPlatRadioSleep(void)    //TODO:(lowpriority) port
 {
     ThreadError error = kThreadError_None;
 
-    VerifyOrExit(error = kStateIdle, error = kThreadError_Busy);
+    VerifyOrExit(error != kStateDisabled, error = kThreadError_Busy);
     sState = kStateSleep;
 
 	#ifdef EXECUTE_MODE
@@ -566,16 +556,11 @@ ThreadError otPlatRadioIdle(void)    //TODO:(lowpriority) port
     switch (sState)
     {
     case kStateSleep:
-        sState = kStateIdle;
         break;
 
-    case kStateIdle:
-        break;
-
-    case kStateListen:
     case kStateTransmit:
         disableReceiver();
-        sState = kStateIdle;
+        sState = kStateReceive;
         break;
 
     case kStateReceive:
@@ -604,8 +589,8 @@ ThreadError otPlatRadioReceive(uint8_t aChannel)
 {
     ThreadError error = kThreadError_None;
 
-    VerifyOrExit(sState == kStateIdle, error = kThreadError_Busy);
-    sState = kStateListen;
+    VerifyOrExit(sState != kStateDisabled, error = kThreadError_Busy);
+    sState = kStateTransmit;
 
     setChannel(aChannel);
 
@@ -626,7 +611,7 @@ ThreadError otPlatRadioTransmit(void)
     static uint8_t handle = 0;
     handle++;
 
-    VerifyOrExit(sState == kStateIdle, error = kThreadError_Busy);
+    VerifyOrExit(sState != kStateDisabled, error = kThreadError_Busy);
     uint16_t frameControl = GETLE16(sTransmitFrame.mPsdu);
     VerifyOrExit((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_DATA, error = kThreadError_Abort);
 
@@ -871,7 +856,7 @@ int readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 
     pthread_mutex_unlock(&receiveFrame_mutex);
 
-	sState = kStateIdle;
+	sState = kStateReceive;
 	otPlatRadioReceiveDone(&sReceiveFrame, sReceiveError);
 
     PlatformRadioProcess();
@@ -889,7 +874,7 @@ int readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
     	if(params->Status == MAC_CHANNEL_ACCESS_FAILURE) sTransmitError = kThreadError_ChannelAccessFailure;
     	else if(params->Status == MAC_NO_ACK) sTransmitError = kThreadError_NoAck;
     	else sTransmitError = kThreadError_Abort;
-    	sState = kStateIdle;
+    	sState = kStateReceive;
     	fprintf(stderr, "\n\rMCPS_DATA_confirm error: %#x \r\n", params->Status);
     	otPlatRadioTransmitDone(false, sTransmitError);
     }
@@ -964,7 +949,6 @@ int genericDispatchFrame(const uint8_t *buf, size_t len) { //Async
 }
 
 int PlatformRadioProcess(void)    //TODO: port - This should be the callback in future for data receive
-
 {
 	pthread_mutex_lock(&receiveFrame_mutex);
 
@@ -972,7 +956,7 @@ int PlatformRadioProcess(void)    //TODO: port - This should be the callback in 
     pthread_cond_broadcast(&receiveFrame_cond);
     pthread_mutex_unlock(&receiveFrame_mutex);
 
-    if (sState == kStateIdle)
+    if (sState == kStateSleep)
     {
         disableReceiver();
     }
