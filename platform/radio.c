@@ -121,7 +121,7 @@ void setChannel(uint8_t channel)
     	        &channel,
     	        pDeviceRef);
         sChannel = channel;
-        fprintf(stderr, "\n\rCurrent channel changed to: %d\n\r", sChannel);
+        //fprintf(stderr, "\n\rCurrent channel changed to: %d\n\r", sChannel);
     }
 }
 
@@ -139,12 +139,12 @@ ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandl
 {
 	//uint16_t aScanDuration = aBaseSuperframeDuration * (pow(2,ScanDuration) +1);
 	//uint8_t ScanDuration = log2((aScanDuration/aBaseSuperframeDuration) -1);
-	uint8_t ScanDuration = 6; //0 to 14
+	uint8_t ScanDuration = 5; //0 to 14
 	struct SecSpec pSecurity = {0};
 	if (aScanChannels == 0) aScanChannels = 0x07fff800; //11 to 26
 	scanCallback = aCallback;
 	uint8_t scanRequest = MLME_SCAN_request(1, aScanChannels, ScanDuration, &pSecurity, pDeviceRef);
-	fprintf(stderr, "\n\r\nScanning request: %x\n\r\n", scanRequest);
+	//fprintf(stderr, "\n\r\nScanning request: %x\n\r\n", scanRequest);
 	return scanRequest;
 }
 
@@ -164,7 +164,7 @@ ThreadError otPlatSetNetworkName(const char *aNetworkName) {
 			1,
 			&payloadLength,
 			pDeviceRef) == MAC_SUCCESS)) {
-		fprintf(stderr, "\n\r\nSetting the payload: %x\n\r\n", mBeaconPayload);
+		//fprintf(stderr, "\n\r\nSetting the payload: %x\n\r\n", mBeaconPayload);
         return kThreadError_None;
 	}
 	else return kThreadError_Failed;
@@ -186,7 +186,7 @@ ThreadError otPlatSetExtendedPanId(const uint8_t *aExtPanId) {
 			1,
 			&payloadLength,
 			pDeviceRef) == MAC_SUCCESS)) {
-		fprintf(stderr, "\n\r\nSetting the payload: %x\n\r\n", mBeaconPayload);
+		//fprintf(stderr, "\n\r\nSetting the payload: %x\n\r\n", mBeaconPayload);
 		return kThreadError_None;
 	}
 
@@ -301,7 +301,7 @@ void coordChangedCallback(uint32_t aFlags, void *aContext) {
 						&securityLevel,
 						&securityLevel,
 						pDeviceRef);
-				fprintf(stderr, "\n\r\n!!! I'm a Coord: %d !!!\n\r\n", scanRequest);
+				//fprintf(stderr, "\n\r\n!!! I'm a Coord: %d !!!\n\r\n", scanRequest);
 				isCoord = 1;
 			}
 		} else if (isCoord) {
@@ -316,7 +316,7 @@ void coordChangedCallback(uint32_t aFlags, void *aContext) {
 					&securityLevel,
 					&securityLevel,
 					pDeviceRef);
-			fprintf(stderr, "\n\r\n*** NOT a Coord ***\n\r\n");
+			//fprintf(stderr, "\n\r\n*** NOT a Coord ***\n\r\n");
 			isCoord = 0;
 		}
 	}
