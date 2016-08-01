@@ -260,6 +260,14 @@ void PlatformRadioInit(void)
 		&enable,
 		pDeviceRef);
 
+	uint8_t retries = 7;	//Retry transmission 7 times if not acknowledged
+	MLME_SET_request_sync(
+		macMaxFrameRetries,
+		0,
+		sizeof(retries),
+		&retries,
+		pDeviceRef);
+
 	uint8_t defaultKeySource[8] = {0, 0, 0, 0, 0, 0, 0, 0xFF};	//set the defaultKeySource as defined in 7.2.2.1 of thread spec
 	MLME_SET_request_sync(
 		macDefaultKeySource,
