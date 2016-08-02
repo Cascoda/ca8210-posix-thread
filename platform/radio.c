@@ -421,7 +421,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 		}
 		else{
 			otRouterInfo tParentInfo;
-			if(otGetParent(&tParentInfo) == kThreadError_None){
+			if(otGetParentInfo(&tParentInfo) == kThreadError_None){
 				struct M_DeviceDescriptor tDeviceDescriptor;
 
 				PUTLE16(otGetPanId(), tDeviceDescriptor.PANId);
@@ -562,7 +562,7 @@ ThreadError otPlatRadioSleep(void)    //TODO:(lowpriority) port
 {
     ThreadError error = kThreadError_None;
 
-    VerifyOrExit(error != kStateDisabled, error = kThreadError_Busy);
+    VerifyOrExit(sState != kStateDisabled, error = kThreadError_Busy);
     sState = kStateSleep;
 
 	#ifdef EXECUTE_MODE
@@ -981,7 +981,6 @@ exit:
 }
 
 int scanConfirmCheck(struct MLME_SCAN_confirm_pset *params) {
-	otActiveScanResult resultStruct;
 	if (params->Status != MAC_SCAN_IN_PROGRESS) {
 		scanCallback(NULL);
 		MLME_SET_request_sync(
