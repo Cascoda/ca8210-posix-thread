@@ -127,13 +127,21 @@ void disableReceiver(void)
 
 ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandleActiveScanResult aCallback)
 {
-	//uint16_t aScanDuration = aBaseSuperframeDuration * (pow(2,ScanDuration) +1);
-	//uint8_t ScanDuration = log2((aScanDuration/aBaseSuperframeDuration) -1);
+
+	/*
+	 * This function causes an active scan to be run by the ca8210
+	 */
+
 	uint8_t ScanDuration = 5; //0 to 14
 	struct SecSpec pSecurity = {0};
 	if (aScanChannels == 0) aScanChannels = 0x07fff800; //11 to 26
 	scanCallback = aCallback;
-	uint8_t scanRequest = MLME_SCAN_request(1, aScanChannels, ScanDuration, &pSecurity, pDeviceRef);
+	uint8_t scanRequest = MLME_SCAN_request(
+			1,
+			aScanChannels,
+			ScanDuration,
+			&pSecurity,
+			pDeviceRef);
 	//fprintf(stderr, "\n\r\nScanning request: %x\n\r\n", scanRequest);
 	return scanRequest;
 }
@@ -279,11 +287,22 @@ void PlatformRadioInit(void)
 }
 
 void otHardMacStateChangeCallback(uint32_t aFlags, void *aContext){
+
+	/*
+	 * This function is called whenever there is an internal state change in thread
+	 */
+
 	keyChangedCallback(aFlags, aContext);
 	coordChangedCallback(aFlags, aContext);
 }
 
 void coordChangedCallback(uint32_t aFlags, void *aContext) {
+
+	/*
+	 * This function sets the node as an 802.15.4 coordinator when it is set to act as a thread
+	 * router, in order that is can respond to active scan beacon requests with beacons.
+	 */
+
 	if(aFlags & OT_NET_ROLE){
 		struct SecSpec securityLevel = {0};
 		if(otGetDeviceRole() == kDeviceRoleRouter || otGetDeviceRole() == kDeviceRoleLeader){
@@ -321,6 +340,12 @@ void coordChangedCallback(uint32_t aFlags, void *aContext) {
 }
 
 void keyChangedCallback(uint32_t aFlags, void *aContext){
+
+	/*
+	 * This Function updates the keytable and devicetable entries stored on the
+	 * ca8210 whenever there is a new key or new device to communicate with.
+	 */
+
 	if((aFlags & (OT_NET_KEY_SEQUENCE | OT_THREAD_CHILD_ADDED | OT_THREAD_CHILD_REMOVED | OT_NET_ROLE | OT_THREAD_LINK_ACCEPT))){	//The thrKeySequenceCounter has changed or device descriptors need updating
 		//Therefore update the keys stored in the macKeytable
 		fprintf(stderr, "\n\rUpdating keys\n\r");
@@ -615,6 +640,11 @@ RadioPacket *otPlatRadioGetTransmitBuffer(void)
 
 ThreadError otPlatRadioTransmit(void)
 {
+	/*
+	 * This Function converts the openthread-provided PHY frame into a MAC primitive to
+	 * communicate with the hardmac-enabled cascoda ca8210. Changes in the soft MAC layer
+	 * the frame from being encrypted until it reaches the hardmac.
+	 */
     ThreadError error = kThreadError_None;
     static uint8_t handle = 0;
     handle++;
@@ -758,6 +788,13 @@ void otPlatRadioSetPromiscuous(bool aEnable)
 int readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 {
 
+	/*
+	 * This Function converts the MAC primitive provided by the ca8210 into a PHY frame
+	 * that can be processed by openthread. Changes in the soft MAC layer mean that the
+	 * frame is not double decrypted, and the link security is accepted if the hardmac
+	 * approves it.
+	 */
+
     pthread_mutex_lock(&receiveFrame_mutex);
 	//wait until the main thread is free to process the frame
 	while(sReceiveFrame.mLength != 0) {pthread_cond_wait(&receiveFrame_cond, &receiveFrame_mutex);}
@@ -875,6 +912,11 @@ int readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 int readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
 {
 
+	/*
+	 * This Function processes the MCPS_DATA_CONFIRM and passes the success or error
+	 * to openthread as appropriate.
+	 */
+
     if(params->Status == MAC_SUCCESS){
     	otPlatRadioTransmitDone(false, sTransmitError);
     }
@@ -896,6 +938,12 @@ int readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
 
 int beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params) //Async
 {
+
+	/*
+	 * This Function processes an incoming beacon from an activeScan, processing the payload
+	 * and passing the relevant information to openthread in a struct.
+	 */
+
 	otActiveScanResult resultStruct;
 
 	/*fprintf(stderr, "\n\rBeaconotify frame: ");
@@ -948,7 +996,12 @@ exit:
 }
 
 int genericDispatchFrame(const uint8_t *buf, size_t len) { //Async
-	fprintf(stderr, "\n\rUnhandled frame: ");
+
+	/*
+	 * This is a debugging function for unhandled incoming MAC data
+	 */
+
+	fprintf(stderr, "\n\rUnhandled: ");
 	for(int i = 0; i < len; i++) {
 		fprintf(stderr, "%02x ", buf[i]);
 	}
