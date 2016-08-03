@@ -1,6 +1,6 @@
 import socket
   
-UDP_IP = "::" # = 0.0.0.0 u IPv4
+UDP_IP = "fe80::ba27:ebff:fed1:96ba" # = 0.0.0.0 u IPv4
 UDP_PORT = 5005
 
 sock = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM, 0)
