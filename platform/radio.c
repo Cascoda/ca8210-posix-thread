@@ -585,7 +585,6 @@ ThreadError otPlatRadioReceive(uint8_t aChannel)
 
     setChannel(aChannel);
 
-<<<<<<< HEAD
 	#ifdef EXECUTE_MODE
     	//uint8_t HWMEAttVal = 36; //0x24
     	uint8_t HWMEAttVal[5] = {0x24, 00, 00, 00, 00};
@@ -599,21 +598,6 @@ ThreadError otPlatRadioReceive(uint8_t aChannel)
 		else return kThreadError_Failed;
 
 	#endif
-=======
-#ifdef EXECUTE_MODE
-
-	uint8_t HWMEAttVal = 36; //0x24
-	if (HWME_GET_request_sync (
-		HWME_POWERCON,
-		1,
-		&HWMEAttVal,
-		pDeviceRef
-		) == HWME_SUCCESS)
-		return kThreadError_None;
-	else return kThreadError_Failed;
-
-#endif
->>>>>>> ce8fae75a35cdd23f2b18cb23282fd28ad495386
 
 exit:
     return error;
