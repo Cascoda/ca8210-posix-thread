@@ -54,7 +54,6 @@
 #define MAC_SC_KEYIDMODE(sc) ((sc>>3)&0x03)
 #define MAC_KEYIDMODE_SC(keyidmode) ((keyidmode&0x03)<<3)
 #define MAC_BASEHEADERLENGTH 3
-#define EXECUTE_MODE 1
 
 enum
 {
@@ -100,16 +99,6 @@ static uint8_t payloadLength = 32;
 
 pthread_mutex_t receiveFrame_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t receiveFrame_cond = PTHREAD_COND_INITIALIZER;
-
-typedef enum PhyState
-{
-    kStateDisabled = 0,
-    kStateSleep,
-    kStateIdle,
-    kStateListen,
-    kStateReceive,
-    kStateTransmit,
-} PhyState;
 
 static PhyState sState;
 
@@ -507,7 +496,6 @@ ThreadError otPlatRadioEnable(void)    //TODO:(lowpriority) port
     sState = kStateSleep;
 
 	#ifdef EXECUTE_MODE
-    	//uint8_t HWMEAttVal = 0; //0x00
     	uint8_t HWMEAttVal[5] = {00, 00, 00, 00, 00};
     	if (HWME_SET_request_sync (
     		HWME_POWERCON,
@@ -529,12 +517,11 @@ ThreadError otPlatRadioDisable(void)    //TODO:(lowpriority) port
 {
     ThreadError error = kThreadError_None;
 
-    VerifyOrExit(sState == kStateIdle, error = kThreadError_Busy);
+    VerifyOrExit(sState != kStateDisabled, error = kThreadError_Busy);
     sState = kStateDisabled;
 
     //should sleep until restarted
 	#ifdef EXECUTE_MODE
-    	//uint8_t HWMEAttVal = 10; //0x0A
     	uint8_t HWMEAttVal[5] = {0x0A, 00, 00, 00, 00};
     	if (HWME_SET_request_sync (
     		HWME_POWERCON,
@@ -559,7 +546,6 @@ ThreadError otPlatRadioSleep(void)    //TODO:(lowpriority) port
     sState = kStateSleep;
 
 	#ifdef EXECUTE_MODE
-    	//uint8_t HWMEAttVal = 42; //0x2A
     	uint8_t HWMEAttVal[5] = {0x2A, 00, 00, 00, 00};
 		if (HWME_SET_request_sync (
 			HWME_POWERCON,
@@ -580,18 +566,17 @@ ThreadError otPlatRadioReceive(uint8_t aChannel)
 {
     ThreadError error = kThreadError_None;
 
-    VerifyOrExit(sState == kStateIdle, error = kThreadError_Busy);
-    sState = kStateListen;
+    VerifyOrExit(sState != kStateDisabled, error = kThreadError_Busy);
+    sState = kStateReceive;
 
     setChannel(aChannel);
 
 	#ifdef EXECUTE_MODE
-    	//uint8_t HWMEAttVal = 36; //0x24
     	uint8_t HWMEAttVal[5] = {0x24, 00, 00, 00, 00};
 		if (HWME_GET_request_sync (
 			HWME_POWERCON,
 			5,
-			&HWMEAttVal,
+			HWMEAttVal,
 			pDeviceRef
 			) == HWME_SUCCESS)
 			return kThreadError_None;
@@ -864,7 +849,7 @@ int readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 
     pthread_mutex_unlock(&receiveFrame_mutex);
 
-	sState = kStateIdle;
+	sState = kStateReceive;
 	otPlatRadioReceiveDone(&sReceiveFrame, sReceiveError);
 
     PlatformRadioProcess();
@@ -887,7 +872,7 @@ int readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
     	if(params->Status == MAC_CHANNEL_ACCESS_FAILURE) sTransmitError = kThreadError_ChannelAccessFailure;
     	else if(params->Status == MAC_NO_ACK) sTransmitError = kThreadError_NoAck;
     	else sTransmitError = kThreadError_Abort;
-    	sState = kStateIdle;
+    	sState = kStateReceive;
     	fprintf(stderr, "\n\rMCPS_DATA_confirm error: %#x \r\n", params->Status);
     	otPlatRadioTransmitDone(false, sTransmitError);
     }
@@ -966,7 +951,6 @@ int genericDispatchFrame(const uint8_t *buf, size_t len) { //Async
 }
 
 int PlatformRadioProcess(void)    //TODO: port - This should be the callback in future for data receive
-
 {
 	pthread_mutex_lock(&receiveFrame_mutex);
 
