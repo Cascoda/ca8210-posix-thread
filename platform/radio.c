@@ -29,7 +29,7 @@
 /**
  * @file
  *   This file implements the OpenThread platform abstraction for radio communication.
- * pp
+ *
  */
 
 #include <openthread-types.h>
@@ -123,18 +123,7 @@ void setChannel(uint8_t channel)
     	        &channel,
     	        pDeviceRef);
         sChannel = channel;
-        //fprintf(stderr, "\n\rCurrent channel changed to: %d\n\r", sChannel);
     }
-}
-
-void enableReceiver(void)
-{
-    // nothing
-}
-
-void disableReceiver(void)
-{
-    //nothing
 }
 
 ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandleActiveScanResult aCallback)
@@ -154,7 +143,6 @@ ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandl
 			ScanDuration,
 			&pSecurity,
 			pDeviceRef);
-	//fprintf(stderr, "\n\r\nScanning request: %x\n\r\n", scanRequest);
 	return scanRequest;
 }
 
@@ -173,7 +161,6 @@ ThreadError otPlatSetNetworkName(const char *aNetworkName) {
 			1,
 			&payloadLength,
 			pDeviceRef) == MAC_SUCCESS)) {
-		//fprintf(stderr, "\n\r\nSetting the payload: %x\n\r\n", mBeaconPayload);
         return kThreadError_None;
 	}
 	else return kThreadError_Failed;
@@ -194,7 +181,6 @@ ThreadError otPlatSetExtendedPanId(const uint8_t *aExtPanId) {
 			1,
 			&payloadLength,
 			pDeviceRef) == MAC_SUCCESS)) {
-		//fprintf(stderr, "\n\r\nSetting the payload: %x\n\r\n", mBeaconPayload);
 		return kThreadError_None;
 	}
 
@@ -267,7 +253,7 @@ void PlatformRadioInit(void)
     callbacks.MCPS_DATA_confirm = &readConfirmFrame;
     callbacks.MLME_BEACON_NOTIFY_indication = &beaconNotifyFrame;
     callbacks.MLME_SCAN_confirm = &scanConfirmCheck;
-    //callbacks.generic_dispatch = &genericDispatchFrame;
+    //callbacks.generic_dispatch = &genericDispatchFrame;	//UNCOMMENT TO ENABLE VIEWING UNHANDLED FRAMES
     cascoda_register_callbacks(&callbacks);
     
     uint8_t enable = 1;	//enable security
@@ -328,7 +314,6 @@ void coordChangedCallback(uint32_t aFlags, void *aContext) {
 						&securityLevel,
 						&securityLevel,
 						pDeviceRef);
-				//fprintf(stderr, "\n\r\n!!! I'm a Coord: %d !!!\n\r\n", scanRequest);
 				isCoord = 1;
 			}
 		} else if (isCoord) {
@@ -343,7 +328,6 @@ void coordChangedCallback(uint32_t aFlags, void *aContext) {
 					&securityLevel,
 					&securityLevel,
 					pDeviceRef);
-			//fprintf(stderr, "\n\r\n*** NOT a Coord ***\n\r\n");
 			isCoord = 0;
 		}
 	}
@@ -382,7 +366,6 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 
 				PUTLE16(otGetPanId() ,tDeviceDescriptor.PANId);
 				PUTLE16(tChildInfo.mRloc16, tDeviceDescriptor.ShortAddress);
-				//memcpy(tDeviceDescriptor.ExtAddress, tChildInfo.mExtAddress.m8, 8);
 				for(int j = 0; j < 8; j++) tDeviceDescriptor.ExtAddress[j] = tChildInfo.mExtAddress.m8[7-j];	//Flip endian
 				tDeviceDescriptor.FrameCounter[0] = 0;	//TODO: Figure out how to do frame counter properly - this method is temporarily breaking replay protection as replays using previous key will still be successful
 				tDeviceDescriptor.FrameCounter[1] = 0;
@@ -411,7 +394,6 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 
 				PUTLE16(otGetPanId() ,tDeviceDescriptor.PANId);
 				PUTLE16(routers[i].mRloc16, tDeviceDescriptor.ShortAddress);
-				//memcpy(tDeviceDescriptor.ExtAddress, tChildInfo.mExtAddress.m8, 8);
 				for(int j = 0; j < 8; j++) tDeviceDescriptor.ExtAddress[j] = routers[i].mExtAddress.m8[7-j];	//Flip endian
 				tDeviceDescriptor.FrameCounter[0] = 0;	//TODO: Figure out how to do frame counter properly - this method is temporarily breaking replay protection as replays using previous key will still be successful
 				tDeviceDescriptor.FrameCounter[1] = 0;
@@ -436,7 +418,6 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 
 				PUTLE16(otGetPanId(), tDeviceDescriptor.PANId);
 				PUTLE16(tParentInfo.mRloc16, tDeviceDescriptor.ShortAddress);
-				//memcpy(tDeviceDescriptor.ExtAddress, tParentInfo.mExtAddress.m8, 8);
 				for(int j = 0; j < 8; j++) tDeviceDescriptor.ExtAddress[j] = tParentInfo.mExtAddress.m8[7-j];	//Flip endian
 				tDeviceDescriptor.FrameCounter[0] = 0;	//TODO: Figure out how to do frame counter properly - this method is temporarily breaking replay protection as replays using previous key will still be successful
 				tDeviceDescriptor.FrameCounter[1] = 0;
@@ -604,6 +585,7 @@ ThreadError otPlatRadioReceive(uint8_t aChannel)
 
     setChannel(aChannel);
 
+<<<<<<< HEAD
 	#ifdef EXECUTE_MODE
     	//uint8_t HWMEAttVal = 36; //0x24
     	uint8_t HWMEAttVal[5] = {0x24, 00, 00, 00, 00};
@@ -617,6 +599,21 @@ ThreadError otPlatRadioReceive(uint8_t aChannel)
 		else return kThreadError_Failed;
 
 	#endif
+=======
+#ifdef EXECUTE_MODE
+
+	uint8_t HWMEAttVal = 36; //0x24
+	if (HWME_GET_request_sync (
+		HWME_POWERCON,
+		1,
+		&HWMEAttVal,
+		pDeviceRef
+		) == HWME_SUCCESS)
+		return kThreadError_None;
+	else return kThreadError_Failed;
+
+#endif
+>>>>>>> ce8fae75a35cdd23f2b18cb23282fd28ad495386
 
 exit:
     return error;
@@ -638,7 +635,10 @@ ThreadError otPlatRadioTransmit(void)
     static uint8_t handle = 0;
     handle++;
 
-    VerifyOrExit(sState == kStateIdle, error = kThreadError_Busy);
+    otPlatRadioEnable();
+
+    VerifyOrExit(sState != kStateDisabled, error = kThreadError_Busy);
+
     uint16_t frameControl = GETLE16(sTransmitFrame.mPsdu);
     VerifyOrExit((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_DATA, error = kThreadError_Abort);
 
@@ -654,7 +654,6 @@ ThreadError otPlatRadioTransmit(void)
     sTransmitError = kThreadError_None;
 
     setChannel(sTransmitFrame.mChannel);
-    enableReceiver();
 
     //transmit
     struct MCPS_DATA_request_pset curPacket;
@@ -730,12 +729,6 @@ ThreadError otPlatRadioTransmit(void)
     //PlatformRadioProcess();
 
 exit:
-
-    if (sTransmitError != kThreadError_None || (sTransmitFrame.mPsdu[0] & IEEE802154_ACK_REQUEST) == 0)
-    {
-        disableReceiver();
-    }
-
     return error;
 }
 
@@ -793,9 +786,6 @@ int readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 	uint16_t frameControl = 0;
 	uint8_t msduLength = params->MsduLength;
 	struct SecSpec * curSecSpec = (struct SecSpec*)((unsigned int)params + (unsigned int)msduLength + 29); //Location defined in cascoda API docs
-
-	//TODO: Move this
-	#define CASCODA_DATAIND_SEC_LOC 29
 
 	frameControl |= (params->Src.AddressMode & 0x3) << 14;
 	frameControl |= (params->Dst.AddressMode & 0x3) << 10;
@@ -935,11 +925,6 @@ int beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params) //Async
 
 	otActiveScanResult resultStruct;
 
-	/*fprintf(stderr, "\n\rBeaconotify frame: ");
-	for(int i = 0; i < 38; i++) {
-		fprintf(stderr, " %x ", ((uint8_t*)params)[i]);
-	}*/
-
 	uint8_t shortaddrs  = *((uint8_t*)params + 23) & 7;
 	uint8_t extaddrs = (*((uint8_t*)params + 23) & 112) >> 4;
 	if ((params->PanDescriptor.Coord.AddressMode) == 3) {
@@ -1004,11 +989,6 @@ int PlatformRadioProcess(void)    //TODO: port - This should be the callback in 
     sReceiveFrame.mLength = 0;
     pthread_cond_broadcast(&receiveFrame_cond);
     pthread_mutex_unlock(&receiveFrame_mutex);
-
-    if (sState == kStateIdle)
-    {
-        disableReceiver();
-    }
 
     return 0;
 }
