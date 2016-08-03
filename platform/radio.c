@@ -101,16 +101,6 @@ static uint8_t payloadLength = 32;
 pthread_mutex_t receiveFrame_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t receiveFrame_cond = PTHREAD_COND_INITIALIZER;
 
-typedef enum PhyState
-{
-    kStateDisabled = 0,
-    kStateSleep,
-    kStateIdle,
-    kStateListen,
-    kStateReceive,
-    kStateTransmit,
-} PhyState;
-
 static PhyState sState;
 
 void setChannel(uint8_t channel)
@@ -966,7 +956,6 @@ int genericDispatchFrame(const uint8_t *buf, size_t len) { //Async
 }
 
 int PlatformRadioProcess(void)    //TODO: port - This should be the callback in future for data receive
-
 {
 	pthread_mutex_lock(&receiveFrame_mutex);
 
