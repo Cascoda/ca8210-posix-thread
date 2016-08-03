@@ -54,7 +54,6 @@
 #define MAC_SC_KEYIDMODE(sc) ((sc>>3)&0x03)
 #define MAC_KEYIDMODE_SC(keyidmode) ((keyidmode&0x03)<<3)
 #define MAC_BASEHEADERLENGTH 3
-#define EXECUTE_MODE 1
 
 enum
 {
@@ -518,7 +517,7 @@ ThreadError otPlatRadioDisable(void)    //TODO:(lowpriority) port
 {
     ThreadError error = kThreadError_None;
 
-    VerifyOrExit(sState == kStateSleep, error = kThreadError_Busy);
+    VerifyOrExit(sState != kStateDisabled, error = kThreadError_Busy);
     sState = kStateDisabled;
 
     //should sleep until restarted
@@ -543,7 +542,7 @@ ThreadError otPlatRadioSleep(void)    //TODO:(lowpriority) port
 {
     ThreadError error = kThreadError_None;
 
-    VerifyOrExit(sState == kStateReceive, error = kThreadError_Busy);
+    VerifyOrExit(sState != kStateDisabled, error = kThreadError_Busy);
     sState = kStateSleep;
 
 	#ifdef EXECUTE_MODE
@@ -567,7 +566,7 @@ ThreadError otPlatRadioReceive(uint8_t aChannel)
 {
     ThreadError error = kThreadError_None;
 
-    VerifyOrExit(sState == kStateSleep, error = kThreadError_Busy);
+    VerifyOrExit(sState != kStateDisabled, error = kThreadError_Busy);
     sState = kStateReceive;
 
     setChannel(aChannel);
@@ -577,7 +576,7 @@ ThreadError otPlatRadioReceive(uint8_t aChannel)
 		if (HWME_GET_request_sync (
 			HWME_POWERCON,
 			5,
-			&HWMEAttVal,
+			HWMEAttVal,
 			pDeviceRef
 			) == HWME_SUCCESS)
 			return kThreadError_None;
