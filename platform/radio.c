@@ -101,8 +101,6 @@ static uint8_t payloadLength = 32;
 pthread_mutex_t receiveFrame_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t receiveFrame_cond = PTHREAD_COND_INITIALIZER;
 
-static PhyState sState;
-
 void setChannel(uint8_t channel)
 {
     if(sChannel != channel){
@@ -493,9 +491,6 @@ ThreadError otPlatRadioEnable(void)    //TODO:(lowpriority) port
 {
     ThreadError error = kThreadError_None;
 
-    VerifyOrExit(sState == kStateDisabled, error = kThreadError_Busy);
-    sState = kStateSleep;
-
 	#ifdef EXECUTE_MODE
     	uint8_t HWMEAttVal[5] = {00, 00, 00, 00, 00};
     	if (HWME_SET_request_sync (
@@ -517,9 +512,6 @@ exit:
 ThreadError otPlatRadioDisable(void)    //TODO:(lowpriority) port 
 {
     ThreadError error = kThreadError_None;
-
-    VerifyOrExit(sState == kStateSleep, error = kThreadError_Busy);
-    sState = kStateDisabled;
 
     //should sleep until restarted
 	#ifdef EXECUTE_MODE
@@ -543,9 +535,6 @@ ThreadError otPlatRadioSleep(void)    //TODO:(lowpriority) port
 {
     ThreadError error = kThreadError_None;
 
-    VerifyOrExit(sState == kStateReceive, error = kThreadError_Busy);
-    sState = kStateSleep;
-
 	#ifdef EXECUTE_MODE
     	uint8_t HWMEAttVal[5] = {0x2A, 00, 00, 00, 00};
 		if (HWME_SET_request_sync (
@@ -566,9 +555,6 @@ exit:
 ThreadError otPlatRadioReceive(uint8_t aChannel)
 {
     ThreadError error = kThreadError_None;
-
-    VerifyOrExit(sState == kStateSleep || sState == kStateTransmit, error = kThreadError_Busy);
-    sState = kStateReceive;
 
     setChannel(aChannel);
 
@@ -607,8 +593,6 @@ ThreadError otPlatRadioTransmit(void)
 
     otPlatRadioEnable();
 
-    VerifyOrExit(sState != kStateDisabled, error = kThreadError_Busy);
-    sState = kStateTransmit;
     sTransmitError = kThreadError_None;
 
     uint16_t frameControl = GETLE16(sTransmitFrame.mPsdu);
@@ -849,7 +833,6 @@ int readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 
     pthread_mutex_unlock(&receiveFrame_mutex);
 
-	sState = kStateReceive;
 	otPlatRadioReceiveDone(&sReceiveFrame, sReceiveError);
 
     PlatformRadioProcess();
@@ -872,7 +855,6 @@ int readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
     	if(params->Status == MAC_CHANNEL_ACCESS_FAILURE) sTransmitError = kThreadError_ChannelAccessFailure;
     	else if(params->Status == MAC_NO_ACK) sTransmitError = kThreadError_NoAck;
     	else sTransmitError = kThreadError_Abort;
-    	sState = kStateReceive;
     	fprintf(stderr, "\n\rMCPS_DATA_confirm error: %#x \r\n", params->Status);
     	otPlatRadioTransmitDone(false, sTransmitError);
     }
