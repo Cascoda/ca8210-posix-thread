@@ -573,7 +573,7 @@ ThreadError otPlatRadioReceive(uint8_t aChannel)
 
 	#ifdef EXECUTE_MODE
     	uint8_t HWMEAttVal[5] = {0x24, 00, 00, 00, 00};
-		if (HWME_GET_request_sync (
+		if (HWME_SET_request_sync (
 			HWME_POWERCON,
 			5,
 			HWMEAttVal,
