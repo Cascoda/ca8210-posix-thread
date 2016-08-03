@@ -567,7 +567,7 @@ ThreadError otPlatRadioReceive(uint8_t aChannel)
 {
     ThreadError error = kThreadError_None;
 
-    VerifyOrExit(sState == kStateSleep, error = kThreadError_Busy);
+    VerifyOrExit(sState == kStateSleep || sState == kStateTransmit, error = kThreadError_Busy);
     sState = kStateReceive;
 
     setChannel(aChannel);
@@ -608,6 +608,8 @@ ThreadError otPlatRadioTransmit(void)
     otPlatRadioEnable();
 
     VerifyOrExit(sState != kStateDisabled, error = kThreadError_Busy);
+    sState = kStateTransmit;
+    sTransmitError = kThreadError_None;
 
     uint16_t frameControl = GETLE16(sTransmitFrame.mPsdu);
     VerifyOrExit((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_DATA, error = kThreadError_Abort);
@@ -619,9 +621,6 @@ ThreadError otPlatRadioTransmit(void)
     }
     fputs("\r\n",stderr);
 */
-
-    sState = kStateTransmit;
-    sTransmitError = kThreadError_None;
 
     setChannel(sTransmitFrame.mChannel);
 
