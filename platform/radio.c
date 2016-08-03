@@ -595,30 +595,14 @@ exit:
     return error;
 }
 
-ThreadError otPlatRadioIdle(void)    //TODO:(lowpriority) port 
+ThreadError otPlatRadioReceive(uint8_t aChannel)
 {
     ThreadError error = kThreadError_None;
 
-    switch (sState)
-    {
-    case kStateSleep:
-        sState = kStateIdle;
-        break;
+    VerifyOrExit(sState == kStateIdle, error = kThreadError_Busy);
+    sState = kStateListen;
 
-    case kStateIdle:
-        break;
-
-    case kStateListen:
-    case kStateTransmit:
-        disableReceiver();
-        sState = kStateIdle;
-        break;
-
-    case kStateReceive:
-    case kStateDisabled:
-        ExitNow(error = kThreadError_Busy);
-        break;
-    }
+    setChannel(aChannel);
 
 	#ifdef EXECUTE_MODE
     	//uint8_t HWMEAttVal = 36; //0x24
@@ -633,20 +617,6 @@ ThreadError otPlatRadioIdle(void)    //TODO:(lowpriority) port
 		else return kThreadError_Failed;
 
 	#endif
-
-exit:
-    return error;
-}
-ThreadError otPlatRadioReceive(uint8_t aChannel)
-{
-    ThreadError error = kThreadError_None;
-
-    VerifyOrExit(sState == kStateIdle, error = kThreadError_Busy);
-    sState = kStateListen;
-
-    setChannel(aChannel);
-
-    enableReceiver();
 
 exit:
     return error;
