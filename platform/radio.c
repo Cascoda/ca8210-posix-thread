@@ -577,7 +577,7 @@ ThreadError otPlatRadioReceive(uint8_t aChannel)
 		if (HWME_GET_request_sync (
 			HWME_POWERCON,
 			5,
-			&HWMEAttVal,
+			HWMEAttVal,
 			pDeviceRef
 			) == HWME_SUCCESS)
 			return kThreadError_None;
