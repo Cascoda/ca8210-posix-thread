@@ -3,7 +3,7 @@ import socket
 UDP_IP = "::" # = 0.0.0.0 u IPv4
 UDP_PORT = 5005
 
-sock = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
+sock = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM, 0)
 sock.bind((UDP_IP, UDP_PORT, 0, 0))
 
 while True:
