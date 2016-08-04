@@ -2,3 +2,6 @@
 	path = openthread
 	url = ../openthread.git
 	branch = hardmac
+[submodule "cascoda"]
+	path = cascoda
+	url = https://github.com/Cascoda/cascoda-api.git
