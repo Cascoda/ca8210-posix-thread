@@ -706,9 +706,9 @@ int8_t otPlatRadioGetNoiseFloor(void)    //TODO:(lowpriority) port
     return 0;
 }
 
-otRadioCaps otPlatRadioGetCaps(void)    //TODO:(lowpriority) port 
+otRadioCaps otPlatRadioGetCaps(void)
 {
-    return kRadioCapsNone;
+    return kRadioCapsAckTimeout;
 }
 
 bool otPlatRadioGetPromiscuous(void)
