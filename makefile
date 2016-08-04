@@ -1,4 +1,4 @@
-SUBDIRS = app cascoda openthread platform
+SUBDIRS = app ca8210-kernel-exchange openthread platform
 CLEANSUBDIRS := $(addsuffix .clean,$(SUBDIRS))
 CFLAGS = -g
 LDFLAGS = -pthread
@@ -10,7 +10,7 @@ subdirs: $(SUBDIRS)
 $(SUBDIRS):
 	$(MAKE) -C $@
 
-app: cascoda openthread platform
+app: ca8210-kernel-exchange openthread platform
 
 clean: $(CLEANSUBDIRS)
 
