@@ -9,7 +9,7 @@ INCLUDEDIRS := ./\
 	../openthread/src/core/\
 	./include/\
 	../platform/\
-	../ca8210-kernel-exchange/cascoda/include/\
+	../ca8210-kernel-exchange/cascoda-api/include/\
 	../ca8210-kernel-exchange/
 INCLUDEDIRCMD := $(addprefix -I,$(INCLUDEDIRS)) 
 CFLAGS := $(INCLUDEDIRCMD) -g -Wall -pthread
