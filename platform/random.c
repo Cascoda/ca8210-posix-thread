@@ -40,6 +40,11 @@
 #include <hwme_tdme.h>
 #include <assert.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 static uint32_t s_state = 1;
 
 void posixPlatformRandomInit(void)
@@ -69,8 +74,19 @@ uint32_t otPlatRandomGet(void)
 			NULL);
 
     if(length1 != 2 || length2 != 2){
-    	assert(0);
-    	//TODO: Use a second method of randomness
+
+    	uint32_t rnum = 0;
+		int fd = open("/dev/urandom", O_RDONLY);
+		if (fd != -1)
+		{
+			(void) read(fd, (void *)&rnum, sizeof(rnum));
+			(void) close(fd);
+		}
+		else{
+			assert(0); //All attempts at randomness have failed
+		}
+
+		return rnum;
     }
 
     return randomBytes.rand32i;
