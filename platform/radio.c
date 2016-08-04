@@ -97,6 +97,8 @@ static uint8_t sReceivePsdu[IEEE802154_MAX_LENGTH];
 static uint8_t mBeaconPayload[32] = {3, 0x91};
 static uint8_t payloadLength = 32;
 
+static int8_t noiseFloor = 127;
+
 pthread_mutex_t receiveFrame_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t receiveFrame_cond = PTHREAD_COND_INITIALIZER;
 
@@ -710,7 +712,7 @@ exit:
 
 int8_t otPlatRadioGetNoiseFloor(void)    //TODO:(lowpriority) port 
 {
-    return 0;
+    return noiseFloor;
 }
 
 otRadioCaps otPlatRadioGetCaps(void)
@@ -845,7 +847,7 @@ int readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 	sReceiveFrame.mLqi = params->MpduLinkQuality;
 	sReceiveFrame.mChannel = sChannel;
 	sReceiveFrame.mPower = (params->MpduLinkQuality - 256)/2;	//Formula from CA-821X API
-
+	noiseFloor = sReceiveFrame.mPower;
 
 /*
 	fputs("\r\nReceived:",stderr);
@@ -912,6 +914,7 @@ int beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params) //Async
 	resultStruct.mPanId = GETLE16(params->PanDescriptor.Coord.PANId);
 	resultStruct.mChannel = params->PanDescriptor.LogicalChannel;
 	resultStruct.mRssi = (params->PanDescriptor.LinkQuality - 256)/2;
+	noiseFloor = resultStruct.mRssi;
 	resultStruct.mLqi = params->PanDescriptor.LinkQuality;
 	VerifyOrExit(params->PanDescriptor.Security.SecurityLevel == 0,;);
 	//Asset security = 0
