@@ -2,6 +2,6 @@
 	path = openthread
 	url = ../openthread.git
 	branch = hardmac
-[submodule "cascoda"]
-	path = cascoda
-	url = https://github.com/Cascoda/cascoda-api.git
+[submodule "ca8210-kernel-exchange"]
+	path = ca8210-kernel-exchange
+	url = https://github.com/CiaranWoodward/ca8210-kernel-exchange.git

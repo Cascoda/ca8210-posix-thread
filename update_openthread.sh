@@ -1,4 +1,4 @@
-git submodule update --init
+git submodule update --init --recursive
 
 #cd openthread
 #git pull

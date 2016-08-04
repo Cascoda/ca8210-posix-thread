@@ -1,7 +1,7 @@
 TARGET = cliapp
-LIBDIRS = ../openthread/src/cli/ ../openthread/src/core/ ../cascoda/ ../platform/ ../openthread/third_party/mbedtls/
+LIBDIRS = ../openthread/src/cli/ ../openthread/src/core/ ../ca8210-kernel-exchange/ ../platform/ ../openthread/third_party/mbedtls/
 LIBSEARCH := $(addprefix -L,$(LIBDIRS))
-LIBS = -lm -lopenthread -lopenthread-cli -lraspcascoda -lcascoda -lmbedcrypto -lstdc++ -lpthread
+LIBS = -lm -lopenthread -lopenthread-cli -lraspcascoda -lca8210 -lmbedcrypto -lstdc++ -lpthread
 CC = gcc
 INCLUDEDIRS := ./\
 	../openthread/include/cli/\
@@ -9,7 +9,8 @@ INCLUDEDIRS := ./\
 	../openthread/src/core/\
 	./include/\
 	../platform/\
-	../cascoda/include/
+	../ca8210-kernel-exchange/cascoda/include/\
+	../ca8210-kernel-exchange/
 INCLUDEDIRCMD := $(addprefix -I,$(INCLUDEDIRS)) 
 CFLAGS := $(INCLUDEDIRCMD) -g -Wall -pthread
 
