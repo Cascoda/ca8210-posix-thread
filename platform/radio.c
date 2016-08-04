@@ -269,6 +269,13 @@ void PlatformRadioInit(void)
 		defaultKeySource,
 		pDeviceRef);
 
+	uint8_t LQImode = HWME_LQIMODE_ED;	//LQI values should be derived from receive energy
+	HWME_SET_request_sync(
+		HWME_LQIMODE,
+		1,
+		&LQImode,
+		pDeviceRef);
+
 }
 
 void otHardMacStateChangeCallback(uint32_t aFlags, void *aContext){
@@ -837,7 +844,8 @@ int readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 	memcpy(sReceiveFrame.mPsdu + headerLength, params->Msdu, params->MsduLength);
 	sReceiveFrame.mLqi = params->MpduLinkQuality;
 	sReceiveFrame.mChannel = sChannel;
-	sReceiveFrame.mPower = -20;
+	sReceiveFrame.mPower = (params->MpduLinkQuality - 256)/2;	//Formula from CA-821X API
+
 
 /*
 	fputs("\r\nReceived:",stderr);
@@ -903,7 +911,7 @@ int beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params) //Async
 	}
 	resultStruct.mPanId = GETLE16(params->PanDescriptor.Coord.PANId);
 	resultStruct.mChannel = params->PanDescriptor.LogicalChannel;
-	resultStruct.mRssi = -20;
+	resultStruct.mRssi = (params->PanDescriptor.LinkQuality - 256)/2;
 	resultStruct.mLqi = params->PanDescriptor.LinkQuality;
 	VerifyOrExit(params->PanDescriptor.Security.SecurityLevel == 0,;);
 	//Asset security = 0
