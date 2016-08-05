@@ -26,7 +26,6 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#define OPENTHREAD_CORE_HAVE_PROJECT_SPECIFIC_CONFIG 1
 
 #include <stdlib.h>
 #include <stdio.h>
