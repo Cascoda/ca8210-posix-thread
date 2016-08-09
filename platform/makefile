@@ -6,7 +6,8 @@ INCLUDEDIRS := ./\
 	../openthread/include/cli/\
 	../openthread/include/crypto/\
 	../openthread/include/\
-	../cascoda/include/\
+	../ca8210-kernel-exchange/cascoda-api/include/\
+	../ca8210-kernel-exchange/\
 	../openthread/src/core/\
 	../openthread/src/core/common/
 INCLUDEDIRCMD := $(addprefix -I,$(INCLUDEDIRS)) 

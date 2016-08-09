@@ -36,32 +36,59 @@
 
 #include <platform/random.h>
 #include <posix-platform.h>
+#include <cascoda_api.h>
+#include <hwme_tdme.h>
+#include <assert.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 static uint32_t s_state = 1;
 
 void posixPlatformRandomInit(void)
 {
-    s_state = NODE_ID;
+    //nothing
 }
 
 uint32_t otPlatRandomGet(void)
 {
-    uint32_t mlcg, p, q;
-    uint64_t tmpstate;
 
-    tmpstate = (uint64_t)33614 * (uint64_t)s_state;
-    q = tmpstate & 0xffffffff;
-    q = q >> 1;
-    p = tmpstate >> 32;
-    mlcg = p + q;
+	uint8_t length1, length2;
 
-    if (mlcg & 0x80000000)
-    {
-        mlcg &= 0x7fffffff;
-        mlcg++;
+	union randBytes{
+		uint8_t randb[4];
+		uint32_t rand32i;
+	} randomBytes;
+
+    HWME_GET_request_sync(
+    		HWME_RANDOMNUM,
+			&length1,
+			randomBytes.randb,
+			NULL);
+    HWME_GET_request_sync(
+			HWME_RANDOMNUM,
+			&length2,
+			randomBytes.randb + 2,
+			NULL);
+
+    if(length1 != 2 || length2 != 2){
+
+    	uint32_t rnum = 0;
+		int fd = open("/dev/urandom", O_RDONLY);
+		if (fd != -1)
+		{
+			(void) read(fd, (void *)&rnum, sizeof(rnum));
+			(void) close(fd);
+		}
+		else{
+			assert(0); //All attempts at randomness have failed
+		}
+
+		return rnum;
     }
 
-    s_state = mlcg;
+    return randomBytes.rand32i;
 
-    return mlcg;
 }
