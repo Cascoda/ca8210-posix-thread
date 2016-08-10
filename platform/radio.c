@@ -902,6 +902,12 @@ int beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params) //Async
 	 * and passing the relevant information to openthread in a struct.
 	 */
 
+	fprintf(stderr, "\n\rBeaconotify frame: ");
+	 	for(int i = 0; i < 58; i++) {
+	 		fprintf(stderr, " %x ", ((uint8_t*)params)[i]);
+	 	}
+
+
 	otActiveScanResult resultStruct;
 
 	uint8_t shortaddrs  = *((uint8_t*)params + 23) & 7;
