@@ -903,7 +903,7 @@ int beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params) //Async
 	 */
 
 	fprintf(stderr, "\n\rBeaconotify frame: ");
-	 	for(int i = 0; i < 58; i++) {
+	 	for(int i = 0; i < 57; i++) {
 	 		fprintf(stderr, " %x ", ((uint8_t*)params)[i]);
 	 	}
 
