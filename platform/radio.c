@@ -902,18 +902,11 @@ int beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params) //Async
 	 * and passing the relevant information to openthread in a struct.
 	 */
 
-	fprintf(stderr, "\n\rBeaconotify frame: ");
-	 	for(int i = 0; i < 57; i++) {
-	 		fprintf(stderr, " %x ", ((uint8_t*)params)[i]);
-	 	}
-
-
 	otActiveScanResult resultStruct;
 
 	uint8_t shortaddrs  = *((uint8_t*)params + 23) & 7;
 	uint8_t extaddrs = (*((uint8_t*)params + 23) & 112) >> 4;
-	fprintf(stderr, "\r\n Coord Address Mode: %d\r\n", params->PanDescriptor.Coord.AddressMode);
-	fprintf(stderr, "\r\n Coord Address: %x\r\n", params->PanDescriptor.Coord.Address);
+
 	if ((params->PanDescriptor.Coord.AddressMode) == 3) {
 		memcpy(resultStruct.mExtAddress.m8, params->PanDescriptor.Coord.Address, 8);
 	} else {
