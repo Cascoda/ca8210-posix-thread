@@ -139,7 +139,7 @@ ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandl
 
 ThreadError otPlatSetNetworkName(const char *aNetworkName) {
 
-	memcpy(mBeaconPayload + 4, aNetworkName, 16);
+	memcpy(mBeaconPayload + 2, aNetworkName, 16);
 	if ((MLME_SET_request_sync(
 			macBeaconPayload,
 			0,
@@ -159,7 +159,7 @@ ThreadError otPlatSetNetworkName(const char *aNetworkName) {
 
 ThreadError otPlatSetExtendedPanId(const uint8_t *aExtPanId) {
 
-	memcpy(mBeaconPayload + 20, aExtPanId, 8);
+	memcpy(mBeaconPayload + 18, aExtPanId, 8);
 	if ((MLME_SET_request_sync(
 			macBeaconPayload,
 			0,
