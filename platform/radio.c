@@ -931,8 +931,8 @@ int beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params) //Async
 		uint8_t *Sdu = (uint8_t*)params + (25 + 2 * shortaddrs + 8 * extaddrs);
 		uint8_t version = (*((uint8_t*)Sdu + 1) & 15);
 		if(*Sdu == 3 && version == 1) {
-			resultStruct.mNetworkName = ((char*)Sdu) + 4;
-			resultStruct.mExtPanId = Sdu + 20;
+			resultStruct.mNetworkName = ((char*)Sdu) + 2;
+			resultStruct.mExtPanId = Sdu + 18;
 			scanCallback(&resultStruct);
 		}
 	}
