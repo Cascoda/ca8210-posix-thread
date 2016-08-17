@@ -139,7 +139,7 @@ ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandl
 
 ThreadError otPlatSetNetworkName(const char *aNetworkName) {
 
-	memcpy(mBeaconPayload + 4, aNetworkName, 16);
+	memcpy(mBeaconPayload + 2, aNetworkName, 16);
 	if ((MLME_SET_request_sync(
 			macBeaconPayload,
 			0,
@@ -159,7 +159,7 @@ ThreadError otPlatSetNetworkName(const char *aNetworkName) {
 
 ThreadError otPlatSetExtendedPanId(const uint8_t *aExtPanId) {
 
-	memcpy(mBeaconPayload + 20, aExtPanId, 8);
+	memcpy(mBeaconPayload + 18, aExtPanId, 8);
 	if ((MLME_SET_request_sync(
 			macBeaconPayload,
 			0,
@@ -906,6 +906,7 @@ int beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params) //Async
 
 	uint8_t shortaddrs  = *((uint8_t*)params + 23) & 7;
 	uint8_t extaddrs = (*((uint8_t*)params + 23) & 112) >> 4;
+
 	if ((params->PanDescriptor.Coord.AddressMode) == 3) {
 		memcpy(resultStruct.mExtAddress.m8, params->PanDescriptor.Coord.Address, 8);
 	} else {
@@ -923,8 +924,8 @@ int beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params) //Async
 		uint8_t *Sdu = (uint8_t*)params + (25 + 2 * shortaddrs + 8 * extaddrs);
 		uint8_t version = (*((uint8_t*)Sdu + 1) & 15);
 		if(*Sdu == 3 && version == 1) {
-			resultStruct.mNetworkName = ((char*)Sdu) + 4;
-			resultStruct.mExtPanId = Sdu + 20;
+			resultStruct.mNetworkName = ((char*)Sdu) + 2;
+			resultStruct.mExtPanId = Sdu + 18;
 			scanCallback(&resultStruct);
 		}
 	}
