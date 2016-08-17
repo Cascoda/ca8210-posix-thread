@@ -843,7 +843,10 @@ int readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 
 	sReceiveFrame.mLength = params->MsduLength + footerLength + headerLength;
 
-	assert(sReceiveFrame.mLength <= aMaxPHYPacketSize);
+	if(sReceiveFrame.mLength > aMaxPHYPacketSize){
+		fprintf(stderr, "\n\rInvalid frame Length\r\n");
+		return 1;
+	}
 
 	memcpy(sReceiveFrame.mPsdu + headerLength, params->Msdu, params->MsduLength);
 	sReceiveFrame.mLqi = params->MpduLinkQuality;
@@ -916,7 +919,8 @@ int beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params) //Async
 	if ((params->PanDescriptor.Coord.AddressMode) == 3) {
 		memcpy(resultStruct.mExtAddress.m8, params->PanDescriptor.Coord.Address, 8);
 	} else {
-		assert(false);
+		fprintf(stderr, "\n\rINVALID BEACON RECEIVED\r\n");
+		return 1;
 	}
 	resultStruct.mPanId = GETLE16(params->PanDescriptor.Coord.PANId);
 	resultStruct.mChannel = params->PanDescriptor.LogicalChannel;
