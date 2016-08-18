@@ -27,7 +27,7 @@
  */
 
 #include <platform/misc.h>
-#include "platform-posix.h"
+#include "posix-platform.h"
 
 void otPlatReset(void)
 {
