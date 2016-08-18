@@ -109,7 +109,7 @@ void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat
 		break;
 
     case kLogRegionMeshCoP:
-		LOG_PRINTF("MCOP ");
+    	fprintf(stderr, "MCOP ");
 		break;
 	}
 
