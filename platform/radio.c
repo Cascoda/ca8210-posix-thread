@@ -755,6 +755,8 @@ int readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 	 * approves it.
 	 */
 
+	if(!otIsInterfaceUp()) return 1;
+
     pthread_mutex_lock(&receiveFrame_mutex);
 	//wait until the main thread is free to process the frame
 	while(sReceiveFrame.mLength != 0) {pthread_cond_wait(&receiveFrame_cond, &receiveFrame_mutex);}
@@ -841,7 +843,10 @@ int readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 
 	sReceiveFrame.mLength = params->MsduLength + footerLength + headerLength;
 
-	assert(sReceiveFrame.mLength <= aMaxPHYPacketSize);
+	if(sReceiveFrame.mLength > aMaxPHYPacketSize){
+		fprintf(stderr, "\n\rInvalid frame Length\r\n");
+		return 1;
+	}
 
 	memcpy(sReceiveFrame.mPsdu + headerLength, params->Msdu, params->MsduLength);
 	sReceiveFrame.mLqi = params->MpduLinkQuality;
@@ -875,6 +880,8 @@ int readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
 	 * to openthread as appropriate.
 	 */
 
+	if(!otIsInterfaceUp()) return 1;
+
     if(params->Status == MAC_SUCCESS){
     	otPlatRadioTransmitDone(false, sTransmitError);
     }
@@ -902,6 +909,8 @@ int beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params) //Async
 	 * and passing the relevant information to openthread in a struct.
 	 */
 
+	if(!otIsInterfaceUp()) return 1;
+
 	otActiveScanResult resultStruct;
 
 	uint8_t shortaddrs  = *((uint8_t*)params + 23) & 7;
@@ -910,7 +919,8 @@ int beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params) //Async
 	if ((params->PanDescriptor.Coord.AddressMode) == 3) {
 		memcpy(resultStruct.mExtAddress.m8, params->PanDescriptor.Coord.Address, 8);
 	} else {
-		assert(false);
+		fprintf(stderr, "\n\rINVALID BEACON RECEIVED\r\n");
+		return 1;
 	}
 	resultStruct.mPanId = GETLE16(params->PanDescriptor.Coord.PANId);
 	resultStruct.mChannel = params->PanDescriptor.LogicalChannel;
@@ -935,6 +945,9 @@ exit:
 }
 
 int scanConfirmCheck(struct MLME_SCAN_confirm_pset *params) {
+
+	if(!otIsInterfaceUp()) return 1;
+
 	if (params->Status != MAC_SCAN_IN_PROGRESS) {
 		scanCallback(NULL);
 		MLME_SET_request_sync(
