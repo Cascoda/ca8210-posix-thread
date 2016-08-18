@@ -935,7 +935,7 @@ int beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params) //Async
 		uint8_t version = (*((uint8_t*)Sdu + 1) & 15);
 		if(*Sdu == 3 && version == 1) {
 			memcpy(&resultStruct.mNetworkName, ((char*)Sdu) + 2, sizeof(resultStruct.mNetworkName));
-			resultStruct.mExtendedPanId = Sdu + 18;
+			memcpy(&resultStruct.mExtendedPanId, Sdu + 18, sizeof(resultStruct.mExtendedPanId));
 			scanCallback(&resultStruct);
 		}
 	}
