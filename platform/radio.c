@@ -49,6 +49,8 @@
 #include <ieee_802_15_4.h>
 #include <pthread.h>
 
+#include <signal.h>
+
 
 //Mac tools
 #define MAC_SC_SECURITYLEVEL(sc) (sc&0x07)
@@ -614,8 +616,6 @@ ThreadError otPlatRadioTransmit(void)
     static uint8_t handle = 0;
     handle++;
 
-    otPlatLog(kLogLevelDebg, kLogRegionHardMac, "Sending 0%...\r\n");
-
     otPlatRadioEnable();
 
     VerifyOrExit(sState != kStateDisabled, error = kThreadError_Busy);
@@ -708,7 +708,6 @@ ThreadError otPlatRadioTransmit(void)
         pDeviceRef);
 
     //PlatformRadioProcess();
-    otPlatLog(kLogLevelDebg, kLogRegionHardMac, "Sending 25%...\r\n");
 
 exit:
     return error;
@@ -869,14 +868,10 @@ int readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 
     pthread_mutex_unlock(&receiveFrame_mutex);
 
-    otPlatLog(kLogLevelDebg, kLogRegionHardMac, "Receiving 50%...\r\n");
-
 	sState = kStateReceive;
 	otPlatRadioReceiveDone(&sReceiveFrame, sReceiveError);
 
     PlatformRadioProcess();
-
-    otPlatLog(kLogLevelDebg, kLogRegionHardMac, "Receiving 100%...\r\n");
 
     return 0;
 }
@@ -888,8 +883,6 @@ int readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
 	 * This Function processes the MCPS_DATA_CONFIRM and passes the success or error
 	 * to openthread as appropriate.
 	 */
-
-	otPlatLog(kLogLevelDebg, kLogRegionHardMac, "Sending 50%...\r\n");
 
 	if(!otIsInterfaceUp()) return 1;
 
@@ -908,8 +901,6 @@ int readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
     sTransmitError = kThreadError_None;
 
     PlatformRadioProcess();
-
-    otPlatLog(kLogLevelDebg, kLogRegionHardMac, "Sending 100%...\r\n");
 
     return 0;
 }
