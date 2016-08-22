@@ -757,7 +757,6 @@ int readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 	 * frame is not double decrypted, and the link security is accepted if the hardmac
 	 * approves it.
 	 */
-	otPlatLog(kLogLevelDebg, kLogRegionHardMac, "Receiving 0%...\r\n");
 
 	if(!otIsInterfaceUp()) return 1;
 
