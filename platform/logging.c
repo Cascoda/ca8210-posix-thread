@@ -111,7 +111,11 @@ void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat
     case kLogRegionMeshCoP:
     	fprintf(stderr, "MCOP ");
 		break;
-	}
+
+    case kLogRegionHardMac:
+    	fprintf(stderr, "HMAC ");
+    	break;
+    }
 
     va_start(args, aFormat);
     vfprintf(stderr, aFormat, args);

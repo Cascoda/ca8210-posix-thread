@@ -40,6 +40,7 @@
 #include <assert.h>
 #include <common/code_utils.hpp>
 #include <platform/radio.h>
+#include <platform/logging.h>
 #include <cascoda_api.h>
 #include <kernel_exchange.h>
 #include <string.h>
@@ -340,7 +341,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 
 	if((aFlags & (OT_NET_KEY_SEQUENCE | OT_THREAD_CHILD_ADDED | OT_THREAD_CHILD_REMOVED | OT_NET_ROLE | OT_THREAD_LINK_ACCEPT))){	//The thrKeySequenceCounter has changed or device descriptors need updating
 		//Therefore update the keys stored in the macKeytable
-		fprintf(stderr, "\n\rUpdating keys\n\r");
+		otPlatLog(kLogLevelDebg, kLogRegionHardMac, "Updating keys\n\r");
 		if(otGetKeySequenceCounter() == 0) otSetKeySequenceCounter(2);
 		uint32_t tKeySeq = otGetKeySequenceCounter() - 1;
 
@@ -431,7 +432,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 						pDeviceRef
 						);
 			}
-			else fprintf(stderr, "\n\r-Error retrieving parent!\n\r");
+			otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Error retrieving parent!\n\r");
 		}
 
 		MLME_SET_request_sync(
@@ -844,7 +845,7 @@ int readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 	sReceiveFrame.mLength = params->MsduLength + footerLength + headerLength;
 
 	if(sReceiveFrame.mLength > aMaxPHYPacketSize){
-		fprintf(stderr, "\n\rInvalid frame Length\r\n");
+		otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Invalid frame Length\n\r");
 		return 1;
 	}
 
@@ -890,7 +891,7 @@ int readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
     	else if(params->Status == MAC_NO_ACK) sTransmitError = kThreadError_NoAck;
     	else sTransmitError = kThreadError_Abort;
     	sState = kStateReceive;
-    	fprintf(stderr, "\n\rMCPS_DATA_confirm error: %#x \r\n", params->Status);
+    	otPlatLog(kLogLevelWarn, kLogRegionHardMac, "MCPS_DATA_confirm error: %#x \r\n", params->Status);
     	otPlatRadioTransmitDone(false, sTransmitError);
     }
 
@@ -919,7 +920,7 @@ int beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params) //Async
 	if ((params->PanDescriptor.Coord.AddressMode) == 3) {
 		memcpy(resultStruct.mExtAddress.m8, params->PanDescriptor.Coord.Address, 8);
 	} else {
-		fprintf(stderr, "\n\rINVALID BEACON RECEIVED\r\n");
+    	otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Invalid beacon received!\r\n");
 		return 1;
 	}
 	resultStruct.mPanId = GETLE16(params->PanDescriptor.Coord.PANId);
