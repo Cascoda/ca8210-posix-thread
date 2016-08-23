@@ -66,16 +66,18 @@ void posixPlatformProcessDrivers(void)
     FD_ZERO(&write_fds);
 
     posixPlatformUartUpdateFdSet(&read_fds, &write_fds, &max_fd);
+    selfpipe_UpdateFdSet(&read_fds, &write_fds, &max_fd);
     posixPlatformAlarmUpdateTimeout(&timeout);
 
     if (!otAreTaskletsPending())
     {
         rval = select(max_fd + 1, &read_fds, &write_fds, NULL, &timeout);
+        selfpipe_flush();
         assert(rval >= 0 && errno != ETIME);
     }
 
     posixPlatformUartProcess();
-    PlatformRadioProcess();
+    //PlatformRadioProcess();
     posixPlatformAlarmProcess();
 }
 

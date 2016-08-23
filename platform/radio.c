@@ -49,7 +49,7 @@
 #include <ieee_802_15_4.h>
 #include <pthread.h>
 
-#include <signal.h>
+#include "selfpipe.h"
 
 
 //Mac tools
@@ -239,6 +239,7 @@ void PlatformRadioInit(void)
 		pthread_cond_broadcast(&receiveFrame_cond);
 	pthread_mutex_unlock(&receiveFrame_mutex);
     
+	selfpipe_init();
 
     kernel_exchange_init();
 
@@ -981,10 +982,11 @@ int genericDispatchFrame(const uint8_t *buf, size_t len) { //Async
 int PlatformRadioProcess(void)    //TODO: port - This should be the callback in future for data receive
 {
 	pthread_mutex_lock(&receiveFrame_mutex);
-
     sReceiveFrame.mLength = 0;
     pthread_cond_broadcast(&receiveFrame_cond);
     pthread_mutex_unlock(&receiveFrame_mutex);
+
+    selfpipe_push();
 
     return 0;
 }
