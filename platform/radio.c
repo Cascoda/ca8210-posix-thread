@@ -276,6 +276,22 @@ void PlatformRadioInit(void)
 		&retries,
 		pDeviceRef);
 
+	retries = 5;	//max 5 CSMA backoffs
+	MLME_SET_request_sync(
+		macMaxCSMABackoffs,
+		0,
+		sizeof(retries),
+		&retries,
+		pDeviceRef);
+
+	uint8_t maxBE = 4;	//max BackoffExponent 4
+	MLME_SET_request_sync(
+			macMaxBE,
+			0,
+			sizeof(maxBE),
+			&maxBE,
+			pDeviceRef);
+
 	uint8_t defaultKeySource[8] = {0, 0, 0, 0, 0, 0, 0, 0xFF};	//set the defaultKeySource as defined in 7.2.2.1 of thread spec
 	MLME_SET_request_sync(
 		macDefaultKeySource,
