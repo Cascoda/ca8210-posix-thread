@@ -1020,8 +1020,8 @@ static inline void barrier_main_letWorkerWork(){
 	pthread_mutex_lock(&barrierMutex);
 	if(mbarrier_waiting == WAITING){
 		mbarrier_waiting = GREENLIGHT;
-		pthread_cond_signal(&barrierCondVar);
-		while(mbarrier_waiting != NOT_WAITING)pthread_cond_wait(&barrierCondVar, &barrierMutex);	//The worker thread does work now
+		pthread_cond_broadcast(&barrierCondVar);
+/**/		while(mbarrier_waiting != NOT_WAITING)pthread_cond_wait(&barrierCondVar, &barrierMutex);	//The worker thread does work now
 	}
 	pthread_mutex_unlock(&barrierMutex);
 }
@@ -1030,12 +1030,12 @@ static inline void barrier_worker_waitForMain(){
 	pthread_mutex_lock(&barrierMutex);
 	selfpipe_push();
 	mbarrier_waiting = WAITING;
-	pthread_cond_signal(&barrierCondVar);
-	while(mbarrier_waiting != GREENLIGHT) pthread_cond_wait(&barrierCondVar, &barrierMutex); //wait for the main thread to signal worker to run
+	pthread_cond_broadcast(&barrierCondVar);
+/**/	while(mbarrier_waiting != GREENLIGHT) pthread_cond_wait(&barrierCondVar, &barrierMutex); //wait for the main thread to signal worker to run
 }
 
 static inline void barrier_worker_endWork(){
 	mbarrier_waiting = NOT_WAITING;
-	pthread_cond_signal(&barrierCondVar);
+	pthread_cond_broadcast(&barrierCondVar);
 	pthread_mutex_unlock(&barrierMutex);
 }
