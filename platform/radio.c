@@ -894,8 +894,9 @@ int readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
 	 * This Function processes the MCPS_DATA_CONFIRM and passes the success or error
 	 * to openthread as appropriate.
 	 */
-	barrier_worker_waitForMain();
 	if(!otIsInterfaceUp()) return 1;
+
+	barrier_worker_waitForMain();
 
     if(params->Status == MAC_SUCCESS){
     	otPlatRadioTransmitDone(false, sTransmitError);
@@ -1021,7 +1022,7 @@ static inline void barrier_main_letWorkerWork(){
 	if(mbarrier_waiting == WAITING){
 		mbarrier_waiting = GREENLIGHT;
 		pthread_cond_broadcast(&barrierCondVar);
-/**/		while(mbarrier_waiting != NOT_WAITING)pthread_cond_wait(&barrierCondVar, &barrierMutex);	//The worker thread does work now
+/**/		while(mbarrier_waiting != NOT_WAITING) pthread_cond_wait(&barrierCondVar, &barrierMutex);	//The worker thread does work now
 	}
 	pthread_mutex_unlock(&barrierMutex);
 }
