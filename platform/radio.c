@@ -84,7 +84,7 @@ void coordChangedCallback(uint32_t aFlags, void *aContext);
 
 static pthread_mutex_t barrierMutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t barrierCondVar = PTHREAD_COND_INITIALIZER;
-static enum barrier_waiting {NOT_WAITING, WAITING, GREENLIGHT} mbarrier_waiting;
+static enum barrier_waiting {NOT_WAITING, WAITING, GREENLIGHT, DONE} mbarrier_waiting;
 
 static inline void barrier_main_letWorkerWork(void);
 static inline void barrier_worker_waitForMain(void);
@@ -1022,13 +1022,16 @@ static inline void barrier_main_letWorkerWork(){
 	if(mbarrier_waiting == WAITING){
 		mbarrier_waiting = GREENLIGHT;
 		pthread_cond_broadcast(&barrierCondVar);
-/**/		while(mbarrier_waiting != NOT_WAITING) pthread_cond_wait(&barrierCondVar, &barrierMutex);	//The worker thread does work now
+/**/		while(mbarrier_waiting != DONE) pthread_cond_wait(&barrierCondVar, &barrierMutex);	//The worker thread does work now
 	}
+	mbarrier_waiting = NOT_WAITING;
+	pthread_cond_broadcast(&barrierCondVar);
 	pthread_mutex_unlock(&barrierMutex);
 }
 
 static inline void barrier_worker_waitForMain(){
 	pthread_mutex_lock(&barrierMutex);
+	while(mbarrier_waiting != NOT_WAITING) pthread_cond_wait(&barrierCondVar, &barrierMutex);
 	selfpipe_push();
 	mbarrier_waiting = WAITING;
 	pthread_cond_broadcast(&barrierCondVar);
@@ -1036,7 +1039,7 @@ static inline void barrier_worker_waitForMain(){
 }
 
 static inline void barrier_worker_endWork(){
-	mbarrier_waiting = NOT_WAITING;
+	mbarrier_waiting = DONE;
 	pthread_cond_broadcast(&barrierCondVar);
 	pthread_mutex_unlock(&barrierMutex);
 }
