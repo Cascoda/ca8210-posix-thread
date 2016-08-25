@@ -70,6 +70,8 @@ enum
     IEEE802154_DSN_OFFSET = 2,
 };
 
+int PlatformRadioSignal(void);
+
 int readFrame(struct MCPS_DATA_indication_pset *params);
 int readConfirmFrame(struct MCPS_DATA_confirm_pset *params);
 
@@ -80,6 +82,13 @@ int genericDispatchFrame(const uint8_t *buf, size_t len);
 void keyChangedCallback(uint32_t aFlags, void *aContext);
 void coordChangedCallback(uint32_t aFlags, void *aContext);
 
+static pthread_mutex_t barrierMutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t barrierCondVar = PTHREAD_COND_INITIALIZER;
+static enum barrier_waiting {NOT_WAITING, WAITING, GREENLIGHT} mbarrier_waiting;
+
+static inline void barrier_main_letWorkerWork(void);
+static inline void barrier_worker_waitForMain(void);
+static inline void barrier_worker_endWork(void);
 
 static RadioPacket sTransmitFrame;
 static RadioPacket sReceiveFrame;
@@ -708,7 +717,7 @@ ThreadError otPlatRadioTransmit(void)
         &curSecSpec,
         pDeviceRef);
 
-    //PlatformRadioProcess();
+    //PlatformRadioSignal();
 
 exit:
     return error;
@@ -868,10 +877,12 @@ int readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 
     pthread_mutex_unlock(&receiveFrame_mutex);
 
+    barrier_worker_waitForMain();
 	sState = kStateReceive;
 	otPlatRadioReceiveDone(&sReceiveFrame, sReceiveError);
+	barrier_worker_endWork();
 
-    PlatformRadioProcess();
+    PlatformRadioSignal();
 
     return 0;
 }
@@ -883,7 +894,7 @@ int readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
 	 * This Function processes the MCPS_DATA_CONFIRM and passes the success or error
 	 * to openthread as appropriate.
 	 */
-
+	barrier_worker_waitForMain();
 	if(!otIsInterfaceUp()) return 1;
 
     if(params->Status == MAC_SUCCESS){
@@ -899,8 +910,9 @@ int readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
     }
 
     sTransmitError = kThreadError_None;
+    barrier_worker_endWork();
 
-    PlatformRadioProcess();
+    PlatformRadioSignal();
 
     return 0;
 }
@@ -940,7 +952,9 @@ int beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params) //Async
 		if(*Sdu == 3 && version == 1) {
 			memcpy(&resultStruct.mNetworkName, ((char*)Sdu) + 2, sizeof(resultStruct.mNetworkName));
 			memcpy(&resultStruct.mExtendedPanId, Sdu + 18, sizeof(resultStruct.mExtendedPanId));
+			barrier_worker_waitForMain();
 			scanCallback(&resultStruct);
+			barrier_worker_endWork();
 		}
 	}
 
@@ -953,7 +967,9 @@ int scanConfirmCheck(struct MLME_SCAN_confirm_pset *params) {
 	if(!otIsInterfaceUp()) return 1;
 
 	if (params->Status != MAC_SCAN_IN_PROGRESS) {
+		barrier_worker_waitForMain();
 		scanCallback(NULL);
+		barrier_worker_endWork();
 		MLME_SET_request_sync(
 		    			phyCurrentChannel,
 		    	        0,
@@ -979,14 +995,47 @@ int genericDispatchFrame(const uint8_t *buf, size_t len) { //Async
 	return 0;
 }
 
-int PlatformRadioProcess(void)    //TODO: port - This should be the callback in future for data receive
+int PlatformRadioSignal(void)
 {
 	pthread_mutex_lock(&receiveFrame_mutex);
     sReceiveFrame.mLength = 0;
     pthread_cond_broadcast(&receiveFrame_cond);
     pthread_mutex_unlock(&receiveFrame_mutex);
 
-    selfpipe_push();
-
     return 0;
+}
+
+int PlatformRadioProcess(void){
+	barrier_main_letWorkerWork();
+}
+
+/*
+ * The following functions create a thread safe system for allowing the worker thread to access openthread
+ * functions safely. The main thread always has priority and must explicitly give control to the worker
+ * thread while locking itself. This has ONLY been designed to work with ONE worker and ONE main.
+ */
+
+//Lets the worker thread work synchronously if there is synchronous work to do
+static inline void barrier_main_letWorkerWork(){
+	pthread_mutex_lock(&barrierMutex);
+	if(mbarrier_waiting == WAITING){
+		mbarrier_waiting = GREENLIGHT;
+		pthread_cond_signal(&barrierCondVar);
+		while(mbarrier_waiting != NOT_WAITING)pthread_cond_wait(&barrierCondVar, &barrierMutex);	//The worker thread does work now
+	}
+	pthread_mutex_unlock(&barrierMutex);
+}
+
+static inline void barrier_worker_waitForMain(){
+	pthread_mutex_lock(&barrierMutex);
+	selfpipe_push();
+	mbarrier_waiting = WAITING;
+	pthread_cond_signal(&barrierCondVar);
+	while(mbarrier_waiting != GREENLIGHT) pthread_cond_wait(&barrierCondVar, &barrierMutex); //wait for the main thread to signal worker to run
+}
+
+static inline void barrier_worker_endWork(){
+	mbarrier_waiting = NOT_WAITING;
+	pthread_cond_signal(&barrierCondVar);
+	pthread_mutex_unlock(&barrierMutex);
 }
