@@ -237,6 +237,13 @@ ThreadError otPlatRadioSetShortAddress(uint16_t address)
     else return kThreadError_Failed;
 }
 
+static int driverErrorCallback(int error_number){
+	otPlatLog(kLogLevelCrit, kLogRegionHardMac, "DRIVER FAILED WITH ERROR %d\n\r", error_number);
+	//TODO: Fail gracefully
+	abort();
+	return 0;
+}
+
 void PlatformRadioInit(void)
 {
     sTransmitFrame.mLength = 0;
@@ -250,7 +257,7 @@ void PlatformRadioInit(void)
     
 	selfpipe_init();
 
-    kernel_exchange_init();
+    kernel_exchange_init_withhandler(driverErrorCallback);
 
     struct cascoda_api_callbacks callbacks = {0};
     callbacks.MCPS_DATA_indication = &readFrame;
@@ -920,6 +927,7 @@ int readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
     	otPlatRadioTransmitDone(false, sTransmitError);
     }
     else{
+    	//TODO: Better handle the channel_access_failures
     	if(params->Status == MAC_CHANNEL_ACCESS_FAILURE) sTransmitError = kThreadError_ChannelAccessFailure;
     	else if(params->Status == MAC_NO_ACK) sTransmitError = kThreadError_NoAck;
     	else sTransmitError = kThreadError_Abort;
