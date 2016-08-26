@@ -647,7 +647,9 @@ ThreadError otPlatRadioTransmit(void)
     VerifyOrExit(sState != kStateDisabled, error = kThreadError_Busy);
 
     uint16_t frameControl = GETLE16(sTransmitFrame.mPsdu);
-    VerifyOrExit((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_DATA, error = kThreadError_Abort);
+    VerifyOrExit((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_DATA, \
+    	error = kThreadError_Abort;									\
+    	otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Unexpected frame type %#x\n\r", (frameControl & MAC_FC_FT_MASK)););
 
 /*
     fputs("\r\nTransmit:",stderr);
