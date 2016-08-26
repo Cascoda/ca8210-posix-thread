@@ -62,6 +62,7 @@ uint32_t otPlatRandomGet(void)
 		uint32_t rand32i;
 	} randomBytes;
 
+	/*
     HWME_GET_request_sync(
     		HWME_RANDOMNUM,
 			&length1,
@@ -72,6 +73,7 @@ uint32_t otPlatRandomGet(void)
 			&length2,
 			randomBytes.randb + 2,
 			NULL);
+	*/
 
     if(length1 != 2 || length2 != 2){
 

@@ -636,7 +636,7 @@ ThreadError otPlatRadioTransmit(void)
 	/*
 	 * This Function converts the openthread-provided PHY frame into a MAC primitive to
 	 * communicate with the hardmac-enabled cascoda ca8210. Changes in the soft MAC layer
-	 * the frame from being encrypted until it reaches the hardmac.
+	 * prevent the frame from being encrypted until it reaches the hardmac.
 	 */
     ThreadError error = kThreadError_None;
     static uint8_t handle = 0;
