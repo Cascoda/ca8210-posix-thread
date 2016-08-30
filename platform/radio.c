@@ -659,8 +659,6 @@ ThreadError otPlatRadioTransmit(void)
     static uint8_t handle = 0;
     handle++;
 
-    otPlatRadioEnable();
-
     VerifyOrExit(sState != kStateDisabled, error = kThreadError_Busy);
 
     uint16_t frameControl = GETLE16(sTransmitFrame.mPsdu);
@@ -941,11 +939,11 @@ int readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
     	if(params->Status == MAC_CHANNEL_ACCESS_FAILURE) sTransmitError = kThreadError_ChannelAccessFailure;
     	else if(params->Status == MAC_NO_ACK) sTransmitError = kThreadError_NoAck;
     	else sTransmitError = kThreadError_Abort;
-    	sState = kStateReceive;
     	otPlatLog(kLogLevelWarn, kLogRegionHardMac, "MCPS_DATA_confirm error: %#x \r\n", params->Status);
     	otPlatRadioTransmitDone(false, sTransmitError);
     }
 
+    sState = kStateReceive;
     sTransmitError = kThreadError_None;
     barrier_worker_endWork();
 
