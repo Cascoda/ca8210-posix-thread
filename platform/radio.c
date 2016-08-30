@@ -537,24 +537,26 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 
 ThreadError otPlatRadioEnable(void)    //TODO:(lowpriority) port 
 {
-    ThreadError error = kThreadError_None;
+	ThreadError error = kThreadError_Busy;
 
-    VerifyOrExit(sState == kStateDisabled, error = kThreadError_Busy);
-    sState = kStateSleep;
+	if (sState == kStateSleep || sState == kStateDisabled)
+	{
+		error = kThreadError_None;
+		sState = kStateSleep;
 
-	#ifdef EXECUTE_MODE
-    	uint8_t HWMEAttVal[5] = {00, 00, 00, 00, 00};
-    	if (HWME_SET_request_sync (
-    		HWME_POWERCON,
-    		5,
-    		HWMEAttVal,
-    		pDeviceRef
-    		) == HWME_SUCCESS)
-    		return kThreadError_None;
-        else return kThreadError_Failed;
+		#ifdef EXECUTE_MODE
+			uint8_t HWMEAttVal[5] = {00, 00, 00, 00, 00};
+			if (HWME_SET_request_sync (
+				HWME_POWERCON,
+				5,
+				HWMEAttVal,
+				pDeviceRef
+				) == HWME_SUCCESS)
+				return kThreadError_None;
+			else return kThreadError_Failed;
 
-	#endif
-
+		#endif
+	}
 
 exit:
     return error;
@@ -562,24 +564,27 @@ exit:
 
 ThreadError otPlatRadioDisable(void)    //TODO:(lowpriority) port 
 {
-    ThreadError error = kThreadError_None;
+	ThreadError error = kThreadError_Busy;
 
-    VerifyOrExit(sState != kStateDisabled, error = kThreadError_Busy);
-    sState = kStateDisabled;
+	if (sState == kStateDisabled || sState == kStateSleep)
+	{
+		error = kThreadError_None;
+		sState = kStateDisabled;
 
-    //should sleep until restarted
-	#ifdef EXECUTE_MODE
-    	uint8_t HWMEAttVal[5] = {0x0A, 00, 00, 00, 00};
-    	if (HWME_SET_request_sync (
-    		HWME_POWERCON,
-    		5,
-    		HWMEAttVal,
-    		pDeviceRef
-    		) == HWME_SUCCESS)
-	    	return kThreadError_None;
-	    else return kThreadError_Failed;
+		//should sleep until restarted
+		#ifdef EXECUTE_MODE
+			uint8_t HWMEAttVal[5] = {0x0A, 00, 00, 00, 00};
+			if (HWME_SET_request_sync (
+				HWME_POWERCON,
+				5,
+				HWMEAttVal,
+				pDeviceRef
+				) == HWME_SUCCESS)
+				return kThreadError_None;
+			else return kThreadError_Failed;
 
-	#endif
+		#endif
+	}
 
 exit:
     return error;
@@ -587,23 +592,26 @@ exit:
 
 ThreadError otPlatRadioSleep(void)    //TODO:(lowpriority) port 
 {
-    ThreadError error = kThreadError_None;
+	ThreadError error = kThreadError_Busy;
 
-    VerifyOrExit(sState != kStateDisabled, error = kThreadError_Busy);
-    sState = kStateSleep;
+	if (sState == kStateSleep || sState == kStateReceive)
+	{
+		error = kThreadError_None;
+		sState = kStateSleep;
 
-	#ifdef EXECUTE_MODE
-    	uint8_t HWMEAttVal[5] = {0x2A, 00, 00, 00, 00};
-		if (HWME_SET_request_sync (
-			HWME_POWERCON,
-			5,
-			HWMEAttVal,
-			pDeviceRef
-			) == HWME_SUCCESS)
-			return kThreadError_None;
-	    else return kThreadError_Failed;
+		#ifdef EXECUTE_MODE
+			uint8_t HWMEAttVal[5] = {0x2A, 00, 00, 00, 00};
+			if (HWME_SET_request_sync (
+				HWME_POWERCON,
+				5,
+				HWMEAttVal,
+				pDeviceRef
+				) == HWME_SUCCESS)
+				return kThreadError_None;
+			else return kThreadError_Failed;
 
-	#endif
+		#endif
+	}
 
 exit:
     return error;
