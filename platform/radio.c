@@ -264,7 +264,7 @@ void PlatformRadioInit(void)
     callbacks.MCPS_DATA_confirm = &readConfirmFrame;
     callbacks.MLME_BEACON_NOTIFY_indication = &beaconNotifyFrame;
     callbacks.MLME_SCAN_confirm = &scanConfirmCheck;
-    //callbacks.generic_dispatch = &genericDispatchFrame;	//UNCOMMENT TO ENABLE VIEWING UNHANDLED FRAMES
+    callbacks.generic_dispatch = &genericDispatchFrame;	//UNCOMMENT TO ENABLE VIEWING UNHANDLED FRAMES
     cascoda_register_callbacks(&callbacks);
     
     uint8_t enable = 1;	//enable security
