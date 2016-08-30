@@ -17,9 +17,9 @@ void selfpipe_push(void){
 	write(fd[1], "a", 1);
 }
 
-void selfpipe_flush(void){
-	uint8_t junkBuf[32];
-	read(fd[0], junkBuf, 32);
+void selfpipe_pop(void){
+	uint8_t junkBuf;
+	read(fd[0], &junkBuf, 1);
 }
 
 void selfpipe_UpdateFdSet(fd_set *aReadFdSet, fd_set *aWriteFdSet, int *aMaxFd)

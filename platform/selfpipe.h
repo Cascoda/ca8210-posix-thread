@@ -11,7 +11,7 @@
 void selfpipe_init(void);
 
 void selfpipe_push(void);
-void selfpipe_flush(void);
+void selfpipe_pop(void);
 
 void selfpipe_UpdateFdSet(fd_set *aReadFdSet, fd_set *aWriteFdSet, int *aMaxFd);
 

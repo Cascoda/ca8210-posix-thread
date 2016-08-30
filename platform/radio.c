@@ -467,7 +467,9 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 						pDeviceRef
 						);
 			}
-			otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Error retrieving parent!\n\r");
+			else{
+				otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Error retrieving parent!\n\r");
+			}
 		}
 
 		MLME_SET_request_sync(

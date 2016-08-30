@@ -72,7 +72,7 @@ void posixPlatformProcessDrivers(void)
     if (!otAreTaskletsPending())
     {
         rval = select(max_fd + 1, &read_fds, &write_fds, NULL, &timeout);
-        selfpipe_flush();
+        selfpipe_pop();
         assert(rval >= 0 && errno != ETIME);
     }
 
