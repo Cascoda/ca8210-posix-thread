@@ -895,7 +895,7 @@ int readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 	sReceiveFrame.mLength = params->MsduLength + footerLength + headerLength;
 
 	if(sReceiveFrame.mLength > aMaxPHYPacketSize){
-		otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Invalid frame Length\n\r");
+		otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Invalid frame Length %d! Msdu: %d; Footer: %d; Header: %d;\n\r", sReceiveFrame.mLength, params->MsduLength, footerLength, headerLength);
 		return 1;
 	}
 
