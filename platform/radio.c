@@ -483,8 +483,9 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 		struct M_KeyDescriptor_thread {
 			struct M_KeyTableEntryFixed    Fixed;
 			struct M_KeyIdLookupDesc       KeyIdLookupList[1];
-			struct M_KeyDeviceDesc         KeyDeviceList[count];
-			struct M_KeyUsageDesc          KeyUsageList[2];
+			uint8_t                        flags[7];
+			//struct M_KeyDeviceDesc         KeyDeviceList[count];
+			//struct M_KeyUsageDesc          KeyUsageList[2];
 		}tKeyDescriptor;
 
 
@@ -494,8 +495,11 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 		tKeyDescriptor.Fixed.KeyDeviceListEntries = count;
 
 		//Flags according to Cascoda API 5.3.1
-		tKeyDescriptor.KeyUsageList[0].Flags = (MAC_FC_FT_DATA & KUD_FrameTypeMask);	//data usage
-		tKeyDescriptor.KeyUsageList[1].Flags = (MAC_FC_FT_COMMAND & KUD_FrameTypeMask) | ((CMD_DATA_REQ << KUD_CommandFrameIdentifierShift) & KUD_CommandFrameIdentifierMask);	//Data req usage
+		//tKeyDescriptor.KeyUsageList[0].Flags = (MAC_FC_FT_DATA & KUD_FrameTypeMask);	//data usage
+		//tKeyDescriptor.KeyUsageList[1].Flags = (MAC_FC_FT_COMMAND & KUD_FrameTypeMask) | ((CMD_DATA_REQ << KUD_CommandFrameIdentifierShift) & KUD_CommandFrameIdentifierMask);	//Data req usage
+		tKeyDescriptor.flags[count + 0] = (MAC_FC_FT_DATA & KUD_FrameTypeMask);	//data usage
+		tKeyDescriptor.flags[count + 1] = (MAC_FC_FT_COMMAND & KUD_FrameTypeMask) | ((CMD_DATA_REQ << KUD_CommandFrameIdentifierShift) & KUD_CommandFrameIdentifierMask);	//Data req usage
+
 
 		tKeyDescriptor.KeyIdLookupList[0].LookupDataSizeCode = 1; //1 means length 9
 		//This sets the MSB of the lookUpData to equal defaultKeySource as is required by 7.5.8.2.2 of IEEE 15.4 spec
@@ -505,11 +509,12 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 
 		//Fill the deviceListEntries
 		for(int i = 0; i < count; i++){
-			tKeyDescriptor.KeyDeviceList[i].Flags = i;
+			//tKeyDescriptor.KeyDeviceList[i].Flags = i;
+			tKeyDescriptor.flags[i] = i;
 		}
 
 		//Generate and store the keys for the current, previous, and next rotations
-		count = 0;
+		uint8_t storeCount = 0;
 		for(uint8_t i = 0; i < 3; i++){
 			if((tKeySeq + i) > 0){	//0 is invalid key sequence
 				memcpy(tKeyDescriptor.Fixed.Key, getMacKeyFromSequenceCounter(tKeySeq + i), 16);
@@ -517,8 +522,8 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 
 				MLME_SET_request_sync(
 					macKeyTable,
-					count++,
-					sizeof(tKeyDescriptor),
+					storeCount++,
+					sizeof(tKeyDescriptor) - (5-count),	/*dont send the unused bytes (those not counted by count)*/
 					&tKeyDescriptor,
 					pDeviceRef
 					);
@@ -528,7 +533,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 			macKeyTableEntries,
 			0,
 			1,
-			&count,
+			&storeCount,
 			pDeviceRef
 			);
 
