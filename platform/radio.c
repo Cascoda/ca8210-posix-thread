@@ -938,6 +938,11 @@ int readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
 
     if(params->Status == MAC_SUCCESS){
     	otPlatRadioTransmitDone(false, sTransmitError);
+    	sState = kStateReceive;
+    	sTransmitError = kThreadError_None;
+    }
+    else if(params->Status == MAC_UNSUPPORTED_SECURITY){
+    	otPlatLog(kLogLevelWarn, kLogRegionHardMac, "MCPS_DATA_confirm error: %#x... Ignoring \r\n", params->Status);
     }
     else{
     	//TODO: Better handle the channel_access_failures
@@ -946,10 +951,10 @@ int readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
     	else sTransmitError = kThreadError_Abort;
     	otPlatLog(kLogLevelWarn, kLogRegionHardMac, "MCPS_DATA_confirm error: %#x \r\n", params->Status);
     	otPlatRadioTransmitDone(false, sTransmitError);
+    	sState = kStateReceive;
+    	sTransmitError = kThreadError_None;
     }
 
-    sState = kStateReceive;
-    sTransmitError = kThreadError_None;
     barrier_worker_endWork();
 
     PlatformRadioSignal();
