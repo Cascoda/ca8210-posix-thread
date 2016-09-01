@@ -55,7 +55,8 @@ void posixPlatformRandomInit(void)
 uint32_t otPlatRandomGet(void)
 {
 
-	uint8_t length1, length2;
+	uint8_t length1 = 0;
+	uint8_t length2 = 0;
 
 	union randBytes{
 		uint8_t randb[4];
