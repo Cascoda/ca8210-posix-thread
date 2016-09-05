@@ -82,6 +82,8 @@ int genericDispatchFrame(const uint8_t *buf, size_t len);
 void keyChangedCallback(uint32_t aFlags, void *aContext);
 void coordChangedCallback(uint32_t aFlags, void *aContext);
 
+
+//BARRIER
 static pthread_mutex_t barrierMutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t barrierCondVar = PTHREAD_COND_INITIALIZER;
 static enum barrier_waiting {NOT_WAITING, WAITING, GREENLIGHT, DONE} mbarrier_waiting;
@@ -89,6 +91,17 @@ static enum barrier_waiting {NOT_WAITING, WAITING, GREENLIGHT, DONE} mbarrier_wa
 static inline void barrier_main_letWorkerWork(void);
 static inline void barrier_worker_waitForMain(void);
 static inline void barrier_worker_endWork(void);
+
+//INTRANSIT
+static RadioPacket * getIntransitFrame(uint8_t handle);	//Return pointer to the relevant packet, or NULL
+static int rmIntransitFrame(uint8_t handle);	//Release dynamically allocated memory -- returns 0 for success, or an error code
+static int putIntransitFrame(uint8_t handle, const RadioPacket * in, uint8_t headerSize);	//returns 0 for success, or an error code
+static int isHandleInUse(uint8_t handle); //returns 0 if the handle is free, or 1 if it is already in use
+
+#define MAX_INTRANSITS 7 /*TODO:  5 indirect frames +2 (perhaps need more?)*/
+uint8_t IntransitHandles[MAX_INTRANSITS] = {0};
+RadioPacket IntransitPackets[MAX_INTRANSITS];
+static pthread_mutex_t intransit_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static RadioPacket sTransmitFrame;
 static RadioPacket sReceiveFrame;
@@ -664,6 +677,8 @@ ThreadError otPlatRadioTransmit(void)
     static uint8_t handle = 0;
     handle++;
 
+    while(isHandleInUse(handle)) handle++;  //make sure handle is available for use
+
     VerifyOrExit(sState != kStateDisabled, error = kThreadError_Busy);
 
     uint16_t frameControl = GETLE16(sTransmitFrame.mPsdu);
@@ -708,6 +723,8 @@ ThreadError otPlatRadioTransmit(void)
     	memcpy(curPacket.Dst.PANId, sTransmitFrame.mPsdu+3, 2);
     	addressFieldLength +=10;
     }
+
+    putIntransitFrame(handle, &sTransmitFrame, headerLength); //Don't need to store security information OR source address for intransits, just destination addressing info and fc (Max length 13 bytes)
 
     if(curPacket.SrcAddrMode == MAC_MODE_SHORT_ADDR) addressFieldLength += 4;
     else if(curPacket.SrcAddrMode == MAC_MODE_LONG_ADDR) addressFieldLength += 10;
@@ -936,13 +953,13 @@ int readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
 
 	barrier_worker_waitForMain();
 
+	RadioPacket * sentFrame = getIntransitFrame(params->MsduHandle);
+	assert(sentFrame != NULL);
+
     if(params->Status == MAC_SUCCESS){
-    	otPlatRadioTransmitDone(false, sTransmitError);
+    	otPlatRadioTransmitDone(false, sTransmitError, sentFrame);
     	sState = kStateReceive;
     	sTransmitError = kThreadError_None;
-    }
-    else if(params->Status == MAC_UNSUPPORTED_SECURITY){
-    	otPlatLog(kLogLevelWarn, kLogRegionHardMac, "MCPS_DATA_confirm error: %#x... Ignoring \r\n", params->Status);
     }
     else{
     	//TODO: Better handle the channel_access_failures
@@ -950,12 +967,14 @@ int readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
     	else if(params->Status == MAC_NO_ACK) sTransmitError = kThreadError_NoAck;
     	else sTransmitError = kThreadError_Abort;
     	otPlatLog(kLogLevelWarn, kLogRegionHardMac, "MCPS_DATA_confirm error: %#x \r\n", params->Status);
-    	otPlatRadioTransmitDone(false, sTransmitError);
+    	otPlatRadioTransmitDone(false, sTransmitError, sentFrame);
     	sState = kStateReceive;
     	sTransmitError = kThreadError_None;
     }
 
     barrier_worker_endWork();
+
+    rmIntransitFrame(params->MsduHandle);
 
     PlatformRadioSignal();
 
@@ -1055,6 +1074,82 @@ int PlatformRadioProcess(void){
 }
 
 /*
+ * The following functions exist to create a queue for in-transit data packets. The complete frames are not
+ * stored, only the header information required to process the completion of the transmission. This is because
+ * it is not guaranteed for these frames to transmit in order, and the destination address is required for
+ *  post-transmission processing.
+ */
+
+static int isHandleInUse(uint8_t handle){
+	pthread_mutex_lock(&intransit_mutex);
+	for(int i = 0; i < MAX_INTRANSITS; i++){
+		if(IntransitHandles[i] == handle){
+			pthread_mutex_unlock(&intransit_mutex);
+			return 1;	//Handle is in use
+		}
+	}
+	pthread_mutex_unlock(&intransit_mutex);
+	return 0;
+}
+
+static int putIntransitFrame(uint8_t handle, const RadioPacket * in, uint8_t headerSize){
+	int i = 0;
+	uint8_t found = 0;
+
+	pthread_mutex_lock(&intransit_mutex);
+	while(!found){
+		if(i >= MAX_INTRANSITS) return -1;	//No space for intransit frame storage! This should be impossible -> probably increase array size!
+
+		if(IntransitHandles[i] == 0) break; //This index is empty
+
+		i++;
+	}
+
+	IntransitHandles[i] = handle;
+
+	memcpy(&IntransitPackets[i], in, sizeof(RadioPacket));
+	IntransitPackets[i].mPsdu = malloc(headerSize);
+	memcpy(IntransitPackets[i].mPsdu, in.mPsdu, headerSize);
+
+	pthread_mutex_unlock(&intransit_mutex);
+
+	return 0;
+}
+
+static int rmIntransitFrame(uint8_t handle){
+	//TODO: Overchecks for debugging purposes -> remove this once confident
+	uint8_t found = 0;
+
+	pthread_mutex_lock(&intransit_mutex);
+
+	for(int i = 0; i < MAX_INTRANSITS; i++){
+		if(IntransitHandles[i] == handle){
+			assert(found == 0); //Crash if there was more than one instance of the same handle
+			found = 1;
+			free(IntransitPackets[i].mPsdu);
+			IntransitHandles[i] = 0;
+		}
+	}
+
+	pthread_mutex_unlock(&intransit_mutex);
+
+	return !found;	//0 if successfully removed
+}
+
+static RadioPacket * getIntransitFrame(uint8_t handle){
+	pthread_mutex_lock(&intransit_mutex);
+
+	for(int i = 0; i < MAX_INTRANSITS; i++){
+		if(IntransitHandles[i] == handle){
+			pthread_mutex_unlock(&intransit_mutex);
+			return &IntransitPackets[i];
+		}
+	}
+	pthread_mutex_unlock(&intransit_mutex);
+	return NULL;
+}
+
+/*
  * The following functions create a thread safe system for allowing the worker thread to access openthread
  * functions safely. The main thread always has priority and must explicitly give control to the worker
  * thread while locking itself. This has ONLY been designed to work with ONE worker and ONE main.
@@ -1066,7 +1161,7 @@ static inline void barrier_main_letWorkerWork(){
 	if(mbarrier_waiting == WAITING){
 		mbarrier_waiting = GREENLIGHT;
 		pthread_cond_broadcast(&barrierCondVar);
-/**/		while(mbarrier_waiting != DONE) pthread_cond_wait(&barrierCondVar, &barrierMutex);	//The worker thread does work now
+		while(mbarrier_waiting != DONE) pthread_cond_wait(&barrierCondVar, &barrierMutex);	//The worker thread does work now
 	}
 	mbarrier_waiting = NOT_WAITING;
 	pthread_cond_broadcast(&barrierCondVar);
@@ -1079,7 +1174,7 @@ static inline void barrier_worker_waitForMain(){
 	selfpipe_push();
 	mbarrier_waiting = WAITING;
 	pthread_cond_broadcast(&barrierCondVar);
-/**/	while(mbarrier_waiting != GREENLIGHT) pthread_cond_wait(&barrierCondVar, &barrierMutex); //wait for the main thread to signal worker to run
+	while(mbarrier_waiting != GREENLIGHT) pthread_cond_wait(&barrierCondVar, &barrierMutex); //wait for the main thread to signal worker to run
 }
 
 static inline void barrier_worker_endWork(){
