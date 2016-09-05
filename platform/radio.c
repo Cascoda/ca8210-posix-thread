@@ -35,6 +35,7 @@
 #include <openthread-types.h>
 #include <openthread.h>
 
+#include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
 #include <assert.h>
@@ -576,7 +577,6 @@ ThreadError otPlatRadioEnable(void)    //TODO:(lowpriority) port
 		#endif
 	}
 
-exit:
     return error;
 }
 
@@ -604,7 +604,6 @@ ThreadError otPlatRadioDisable(void)    //TODO:(lowpriority) port
 		#endif
 	}
 
-exit:
     return error;
 }
 
@@ -631,7 +630,6 @@ ThreadError otPlatRadioSleep(void)    //TODO:(lowpriority) port
 		#endif
 	}
 
-exit:
     return error;
 }
 
@@ -1041,7 +1039,7 @@ int scanConfirmCheck(struct MLME_SCAN_confirm_pset *params) {
 		    	        &sChannel,
 		    	        pDeviceRef);
 	}
-exit:
+
 	return 0;
 }
 
@@ -1071,6 +1069,7 @@ int PlatformRadioSignal(void)
 
 int PlatformRadioProcess(void){
 	barrier_main_letWorkerWork();
+	return 0;
 }
 
 /*
@@ -1108,8 +1107,8 @@ static int putIntransitFrame(uint8_t handle, const RadioPacket * in, uint8_t hea
 	IntransitHandles[i] = handle;
 
 	memcpy(&IntransitPackets[i], in, sizeof(RadioPacket));
-	IntransitPackets[i].mPsdu = malloc(headerSize);
-	memcpy(IntransitPackets[i].mPsdu, in.mPsdu, headerSize);
+	IntransitPackets[i].mPsdu = malloc((size_t)headerSize);
+	memcpy(IntransitPackets[i].mPsdu, in->mPsdu, headerSize);
 
 	pthread_mutex_unlock(&intransit_mutex);
 
