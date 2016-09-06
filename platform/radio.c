@@ -289,6 +289,13 @@ void PlatformRadioInit(void)
 		&enable,
 		pDeviceRef);
 
+	MLME_SET_request_sync(	//enable Rx when Idle
+			macRxOnWhenIdle,
+			0,
+			sizeof(enable),
+			&enable,
+			pDeviceRef);
+
 	uint8_t retries = 7;	//Retry transmission 7 times if not acknowledged
 	MLME_SET_request_sync(
 		macMaxFrameRetries,
@@ -1151,7 +1158,8 @@ static RadioPacket * getIntransitFrame(uint8_t handle){
 /*
  * The following functions create a thread safe system for allowing the worker thread to access openthread
  * functions safely. The main thread always has priority and must explicitly give control to the worker
- * thread while locking itself. This has ONLY been designed to work with ONE worker and ONE main.
+ * thread while locking itself. This has ONLY been designed to work with ONE worker and ONE main, in a way
+ * that causes the worker thread to run one operation per poll cycle as openthread was designed for.
  */
 
 //Lets the worker thread work synchronously if there is synchronous work to do

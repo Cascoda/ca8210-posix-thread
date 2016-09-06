@@ -45,8 +45,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-static uint32_t s_state = 1;
-
 void posixPlatformRandomInit(void)
 {
     //nothing
