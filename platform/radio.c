@@ -110,6 +110,7 @@ static ThreadError sTransmitError;
 static ThreadError sReceiveError = kThreadError_None;
 
 static otHandleActiveScanResult scanCallback;
+static uint8_t activeScanInProgress = 0;
 
 static void* pDeviceRef = NULL;
 
@@ -160,7 +161,15 @@ ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandl
 			ScanDuration,
 			&pSecurity,
 			pDeviceRef);
+
+	if(scanRequest == MAC_SUCCESS) activeScanInProgress = 1;
+
 	return scanRequest;
+}
+
+bool otActiveScanInProgress(void)
+{
+    return activeScanInProgress;
 }
 
 ThreadError otPlatSetNetworkName(const char *aNetworkName) {
@@ -714,6 +723,7 @@ ThreadError otPlatRadioTransmit(void)
     curPacket.SrcAddrMode = MAC_FC_SAM(frameControl);
     curPacket.Dst.AddressMode = MAC_FC_DAM(frameControl);
     curPacket.TxOptions = (frameControl & MAC_FC_ACK_REQ) ? 0x01 : 0x00;
+    curPacket.TxOptions |= sTransmitFrame.mDirectTransmission ? 0x00 : 1<<2;	//Set bit 2 for indirect transmissions
     uint8_t isPanCompressed = frameControl & MAC_FC_PAN_COMP;
 
     uint8_t addressFieldLength = 0;
@@ -1038,6 +1048,7 @@ int scanConfirmCheck(struct MLME_SCAN_confirm_pset *params) {
 	if (params->Status != MAC_SCAN_IN_PROGRESS) {
 		barrier_worker_waitForMain();
 		scanCallback(NULL);
+		activeScanInProgress = 1;
 		barrier_worker_endWork();
 		MLME_SET_request_sync(
 		    			phyCurrentChannel,
