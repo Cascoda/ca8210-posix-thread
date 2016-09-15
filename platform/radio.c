@@ -110,6 +110,7 @@ static ThreadError sTransmitError;
 static ThreadError sReceiveError = kThreadError_None;
 
 static otHandleActiveScanResult scanCallback;
+static void * scanContext;
 static uint8_t activeScanInProgress = 0;
 
 static void* pDeviceRef = NULL;
@@ -144,7 +145,7 @@ void setChannel(uint8_t channel)
     }
 }
 
-ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandleActiveScanResult aCallback)
+ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandleActiveScanResult aCallback, void *aCallbackContext)
 {
 
 	/*
@@ -155,6 +156,7 @@ ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandl
 	struct SecSpec pSecurity = {0};
 	if (aScanChannels == 0) aScanChannels = 0x07fff800; //11 to 26
 	scanCallback = aCallback;
+	scanContext = aCallbackContext;
 	uint8_t scanRequest = MLME_SCAN_request(
 			1,
 			aScanChannels,
@@ -163,7 +165,6 @@ ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandl
 			pDeviceRef);
 
 	if(scanRequest == MAC_SUCCESS) activeScanInProgress = 1;
-
 	return scanRequest;
 }
 
@@ -1032,7 +1033,7 @@ int beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params) //Async
 			memcpy(&resultStruct.mNetworkName, ((char*)Sdu) + 2, sizeof(resultStruct.mNetworkName));
 			memcpy(&resultStruct.mExtendedPanId, Sdu + 18, sizeof(resultStruct.mExtendedPanId));
 			barrier_worker_waitForMain();
-			scanCallback(&resultStruct);
+			scanCallback(&resultStruct, scanContext);
 			barrier_worker_endWork();
 		}
 	}
@@ -1047,7 +1048,7 @@ int scanConfirmCheck(struct MLME_SCAN_confirm_pset *params) {
 
 	if (params->Status != MAC_SCAN_IN_PROGRESS) {
 		barrier_worker_waitForMain();
-		scanCallback(NULL);
+		scanCallback(NULL, scanContext);
 		activeScanInProgress = 1;
 		barrier_worker_endWork();
 		MLME_SET_request_sync(
