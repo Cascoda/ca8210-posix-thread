@@ -681,7 +681,7 @@ RadioPacket *otPlatRadioGetTransmitBuffer(void)
     return &sTransmitFrame;
 }
 
-ThreadError otPlatRadioTransmit(void)
+ThreadError otPlatRadioTransmit(void * transmitContext)
 {
 	/*
 	 * This Function converts the openthread-provided PHY frame into a MAC primitive to
@@ -740,6 +740,7 @@ ThreadError otPlatRadioTransmit(void)
     	addressFieldLength +=10;
     }
 
+    sTransmitFrame.mTransmitContext = transmitContext;
     putIntransitFrame(handle, &sTransmitFrame, headerLength); //Don't need to store security information OR source address for intransits, just destination addressing info and fc (Max length 13 bytes)
 
     if(curPacket.SrcAddrMode == MAC_MODE_SHORT_ADDR) addressFieldLength += 4;
@@ -973,7 +974,7 @@ int readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
 	assert(sentFrame != NULL);
 
     if(params->Status == MAC_SUCCESS){
-    	otPlatRadioTransmitDone(false, sTransmitError, sentFrame);
+    	otPlatRadioTransmitDone(false, sTransmitError, sentFrame, sentFrame->mTransmitContext);
     	sState = kStateReceive;
     	sTransmitError = kThreadError_None;
     }
@@ -983,7 +984,7 @@ int readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
     	else if(params->Status == MAC_NO_ACK) sTransmitError = kThreadError_NoAck;
     	else sTransmitError = kThreadError_Abort;
     	otPlatLog(kLogLevelWarn, kLogRegionHardMac, "MCPS_DATA_confirm error: %#x \r\n", params->Status);
-    	otPlatRadioTransmitDone(false, sTransmitError, sentFrame);
+    	otPlatRadioTransmitDone(false, sTransmitError, sentFrame, sentFrame->mTransmitContext);
     	sState = kStateReceive;
     	sTransmitError = kThreadError_None;
     }
