@@ -306,6 +306,7 @@ void PlatformRadioInit(void)
 			&enable,
 			pDeviceRef);
 
+	//TODO: This should be 3 according to thread spec, but openthread still needs to sort out the higher level retries
 	uint8_t retries = 7;	//Retry transmission 7 times if not acknowledged
 	MLME_SET_request_sync(
 		macMaxFrameRetries,
@@ -723,7 +724,7 @@ ThreadError otPlatRadioTransmit(void * transmitContext)
 
     curPacket.SrcAddrMode = MAC_FC_SAM(frameControl);
     curPacket.Dst.AddressMode = MAC_FC_DAM(frameControl);
-    curPacket.TxOptions = (frameControl & MAC_FC_ACK_REQ) ? 0x01 : 0x00;
+    curPacket.TxOptions = (frameControl & MAC_FC_ACK_REQ) ? 0x01 : 0x00;		//Set bit 0 for ack-requesting transmissions
     curPacket.TxOptions |= sTransmitFrame.mDirectTransmission ? 0x00 : 1<<2;	//Set bit 2 for indirect transmissions
     uint8_t isPanCompressed = frameControl & MAC_FC_PAN_COMP;
 
