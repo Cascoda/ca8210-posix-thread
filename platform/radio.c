@@ -71,6 +71,17 @@ enum
     IEEE802154_DSN_OFFSET = 2,
 };
 
+struct DeviceCache {
+	uint8_t			isActive;
+	otExtAddress 	mExtAddr;					//Extended address of the device
+	uint8_t 		mFrameCounter[4];			//The most up to date frame counter from the device table
+	uint8_t 		mTimeoutFrameCounter[4];	//The previously polled version of the frame counter
+};
+
+static struct DeviceCache sDeviceCache[DEVICE_TABLE_SIZE] = {0};
+
+static uint8_t curDeviceTableSize = 0;
+
 int PlatformRadioSignal(void);
 
 int readFrame(struct MCPS_DATA_indication_pset *params);
@@ -83,6 +94,9 @@ int genericDispatchFrame(const uint8_t *buf, size_t len);
 void keyChangedCallback(uint32_t aFlags, void *aContext);
 void coordChangedCallback(uint32_t aFlags, void *aContext);
 
+//DEVICE FRAME COUNTER CACHING
+static void cacheDevices();
+static struct DeviceCache * getCachedDevice(otExtAddress addr);
 
 //BARRIER
 static pthread_mutex_t barrierMutex = PTHREAD_MUTEX_INITIALIZER;
@@ -525,6 +539,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 		tKeyDescriptor.Fixed.KeyIdLookupListEntries = 1;
 		tKeyDescriptor.Fixed.KeyUsageListEntries = 2;
 		tKeyDescriptor.Fixed.KeyDeviceListEntries = count;
+		curDeviceTableSize = count;
 
 		//Flags according to Cascoda API 5.3.1
 		//tKeyDescriptor.KeyUsageList[0].Flags = (MAC_FC_FT_DATA & KUD_FrameTypeMask);	//data usage
@@ -1091,6 +1106,87 @@ int PlatformRadioSignal(void)
 int PlatformRadioProcess(void){
 	barrier_main_letWorkerWork();
 	return 0;
+}
+
+static struct DeviceCache * getCachedDevice(otExtAddress addr){
+	struct DeviceCache * toReturn = NULL;
+	uint8_t foundEmpty = 0xFF;
+
+	//Find existing cache
+	for(int i = 0; i < DEVICE_TABLE_SIZE; i++){
+		if(sDeviceCache[i].isActive){
+			if(memcmp(addr.m8, sDeviceCache[i].mExtAddr.m8, sizeof(addr)) == 0){
+				return &sDeviceCache[i];
+			}
+		}
+		else if(foundEmpty == 0xFF){
+			foundEmpty = i;
+		}
+	}
+
+	toReturn = sDeviceCache[foundEmpty];
+	//Prepare and return a new cache
+	memset(toReturn, 0, sizeof(*toReturn));
+	toReturn->isActive = 1;
+	toReturn->mExtAddr = addr;
+
+	return toReturn;
+}
+
+static void cacheDevices(){
+	for(uint8_t i = 0; i < curDeviceTableSize; i++){
+		uint8_t length;
+		struct M_DeviceDescriptor tDeviceDescriptor;
+
+		MLME_GET_request_sync(	macDeviceTable,
+								i,
+								&length,
+								&tDeviceDescriptor,
+								pDeviceRef);
+
+		otExtAddress cur;
+		struct DeviceCache * curCache;
+		memcpy(cur.m8, tDeviceDescriptor.ExtAddress, sizeof(cur));
+		curCache = getCachedDevice(cur);
+		memcpy(curCache->mFrameCounter, tDeviceDescriptor.FrameCounter, 4);
+		curCache->isActive = 2;
+	}
+
+	for(uint8_t i = 0; i < DEVICE_TABLE_SIZE; i++){
+		if(sDeviceCache[i].isActive == 1){
+			//Device was not in device table, remove from cache
+			memset(&sDeviceCache[i], 0, sizeof(sDeviceCache[i]));
+		}
+		else if(sDeviceCache[i].isActive == 2){
+			sDeviceCache[i].isActive = 1;
+		}
+	}
+}
+
+uint8_t otPlatRadioIsDeviceActive(otExtAddress addr){
+
+	uint8_t toReturn = 0;
+
+	//update cache
+	//TODO: Don't recache all devices every time -> just update the frame counter for the relevant one and
+	//recache all of the rest as the macDeviceTable is changed.
+	cacheDevices();
+
+	//Find existing cache
+	for(int i = 0; i < DEVICE_TABLE_SIZE; i++){
+		if(sDeviceCache[i].isActive && memcmp(addr.m8, sDeviceCache[i].mExtAddr.m8, sizeof(addr)) == 0){
+			//Device match found
+			if(memcmp(sDeviceCache[i].mFrameCounter, sDeviceCache[i].mTimeoutFrameCounter, 4) == 0){
+				//Device has not sent any messages since last poll -> device is inactive
+				return 0;
+			}
+			else{
+				//Update the timeout version, return 1 -> the device is active
+				memcpy(sDeviceCache[i].mTimeoutFrameCounter, sDeviceCache[i].mFrameCounter, 4);
+				return 1;
+			}
+		}
+	}
 }
 
 /*
