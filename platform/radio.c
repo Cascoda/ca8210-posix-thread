@@ -422,6 +422,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 
 	if((aFlags & (OT_NET_KEY_SEQUENCE | OT_THREAD_CHILD_ADDED | OT_THREAD_CHILD_REMOVED | OT_NET_ROLE | OT_THREAD_LINK_ACCEPT))){	//The thrKeySequenceCounter has changed or device descriptors need updating
 		//Therefore update the keys stored in the macKeytable
+		//TODO: (low priority) Utilise the device cache to speed this up
 		otPlatLog(kLogLevelDebg, kLogRegionHardMac, "Updating keys\n\r");
 		if(otGetKeySequenceCounter() == 0) otSetKeySequenceCounter(2);
 		uint32_t tKeySeq = otGetKeySequenceCounter() - 1;
