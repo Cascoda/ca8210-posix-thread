@@ -1125,7 +1125,7 @@ static struct DeviceCache * getCachedDevice(otExtAddress addr){
 		}
 	}
 
-	toReturn = sDeviceCache[foundEmpty];
+	toReturn = &sDeviceCache[foundEmpty];
 	//Prepare and return a new cache
 	memset(toReturn, 0, sizeof(*toReturn));
 	toReturn->isActive = 1;
@@ -1165,9 +1165,6 @@ static void cacheDevices(){
 }
 
 uint8_t otPlatRadioIsDeviceActive(otExtAddress addr){
-
-	uint8_t toReturn = 0;
-
 	//update cache
 	//TODO: Don't recache all devices every time -> just update the frame counter for the relevant one and
 	//recache all of the rest as the macDeviceTable is changed.
@@ -1179,6 +1176,7 @@ uint8_t otPlatRadioIsDeviceActive(otExtAddress addr){
 			//Device match found
 			if(memcmp(sDeviceCache[i].mFrameCounter, sDeviceCache[i].mTimeoutFrameCounter, 4) == 0){
 				//Device has not sent any messages since last poll -> device is inactive
+				//(This will promptly be removed by the higher level and will flush through)
 				return 0;
 			}
 			else{
@@ -1188,6 +1186,7 @@ uint8_t otPlatRadioIsDeviceActive(otExtAddress addr){
 			}
 		}
 	}
+	return 0;
 }
 
 /*
