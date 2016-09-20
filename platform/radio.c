@@ -805,11 +805,15 @@ ThreadError otPlatRadioTransmit(void * transmitContext)
 
     		uint8_t interval[2] = {0, 0};
     		uint8_t ret;
+    		uint8_t count = 0;
 
+    		do{
     		ret = MLME_POLL_request_sync(curPacket.Dst,
     		                       interval,
 			                       &curSecSpec,
 			                       pDeviceRef);
+    		if(count > 0) otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Poll Failed! Retry #%d", count);
+    		} while(ret == 0xFF && (count++ < 10));
 
     		if(ret == MAC_SUCCESS){
     			otPlatRadioTransmitDone(true, error, &sTransmitFrame, transmitContext);
@@ -818,8 +822,7 @@ ThreadError otPlatRadioTransmit(void * transmitContext)
     			otPlatRadioTransmitDone(false, error, &sTransmitFrame, transmitContext);
     		}
     		else{
-    			error = kThreadError_NoAck;
-    			otPlatRadioTransmitDone(false, error, &sTransmitFrame, transmitContext);
+    			otPlatRadioTransmitDone(false, kThreadError_NoAck, &sTransmitFrame, transmitContext);
     		}
     	}
     	else{
