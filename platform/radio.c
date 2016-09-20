@@ -758,8 +758,10 @@ ThreadError otPlatRadioTransmit(void * transmitContext)
     	addressFieldLength +=10;
     }
 
-    sTransmitFrame.mTransmitContext = transmitContext;
-    putIntransitFrame(handle, &sTransmitFrame, headerLength); //Don't need to store security information OR source address for intransits, just destination addressing info and fc (Max length 13 bytes)
+    if((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_DATA){
+		sTransmitFrame.mTransmitContext = transmitContext;
+		putIntransitFrame(handle, &sTransmitFrame, headerLength); //Don't need to store security information OR source address for intransits, just destination addressing info and fc (Max length 13 bytes)
+	}
 
     if(curPacket.SrcAddrMode == MAC_MODE_SHORT_ADDR) addressFieldLength += 4;
     else if(curPacket.SrcAddrMode == MAC_MODE_LONG_ADDR) addressFieldLength += 10;
@@ -812,12 +814,25 @@ ThreadError otPlatRadioTransmit(void * transmitContext)
     	if(sTransmitFrame.mPsdu[headerLength] == 0x04){	//Data request command
 
     		uint8_t interval[2] = {0, 0};
+    		uint8_t ret;
 
-    		MLME_POLL_request_sync(curPacket.Dst,
+    		ret = MLME_POLL_request_sync(curPacket.Dst,
     		                       interval,
 			                       &curSecSpec,
 			                       pDeviceRef);
-    	}
+
+    		if(ret == MAC_SUCCESS){
+    			otPlatRadioTransmitDone(true, error, sTransmitFrame, transmitContext);
+    		}
+    		else if(ret == MAC_NO_DATA){
+    			otPlatRadioTransmitDone(false, error, sTransmitFrame, transmitContext);
+    		}
+    		else{
+    			error = kThreadError_NoAck;
+    		}
+    			otPlatRadioTransmitDone(false, error, sTransmitFrame, transmitContext);
+    		}
+
     	else{
     		assert(false);
     	}
