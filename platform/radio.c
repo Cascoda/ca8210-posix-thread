@@ -336,11 +336,11 @@ void PlatformRadioInit(void)
 
 	uint8_t maxBE = 4;	//max BackoffExponent 4
 	MLME_SET_request_sync(
-			macMaxBE,
-			0,
-			sizeof(maxBE),
-			&maxBE,
-			pDeviceRef);
+		macMaxBE,
+		0,
+		sizeof(maxBE),
+		&maxBE,
+		pDeviceRef);
 
 	uint8_t defaultKeySource[8] = {0, 0, 0, 0, 0, 0, 0, 0xFF};	//set the defaultKeySource as defined in 7.2.2.1 of thread spec
 	MLME_SET_request_sync(
@@ -357,6 +357,14 @@ void PlatformRadioInit(void)
 		&LQImode,
 		pDeviceRef);
 
+	uint8_t persistanceTime[2];		//Indirect transmissions should wait 90 seconds before timing out
+	PUTLE16(0x16e3, persistanceTime);
+	MLME_SET_request_sync(
+		macTransactionPersistenceTime,
+		0,
+		2,
+		persistanceTime,
+		pDeviceRef);
 }
 
 void otHardMacStateChangeCallback(uint32_t aFlags, void *aContext){
