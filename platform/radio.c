@@ -822,15 +822,15 @@ ThreadError otPlatRadioTransmit(void * transmitContext)
 			                       pDeviceRef);
 
     		if(ret == MAC_SUCCESS){
-    			otPlatRadioTransmitDone(true, error, sTransmitFrame, transmitContext);
+    			otPlatRadioTransmitDone(true, error, &sTransmitFrame, transmitContext);
     		}
     		else if(ret == MAC_NO_DATA){
-    			otPlatRadioTransmitDone(false, error, sTransmitFrame, transmitContext);
+    			otPlatRadioTransmitDone(false, error, &sTransmitFrame, transmitContext);
     		}
     		else{
     			error = kThreadError_NoAck;
     		}
-    			otPlatRadioTransmitDone(false, error, sTransmitFrame, transmitContext);
+    			otPlatRadioTransmitDone(false, error, &sTransmitFrame, transmitContext);
     		}
 
     	else{
