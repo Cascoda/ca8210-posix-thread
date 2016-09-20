@@ -313,13 +313,6 @@ void PlatformRadioInit(void)
 		&enable,
 		pDeviceRef);
 
-	MLME_SET_request_sync(	//enable Rx when Idle
-			macRxOnWhenIdle,
-			0,
-			sizeof(enable),
-			&enable,
-			pDeviceRef);
-
 	//TODO: This should be 3 according to thread spec, but openthread still needs to sort out the higher level retries
 	uint8_t retries = 7;	//Retry transmission 7 times if not acknowledged
 	MLME_SET_request_sync(
@@ -643,28 +636,25 @@ ThreadError otPlatRadioDisable(void)    //TODO:(lowpriority) port
 
 ThreadError otPlatRadioSleep(void)    //TODO:(lowpriority) port 
 {
-	ThreadError error = kThreadError_Busy;
+	return kThreadError_None;
+	//This is handled by the hardmac and the state of rxOnWhenIdle
+}
 
-	if (sState == kStateSleep || sState == kStateReceive)
-	{
-		error = kThreadError_None;
-		sState = kStateSleep;
+ThreadError otPlatRadioSetRxOnWhenIdle(uint8_t rxOnWhenIdle){
+	ThreadError error = kThreadError_None;
+	uint8_t ret = 0;
+	rxOnWhenIdle = rxOnWhenIdle ? 1 : 0;
 
-		#ifdef EXECUTE_MODE
-			uint8_t HWMEAttVal[5] = {0x2A, 00, 00, 00, 00};
-			if (HWME_SET_request_sync (
-				HWME_POWERCON,
-				5,
-				HWMEAttVal,
-				pDeviceRef
-				) == HWME_SUCCESS)
-				return kThreadError_None;
-			else return kThreadError_Failed;
+	ret = MLME_SET_request_sync(	//enable Rx when Idle
+				macRxOnWhenIdle,
+				0,
+				sizeof(rxOnWhenIdle),
+				&rxOnWhenIdle,
+				pDeviceRef);
 
-		#endif
-	}
+	error = ret ? kThreadError_Busy : kThreadError_None;
 
-    return error;
+	return error;
 }
 
 ThreadError otPlatRadioReceive(uint8_t aChannel)
