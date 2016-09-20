@@ -829,10 +829,9 @@ ThreadError otPlatRadioTransmit(void * transmitContext)
     		}
     		else{
     			error = kThreadError_NoAck;
-    		}
     			otPlatRadioTransmitDone(false, error, &sTransmitFrame, transmitContext);
     		}
-
+    	}
     	else{
     		assert(false);
     	}
