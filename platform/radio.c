@@ -714,8 +714,9 @@ ThreadError otPlatRadioTransmit(void * transmitContext)
     VerifyOrExit(sState != kStateDisabled, error = kThreadError_Busy);
 
     uint16_t frameControl = GETLE16(sTransmitFrame.mPsdu);
-    VerifyOrExit((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_DATA, \
-    	error = kThreadError_Abort;									\
+    VerifyOrExit(((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_DATA) || \
+    	((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_COMMAND),         \
+    	error = kThreadError_Abort;                                     \
     	otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Unexpected frame type %#x\n\r", (frameControl & MAC_FC_FT_MASK)););
 
 /*
@@ -784,29 +785,43 @@ ThreadError otPlatRadioTransmit(void * transmitContext)
     	headerLength = ASHloc;
     }
 
-    //Table 95 to calculate auth tag length
-    footerLength = 2 << (curSecSpec.SecurityLevel % 4);
-    footerLength = (footerLength == 2) ? 0 : footerLength;
+    if((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_DATA){
+		//Table 95 to calculate auth tag length
+		footerLength = 2 << (curSecSpec.SecurityLevel % 4);
+		footerLength = (footerLength == 2) ? 0 : footerLength;
 
-    footerLength += 2; //MFR length
+		footerLength += 2; //MFR length
 
-    curPacket.MsduLength = sTransmitFrame.mLength - footerLength - headerLength;
-    memcpy(curPacket.Msdu, sTransmitFrame.mPsdu + headerLength, curPacket.MsduLength);
-    curPacket.MsduHandle = handle;
+		curPacket.MsduLength = sTransmitFrame.mLength - footerLength - headerLength;
+		memcpy(curPacket.Msdu, sTransmitFrame.mPsdu + headerLength, curPacket.MsduLength);
+		curPacket.MsduHandle = handle;
 
-    MCPS_DATA_request(
-        curPacket.SrcAddrMode,
-        curPacket.Dst.AddressMode,
-        GETLE16(curPacket.Dst.PANId),
-        (union MacAddr*) curPacket.Dst.Address,
-        curPacket.MsduLength,
-        curPacket.Msdu,
-        curPacket.MsduHandle,
-        curPacket.TxOptions,
-        &curSecSpec,
-        pDeviceRef);
+		MCPS_DATA_request(
+			curPacket.SrcAddrMode,
+			curPacket.Dst.AddressMode,
+			GETLE16(curPacket.Dst.PANId),
+			(union MacAddr*) curPacket.Dst.Address,
+			curPacket.MsduLength,
+			curPacket.Msdu,
+			curPacket.MsduHandle,
+			curPacket.TxOptions,
+			&curSecSpec,
+			pDeviceRef);
+    }
+    else if((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_COMMAND){
+    	if(sTransmitFrame.mPsdu[headerLength] == 0x04){	//Data request command
 
-    //PlatformRadioSignal();
+    		uint8_t interval[2] = {0, 0};
+
+    		MLME_POLL_request_sync(curPacket.Dst,
+    		                       interval,
+			                       &curSecSpec,
+			                       pDeviceRef);
+    	}
+    	else{
+    		assert(false);
+    	}
+    }
 
 exit:
     return error;
