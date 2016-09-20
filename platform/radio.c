@@ -131,6 +131,10 @@ static void* pDeviceRef = NULL;
 
 static uint8_t sChannel = 0;
 
+//TODO: make this an enum
+enum tristateCache {tristate_disabled = 0, tristate_enabled = 1, tristate_uninit = 2};
+static enum tristateCache promiscuousCache = tristate_uninit;
+
 static uint8_t isCoord = 0;
 
 static uint8_t sTransmitPsdu[IEEE802154_MAX_LENGTH];
@@ -846,6 +850,8 @@ otRadioCaps otPlatRadioGetCaps(void)
 
 bool otPlatRadioGetPromiscuous(void)
 {
+	if(promiscuousCache != tristate_uninit) return promiscuousCache;
+
 	uint8_t resultLen;
     uint8_t result;
     MLME_GET_request_sync(
@@ -854,6 +860,10 @@ bool otPlatRadioGetPromiscuous(void)
         &resultLen,
         &result,
         pDeviceRef);
+
+    result = result ? tristate_enabled : tristate_disabled;
+    promiscuousCache = result;
+
     return (bool) result;
 }
 
@@ -866,7 +876,7 @@ void otPlatRadioSetPromiscuous(bool aEnable)
         sizeof(enable),
         &enable,
         pDeviceRef);
-
+    promiscuousCache = aEnable;
 }
 
 int readFrame(struct MCPS_DATA_indication_pset *params)   //Async
