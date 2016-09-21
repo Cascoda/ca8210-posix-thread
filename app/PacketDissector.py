@@ -24,7 +24,7 @@ def printDissected( packetString ):
 								displayLengthMax = int(param['DisplayLength'], 0)
 
 							if 'Visibility' in param:
-								if param['Visibility'] == 'false':
+								if str(param['Visibility']) == 'false':
 									visible = False
 
 							for _ in itertools.repeat(None, int(param['@Length'], 0)):
@@ -36,16 +36,16 @@ def printDissected( packetString ):
 									for ValueDes in param['PotentialValues']['Value']:
 										if int(ValueDes['@Value'], 0) == inData[iterCounter]:
 											s += '(' + ValueDes['@Name'] + ')'
-											break;
 
-										if 'ParameterDependancy' in ValueDes:
-											for parDep in ValueDes['ParameterDependancy']:
-												for targetPar in item['List']['Parameter']:
-													if targetPar['@Name'] == str(parDep['@Name']):
-														if '#text' in parDep:
-															targetPar[str(parDep['@Value'])] = parDep['#text']
-														else:
-															targetPar['@' + str(parDep['@Value'])] = hex(inData[iterCounter])
+											if 'ParameterDependancy' in ValueDes:
+												for parDep in ValueDes['ParameterDependancy']:
+													for targetPar in item['List']['Parameter']:
+														if targetPar['@Name'] == str(parDep['@Name']):
+															if '#text' in parDep:
+																targetPar[str(parDep['@Value'])] = parDep['#text']
+															else:
+																targetPar['@' + str(parDep['@Value'])] = hex(inData[iterCounter])
+											break;
 
 								iterCounter += 1
 								if iterCounter >= len(inData):
