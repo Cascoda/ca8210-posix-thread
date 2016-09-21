@@ -43,6 +43,7 @@ def printDissected( packetString ):
 						displayLengthCount += 1
 
 					#Certain parameters are discrete, and come with accompanying descriptions
+					#Discrete parameters are currently limited to length 1
 					if param['@Type'] == 'Discrete':
 						for ValueDes in param['PotentialValues']['Value']:
 							if int(ValueDes['@Value'], 0) == inData[iterCounter]:
@@ -68,6 +69,7 @@ def printDissected( packetString ):
 					print s
 
 				#Some parameter dependancies can cause a future property to be affected by the value of itself (eg length)
+				#These kinds of parameters are currently limited to length 1
 				if 'ParameterDependancy' in param:
 					for parDep in param['ParameterDependancy']:
 						for targetPar in item['List']['Parameter']:
