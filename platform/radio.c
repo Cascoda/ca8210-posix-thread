@@ -402,17 +402,7 @@ void coordChangedCallback(uint32_t aFlags, void *aContext) {
 				isCoord = 1;
 			}
 		} else if (isCoord) {
-			MLME_START_request_sync(
-					otGetPanId(),
-					sChannel,
-					15,
-					15,
-					0,
-					0,
-					0,
-					&securityLevel,
-					&securityLevel,
-					pDeviceRef);
+			MLME_RESET_request_sync(0, pDeviceRef);
 			isCoord = 0;
 		}
 	}
