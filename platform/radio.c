@@ -824,7 +824,7 @@ ThreadError otPlatRadioTransmit(void * transmitContext)
     		                       interval,
 			                       &curSecSpec,
 			                       pDeviceRef);
-    		if(count > 0) otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Poll Failed! Retry #%d", count);
+    		if(count > 0) otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Poll Failed! Retry #%d\n\r", count);
     		} while(ret == 0xFF && (count++ < 10));
 
     		if(ret == MAC_SUCCESS){
