@@ -309,6 +309,9 @@ void PlatformRadioInit(void)
     callbacks.generic_dispatch = &genericDispatchFrame;	//UNCOMMENT TO ENABLE VIEWING UNHANDLED FRAMES
     cascoda_register_callbacks(&callbacks);
     
+    //Reset the MAC to a default state
+    MLME_RESET_request_sync(1, pDeviceRef);
+
     uint8_t enable = 1;	//enable security
 	MLME_SET_request_sync(
 		macSecurityEnabled,
