@@ -1203,9 +1203,12 @@ uint8_t otPlatRadioIsDeviceActive(otExtAddress addr){
 	//recache all of the rest as the macDeviceTable is changed.
 	cacheDevices();
 
+	otExtAddress macAddr;
+	for(int i = 0; i < sizeof(otExtAddress); i++) macAddr.m8[i] = addr.m8[7 - i];
+
 	//Find existing cache
 	for(int i = 0; i < DEVICE_TABLE_SIZE; i++){
-		if(sDeviceCache[i].isActive && memcmp(addr.m8, sDeviceCache[i].mExtAddr.m8, sizeof(addr)) == 0){
+		if(sDeviceCache[i].isActive && memcmp(macAddr.m8, sDeviceCache[i].mExtAddr.m8, sizeof(macAddr)) == 0){
 			//Device match found
 			if(memcmp(sDeviceCache[i].mFrameCounter, sDeviceCache[i].mTimeoutFrameCounter, 4) == 0){
 				//Device has not sent any messages since last poll -> device is inactive
