@@ -753,15 +753,15 @@ ThreadError otPlatRadioTransmit(void * transmitContext)
     	addressFieldLength +=10;
     }
 
-    if((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_DATA){
-		sTransmitFrame.mTransmitContext = transmitContext;
-		putIntransitFrame(handle, &sTransmitFrame, headerLength); //Don't need to store security information OR source address for intransits, just destination addressing info and fc (Max length 13 bytes)
-	}
-
     if(curPacket.SrcAddrMode == MAC_MODE_SHORT_ADDR) addressFieldLength += 4;
     else if(curPacket.SrcAddrMode == MAC_MODE_LONG_ADDR) addressFieldLength += 10;
     if(curPacket.SrcAddrMode && isPanCompressed) addressFieldLength -= 2; //Remove size saved by not including the same PAN twice
     headerLength = addressFieldLength + MAC_BASEHEADERLENGTH;
+
+    if((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_DATA){
+		sTransmitFrame.mTransmitContext = transmitContext;
+		putIntransitFrame(handle, &sTransmitFrame, headerLength); //Don't need to store security information OR source address for intransits, just destination addressing info and fc (Max length 13 bytes)
+	}
 
     if(frameControl & MAC_FC_SEC_ENA){	//if security is required
     	uint8_t ASHloc = MAC_BASEHEADERLENGTH + addressFieldLength;
