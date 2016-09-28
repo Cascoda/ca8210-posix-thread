@@ -32,6 +32,7 @@
  *
  */
 
+#include <openthread.h>
 #include <openthread-types.h>
 
 #include <stdlib.h>
@@ -100,7 +101,7 @@ struct DeviceCache {
 	uint8_t 		mTimeoutFrameCounter[4];	//The previously polled version of the frame counter
 };
 
-static struct DeviceCache sDeviceCache[DEVICE_TABLE_SIZE] = {0};
+static struct DeviceCache sDeviceCache[DEVICE_TABLE_SIZE] = {{0}};
 
 static uint8_t sCurDeviceTableSize = 0;
 static void deviceCache_cacheDevices(void);                                 //updates all devices in the cache
