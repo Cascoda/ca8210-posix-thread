@@ -185,7 +185,7 @@ static int8_t noiseFloor = 127;
 
 static PhyState sState;
 
-void setChannel(uint8_t channel)
+static void setChannel(uint8_t channel)
 {
     if(sChannel != channel){
     	MLME_SET_request_sync(
@@ -396,7 +396,7 @@ void PlatformRadioInit(void)
 		pDeviceRef);
 
 	uint8_t persistanceTime[2];		//Indirect transmissions should wait 90 seconds before timing out
-	PUTLE16(0x16e3, persistanceTime);
+	PUTLE16(0x16e3, persistanceTime); //=(90seconds * 10^6)/(aBaseSuperframeDuration * aSymbolPeriod_us)
 	MLME_SET_request_sync(
 		macTransactionPersistenceTime,
 		0,
@@ -630,7 +630,7 @@ ThreadError otPlatRadioEnable(void)    //TODO:(lowpriority) port
 		error = kThreadError_None;
 		sState = kStateSleep;
 
-		#ifdef EXECUTE_MODE
+		#ifdef USE_LOWPOWER_MODES
 			uint8_t HWMEAttVal[5] = {00, 00, 00, 00, 00};
 			if (HWME_SET_request_sync (
 				HWME_POWERCON,
@@ -657,7 +657,7 @@ ThreadError otPlatRadioDisable(void)    //TODO:(lowpriority) port
 		sState = kStateDisabled;
 
 		//should sleep until restarted
-		#ifdef EXECUTE_MODE
+		#ifdef USE_LOWPOWER_MODES
 			uint8_t HWMEAttVal[5] = {0x0A, 00, 00, 00, 00};
 			if (HWME_SET_request_sync (
 				HWME_POWERCON,
@@ -705,19 +705,6 @@ ThreadError otPlatRadioReceive(uint8_t aChannel)
     sState = kStateReceive;
 
     setChannel(aChannel);
-
-	#ifdef EXECUTE_MODE
-    	uint8_t HWMEAttVal[5] = {0x24, 00, 00, 00, 00};
-		if (HWME_SET_request_sync (
-			HWME_POWERCON,
-			5,
-			HWMEAttVal,
-			pDeviceRef
-			) == HWME_SUCCESS)
-			return kThreadError_None;
-		else return kThreadError_Failed;
-
-	#endif
 
 exit:
     return error;
@@ -1112,7 +1099,7 @@ exit:
     return 0;
 }
 
-static int handleScanConfirm(struct MLME_SCAN_confirm_pset *params) {
+static int handleScanConfirm(struct MLME_SCAN_confirm_pset *params) { //Async
 
 	if(!otIsInterfaceUp()) return 1;
 
