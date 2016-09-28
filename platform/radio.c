@@ -446,7 +446,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 				PUTLE16(otGetPanId() ,tDeviceDescriptor.PANId);
 				PUTLE16(tChildInfo.mRloc16, tDeviceDescriptor.ShortAddress);
 				for(int j = 0; j < 8; j++) tDeviceDescriptor.ExtAddress[j] = tChildInfo.mExtAddress.m8[7-j];	//Flip endian
-				tDeviceDescriptor.FrameCounter[0] = 0;	//TODO: Figure out how to do frame counter properly - this method is temporarily breaking replay protection as replays using previous key will still be successful
+				tDeviceDescriptor.FrameCounter[0] = 0;	//TODO: Use the frame cache to do frame counter properly - this method is temporarily breaking replay protection as replays using previous counter will still be successful
 				tDeviceDescriptor.FrameCounter[1] = 0;
 				tDeviceDescriptor.FrameCounter[2] = 0;
 				tDeviceDescriptor.FrameCounter[3] = 0;
@@ -474,7 +474,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 				PUTLE16(otGetPanId() ,tDeviceDescriptor.PANId);
 				PUTLE16(routers[i].mRloc16, tDeviceDescriptor.ShortAddress);
 				for(int j = 0; j < 8; j++) tDeviceDescriptor.ExtAddress[j] = routers[i].mExtAddress.m8[7-j];	//Flip endian
-				tDeviceDescriptor.FrameCounter[0] = 0;	//TODO: Figure out how to do frame counter properly - this method is temporarily breaking replay protection as replays using previous key will still be successful
+				tDeviceDescriptor.FrameCounter[0] = 0;	//TODO: Use the frame cache to do frame counter properly - this method is temporarily breaking replay protection as replays using previous counter will still be successful
 				tDeviceDescriptor.FrameCounter[1] = 0;
 				tDeviceDescriptor.FrameCounter[2] = 0;
 				tDeviceDescriptor.FrameCounter[3] = 0;
@@ -498,7 +498,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 				PUTLE16(otGetPanId(), tDeviceDescriptor.PANId);
 				PUTLE16(tParentInfo.mRloc16, tDeviceDescriptor.ShortAddress);
 				for(int j = 0; j < 8; j++) tDeviceDescriptor.ExtAddress[j] = tParentInfo.mExtAddress.m8[7-j];	//Flip endian
-				tDeviceDescriptor.FrameCounter[0] = 0;	//TODO: Figure out how to do frame counter properly - this method is temporarily breaking replay protection as replays using previous key will still be successful
+				tDeviceDescriptor.FrameCounter[0] = 0;	//TODO: Use the frame cache to do frame counter properly - this method is temporarily breaking replay protection as replays using previous counter will still be successful
 				tDeviceDescriptor.FrameCounter[1] = 0;
 				tDeviceDescriptor.FrameCounter[2] = 0;
 				tDeviceDescriptor.FrameCounter[3] = 0;
@@ -639,7 +639,7 @@ ThreadError otPlatRadioDisable(void)    //TODO:(lowpriority) port
     return error;
 }
 
-ThreadError otPlatRadioSleep(void)    //TODO:(lowpriority) port 
+ThreadError otPlatRadioSleep(void)
 {
 	return kThreadError_None;
 	//This is handled by the hardmac and the state of rxOnWhenIdle
@@ -713,14 +713,6 @@ ThreadError otPlatRadioTransmit(void * transmitContext)
     	((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_COMMAND),         \
     	error = kThreadError_Abort;                                     \
     	otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Unexpected frame type %#x\n\r", (frameControl & MAC_FC_FT_MASK)););
-
-/*
-    fputs("\r\nTransmit:",stderr);
-    for(i = 0; i < sTransmitFrame.mLength; i++){
-    	fprintf(stderr, " %#04x", sTransmitFrame.mPsdu[i]);
-    }
-    fputs("\r\n",stderr);
-*/
 
     sState = kStateTransmit;
     sTransmitError = kThreadError_None;
@@ -839,7 +831,7 @@ exit:
     return error;
 }
 
-int8_t otPlatRadioGetNoiseFloor(void)    //TODO:(lowpriority) port 
+int8_t otPlatRadioGetNoiseFloor(void)
 {
     return noiseFloor;
 }
@@ -988,14 +980,6 @@ int readFrame(struct MCPS_DATA_indication_pset *params)   //Async
 	sReceiveFrame.mChannel = sChannel;
 	sReceiveFrame.mPower = (params->MpduLinkQuality - 256)/2;	//Formula from CA-821X API
 	noiseFloor = sReceiveFrame.mPower;
-
-/*
-	fputs("\r\nReceived:",stderr);
-	for(int i = 0; i < sReceiveFrame.mLength; i++){
-		fprintf(stderr, " %#04x", sReceiveFrame.mPsdu[i]);
-	}
-	fputs("\r\n",stderr);
-*/
 
     pthread_mutex_unlock(&receiveFrame_mutex);
 
