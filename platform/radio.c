@@ -71,6 +71,29 @@ enum
     IEEE802154_DSN_OFFSET = 2,
 };
 
+int PlatformRadioSignal(void);
+
+//CASCODA API CALLBACKS
+static int handleDataIndication(struct MCPS_DATA_indication_pset *params);
+static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params);
+
+static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params);
+static int handleScanConfirm(struct MLME_SCAN_confirm_pset *params);
+static int handleGenericDispatchFrame(const uint8_t *buf, size_t len);
+//END CASCODA API CALLBACKS
+
+//OPENTHREAD API CALLBACKS
+static void keyChangeCallback(uint32_t aFlags, void *aContext);   //Used to update the keys and deviceTable
+static void coordChangeCallback(uint32_t aFlags, void *aContext); //Used to change the device to and from a coordinator
+//END OPENTHREAD API CALLBACKS
+
+//DEVICE FRAME COUNTER CACHING
+/*
+ * The following functions and data create a system for monitoring the frame counter values of connected
+ * devices from the device tree. This is used in practice to check the activity of rx-off-when-idle
+ * children, who only need to send polls in order to remain active and not be timed out. (If there is no
+ * data for that child, there is no effect of these other than to increment the frame counter)
+ */
 struct DeviceCache {
 	uint8_t			isActive;
 	otExtAddress 	mExtAddr;					//Extended address of the device
@@ -80,73 +103,85 @@ struct DeviceCache {
 
 static struct DeviceCache sDeviceCache[DEVICE_TABLE_SIZE] = {0};
 
-static uint8_t curDeviceTableSize = 0;
-
-int PlatformRadioSignal(void);
-
-int readFrame(struct MCPS_DATA_indication_pset *params);
-int readConfirmFrame(struct MCPS_DATA_confirm_pset *params);
-
-int beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params);
-int scanConfirmCheck(struct MLME_SCAN_confirm_pset *params);
-int genericDispatchFrame(const uint8_t *buf, size_t len);
-
-void keyChangedCallback(uint32_t aFlags, void *aContext);
-void coordChangedCallback(uint32_t aFlags, void *aContext);
-
-//DEVICE FRAME COUNTER CACHING
-static void cacheDevices();
-static struct DeviceCache * getCachedDevice(otExtAddress addr);
+static uint8_t sCurDeviceTableSize = 0;
+static void deviceCache_cacheDevices(void);                                 //updates all devices in the cache
+static struct DeviceCache * deviceCache_getCachedDevice(otExtAddress addr); //returns a pointer to the requred cached device
+//END DEVICE FRAME COUNTER CACHING
 
 //BARRIER
-static pthread_mutex_t barrierMutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t barrierCondVar = PTHREAD_COND_INITIALIZER;
+/*
+ * The following functions create a thread safe system for allowing the worker thread to access openthread
+ * functions safely. The main thread always has priority and must explicitly give control to the worker
+ * thread while locking itself. This has ONLY been designed to work with ONE worker and ONE main, in a way
+ * that causes the worker thread to run one operation per poll cycle as openthread was designed for.
+ */
+static pthread_mutex_t barrier_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t barrier_cond = PTHREAD_COND_INITIALIZER;
 static enum barrier_waiting {NOT_WAITING, WAITING, GREENLIGHT, DONE} mbarrier_waiting;
 
-static inline void barrier_main_letWorkerWork(void);
-static inline void barrier_worker_waitForMain(void);
-static inline void barrier_worker_endWork(void);
+static inline void barrier_main_letWorkerWork(void);	//Used by main thread to allow worker to access ot if necessary
+static inline void barrier_worker_waitForMain(void);	//Used by worker thread to start access to ot
+static inline void barrier_worker_endWork(void);		//Used by worker thread to end access to ot
+//END BARRIER
 
 //INTRANSIT
-static RadioPacket * getIntransitFrame(uint8_t handle);	//Return pointer to the relevant packet, or NULL
-static int rmIntransitFrame(uint8_t handle);	//Release dynamically allocated memory -- returns 0 for success, or an error code
-static int putIntransitFrame(uint8_t handle, const RadioPacket * in, uint8_t headerSize);	//returns 0 for success, or an error code
-static int isHandleInUse(uint8_t handle); //returns 0 if the handle is free, or 1 if it is already in use
+/*
+ * The following functions exist to create a queue for in-transit data packets. The complete frames are not
+ * stored, only the header information required to process the completion of the transmission. This is because
+ * it is not guaranteed for these frames to transmit in order, and the destination address is required for
+ *  post-transmission processing.
+ */
+static RadioPacket * intransit_getFrame(uint8_t handle);	//Return pointer to the relevant packet, or NULL
+static int intransit_rmFrame(uint8_t handle);	//Release dynamically allocated memory -- returns 0 for success, or an error code
+static int intransit_putFrame(uint8_t handle, const RadioPacket * in, uint8_t headerSize);	//returns 0 for success, or an error code
+static int intransit_isHandleInUse(uint8_t handle); //returns 0 if the handle is free, or 1 if it is already in use
 
 #define MAX_INTRANSITS 7 /*TODO:  5 indirect frames +2 (perhaps need more?)*/
 uint8_t IntransitHandles[MAX_INTRANSITS] = {0};
 RadioPacket IntransitPackets[MAX_INTRANSITS];
 static pthread_mutex_t intransit_mutex = PTHREAD_MUTEX_INITIALIZER;
+//END INTRANSIT
 
+//FRAME DATA
 static RadioPacket sTransmitFrame;
 static RadioPacket sReceiveFrame;
 static ThreadError sTransmitError;
 static ThreadError sReceiveError = kThreadError_None;
 
-static otHandleActiveScanResult scanCallback;
-static void * scanContext;
-static uint8_t activeScanInProgress = 0;
+static uint8_t sTransmitPsdu[IEEE802154_MAX_LENGTH];
+static uint8_t sReceivePsdu[IEEE802154_MAX_LENGTH];
 
+pthread_mutex_t receiveFrame_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t receiveFrame_cond = PTHREAD_COND_INITIALIZER;
+//END FRAME DATA
+
+//SCAN DATA
+static otHandleActiveScanResult sScanCallback;
+static void * sScanContext;
+static uint8_t sActiveScanInProgress = 0;
+//END SCAN DATA
+
+//For cascoda API
 static void* pDeviceRef = NULL;
 
 static uint8_t sChannel = 0;
 
-//TODO: make this an enum
+//Caching for values that may or may not be set on chip
 enum tristateCache {tristate_disabled = 0, tristate_enabled = 1, tristate_uninit = 2};
-static enum tristateCache promiscuousCache = tristate_uninit;
 
-static uint8_t isCoord = 0;
+//Cached value for promiscuity
+static enum tristateCache sPromiscuousCache = tristate_uninit;
 
-static uint8_t sTransmitPsdu[IEEE802154_MAX_LENGTH];
-static uint8_t sReceivePsdu[IEEE802154_MAX_LENGTH];
+//Cached current coordinator status
+static uint8_t sIsCoordinator = 0;
 
-static uint8_t mBeaconPayload[32] = {3, 0x91};
-static uint8_t payloadLength = 32;
+//BEACON DATA
+#define BEACON_PAYLOAD_LENGTH 32
+static const uint8_t kBeaconPayloadLength = BEACON_PAYLOAD_LENGTH;
+static uint8_t mBeaconPayload[BEACON_PAYLOAD_LENGTH] = {3, 0x91};
+//END BEACON DATA
 
 static int8_t noiseFloor = 127;
-
-pthread_mutex_t receiveFrame_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t receiveFrame_cond = PTHREAD_COND_INITIALIZER;
 
 static PhyState sState;
 
@@ -163,7 +198,7 @@ void setChannel(uint8_t channel)
     }
 }
 
-ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandleActiveScanResult aCallback, void *aCallbackContext)
+ThreadError otPlatRadioActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandleActiveScanResult aCallback, void *aCallbackContext)
 {
 
 	/*
@@ -173,8 +208,8 @@ ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandl
 	uint8_t ScanDuration = 5; //0 to 14
 	struct SecSpec pSecurity = {0};
 	if (aScanChannels == 0) aScanChannels = 0x07fff800; //11 to 26
-	scanCallback = aCallback;
-	scanContext = aCallbackContext;
+	sScanCallback = aCallback;
+	sScanContext = aCallbackContext;
 	uint8_t scanRequest = MLME_SCAN_request(
 			1,
 			aScanChannels,
@@ -182,49 +217,49 @@ ThreadError otActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandl
 			&pSecurity,
 			pDeviceRef);
 
-	if(scanRequest == MAC_SUCCESS) activeScanInProgress = 1;
+	if(scanRequest == MAC_SUCCESS) sActiveScanInProgress = 1;
 	return scanRequest;
 }
 
-bool otActiveScanInProgress(void)
+bool otPlatRadioActiveScanInProgress(void)
 {
-    return activeScanInProgress;
+    return sActiveScanInProgress;
 }
 
-ThreadError otPlatSetNetworkName(const char *aNetworkName) {
+ThreadError otPlatRadioSetNetworkName(const char *aNetworkName) {
 
 	memcpy(mBeaconPayload + 2, aNetworkName, 16);
 	if ((MLME_SET_request_sync(
 			macBeaconPayload,
 			0,
-			payloadLength,
+			kBeaconPayloadLength,
 			mBeaconPayload,
 			pDeviceRef) == MAC_SUCCESS) &&
 		(MLME_SET_request_sync(
 			macBeaconPayloadLength,
 			0,
 			1,
-			&payloadLength,
+			&kBeaconPayloadLength,
 			pDeviceRef) == MAC_SUCCESS)) {
         return kThreadError_None;
 	}
 	else return kThreadError_Failed;
 }
 
-ThreadError otPlatSetExtendedPanId(const uint8_t *aExtPanId) {
+ThreadError otPlatRadioSetExtendedPanId(const uint8_t *aExtPanId) {
 
 	memcpy(mBeaconPayload + 18, aExtPanId, 8);
 	if ((MLME_SET_request_sync(
 			macBeaconPayload,
 			0,
-			payloadLength,
+			kBeaconPayloadLength,
 			mBeaconPayload,
 			pDeviceRef) == MAC_SUCCESS) &&
 		(MLME_SET_request_sync(
 			macBeaconPayloadLength,
 			0,
 			1,
-			&payloadLength,
+			&kBeaconPayloadLength,
 			pDeviceRef) == MAC_SUCCESS)) {
 		return kThreadError_None;
 	}
@@ -302,11 +337,11 @@ void PlatformRadioInit(void)
     kernel_exchange_init_withhandler(driverErrorCallback);
 
     struct cascoda_api_callbacks callbacks = {0};
-    callbacks.MCPS_DATA_indication = &readFrame;
-    callbacks.MCPS_DATA_confirm = &readConfirmFrame;
-    callbacks.MLME_BEACON_NOTIFY_indication = &beaconNotifyFrame;
-    callbacks.MLME_SCAN_confirm = &scanConfirmCheck;
-    callbacks.generic_dispatch = &genericDispatchFrame;	//UNCOMMENT TO ENABLE VIEWING UNHANDLED FRAMES
+    callbacks.MCPS_DATA_indication = &handleDataIndication;
+    callbacks.MCPS_DATA_confirm = &handleDataConfirm;
+    callbacks.MLME_BEACON_NOTIFY_indication = &handleBeaconNotify;
+    callbacks.MLME_SCAN_confirm = &handleScanConfirm;
+    callbacks.generic_dispatch = &handleGenericDispatchFrame;	//UNCOMMENT TO ENABLE VIEWING UNHANDLED FRAMES
     cascoda_register_callbacks(&callbacks);
     
     //Reset the MAC to a default state
@@ -376,11 +411,11 @@ void otHardMacStateChangeCallback(uint32_t aFlags, void *aContext){
 	 * This function is called whenever there is an internal state change in thread
 	 */
 
-	keyChangedCallback(aFlags, aContext);
-	coordChangedCallback(aFlags, aContext);
+	keyChangeCallback(aFlags, aContext);
+	coordChangeCallback(aFlags, aContext);
 }
 
-void coordChangedCallback(uint32_t aFlags, void *aContext) {
+static void coordChangeCallback(uint32_t aFlags, void *aContext) {
 
 	/*
 	 * This function sets the node as an 802.15.4 coordinator when it is set to act as a thread
@@ -390,7 +425,7 @@ void coordChangedCallback(uint32_t aFlags, void *aContext) {
 	if(aFlags & OT_NET_ROLE){
 		struct SecSpec securityLevel = {0};
 		if(otGetDeviceRole() == kDeviceRoleRouter || otGetDeviceRole() == kDeviceRoleLeader){
-			if(!isCoord) {
+			if(!sIsCoordinator) {
 				MLME_START_request_sync(
 						otGetPanId(),
 						sChannel,
@@ -402,16 +437,16 @@ void coordChangedCallback(uint32_t aFlags, void *aContext) {
 						&securityLevel,
 						&securityLevel,
 						pDeviceRef);
-				isCoord = 1;
+				sIsCoordinator = 1;
 			}
-		} else if (isCoord) {
+		} else if (sIsCoordinator) {
 			MLME_RESET_request_sync(0, pDeviceRef);
-			isCoord = 0;
+			sIsCoordinator = 0;
 		}
 	}
 }
 
-void keyChangedCallback(uint32_t aFlags, void *aContext){
+static void keyChangeCallback(uint32_t aFlags, void *aContext){
 
 	/*
 	 * This Function updates the keytable and devicetable entries stored on the
@@ -538,7 +573,7 @@ void keyChangedCallback(uint32_t aFlags, void *aContext){
 		tKeyDescriptor.Fixed.KeyIdLookupListEntries = 1;
 		tKeyDescriptor.Fixed.KeyUsageListEntries = 2;
 		tKeyDescriptor.Fixed.KeyDeviceListEntries = count;
-		curDeviceTableSize = count;
+		sCurDeviceTableSize = count;
 
 		//Flags according to Cascoda API 5.3.1
 		//tKeyDescriptor.KeyUsageList[0].Flags = (MAC_FC_FT_DATA & KUD_FrameTypeMask);	//data usage
@@ -704,7 +739,7 @@ ThreadError otPlatRadioTransmit(void * transmitContext)
     static uint8_t handle = 0;
     handle++;
 
-    while(isHandleInUse(handle)) handle++;  //make sure handle is available for use
+    while(intransit_isHandleInUse(handle)) handle++;  //make sure handle is available for use
 
     VerifyOrExit(sState != kStateDisabled, error = kThreadError_Busy);
 
@@ -752,7 +787,7 @@ ThreadError otPlatRadioTransmit(void * transmitContext)
 
     if((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_DATA){
 		sTransmitFrame.mTransmitContext = transmitContext;
-		putIntransitFrame(handle, &sTransmitFrame, headerLength); //Don't need to store security information OR source address for intransits, just destination addressing info and fc (Max length 13 bytes)
+		intransit_putFrame(handle, &sTransmitFrame, headerLength); //Don't need to store security information OR source address for intransits, just destination addressing info and fc (Max length 13 bytes)
 	}
 
     if(frameControl & MAC_FC_SEC_ENA){	//if security is required
@@ -843,7 +878,7 @@ otRadioCaps otPlatRadioGetCaps(void)
 
 bool otPlatRadioGetPromiscuous(void)
 {
-	if(promiscuousCache != tristate_uninit) return promiscuousCache;
+	if(sPromiscuousCache != tristate_uninit) return sPromiscuousCache;
 
 	uint8_t resultLen;
     uint8_t result;
@@ -855,7 +890,7 @@ bool otPlatRadioGetPromiscuous(void)
         pDeviceRef);
 
     result = result ? tristate_enabled : tristate_disabled;
-    promiscuousCache = result;
+    sPromiscuousCache = result;
 
     return (bool) result;
 }
@@ -869,10 +904,10 @@ void otPlatRadioSetPromiscuous(bool aEnable)
         sizeof(enable),
         &enable,
         pDeviceRef);
-    promiscuousCache = aEnable;
+    sPromiscuousCache = aEnable;
 }
 
-int readFrame(struct MCPS_DATA_indication_pset *params)   //Async
+static int handleDataIndication(struct MCPS_DATA_indication_pset *params)   //Async
 {
 
 	/*
@@ -993,7 +1028,7 @@ int readFrame(struct MCPS_DATA_indication_pset *params)   //Async
     return 0;
 }
 
-int readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
+static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
 {
 
 	/*
@@ -1004,7 +1039,7 @@ int readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
 
 	barrier_worker_waitForMain();
 
-	RadioPacket * sentFrame = getIntransitFrame(params->MsduHandle);
+	RadioPacket * sentFrame = intransit_getFrame(params->MsduHandle);
 	assert(sentFrame != NULL);
 
     if(params->Status == MAC_SUCCESS){
@@ -1025,14 +1060,14 @@ int readConfirmFrame(struct MCPS_DATA_confirm_pset *params)   //Async
 
     barrier_worker_endWork();
 
-    rmIntransitFrame(params->MsduHandle);
+    intransit_rmFrame(params->MsduHandle);
 
     PlatformRadioSignal();
 
     return 0;
 }
 
-int beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params) //Async
+static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params) //Async
 {
 
 	/*
@@ -1068,7 +1103,7 @@ int beaconNotifyFrame(struct MLME_BEACON_NOTIFY_indication_pset *params) //Async
 			memcpy(&resultStruct.mNetworkName, ((char*)Sdu) + 2, sizeof(resultStruct.mNetworkName));
 			memcpy(&resultStruct.mExtendedPanId, Sdu + 18, sizeof(resultStruct.mExtendedPanId));
 			barrier_worker_waitForMain();
-			scanCallback(&resultStruct, scanContext);
+			sScanCallback(&resultStruct, sScanContext);
 			barrier_worker_endWork();
 		}
 	}
@@ -1077,14 +1112,14 @@ exit:
     return 0;
 }
 
-int scanConfirmCheck(struct MLME_SCAN_confirm_pset *params) {
+static int handleScanConfirm(struct MLME_SCAN_confirm_pset *params) {
 
 	if(!otIsInterfaceUp()) return 1;
 
 	if (params->Status != MAC_SCAN_IN_PROGRESS) {
 		barrier_worker_waitForMain();
-		scanCallback(NULL, scanContext);
-		activeScanInProgress = 1;
+		sScanCallback(NULL, sScanContext);
+		sActiveScanInProgress = 1;
 		barrier_worker_endWork();
 		MLME_SET_request_sync(
 		    			phyCurrentChannel,
@@ -1097,7 +1132,7 @@ int scanConfirmCheck(struct MLME_SCAN_confirm_pset *params) {
 	return 0;
 }
 
-int genericDispatchFrame(const uint8_t *buf, size_t len) { //Async
+static int handleGenericDispatchFrame(const uint8_t *buf, size_t len) { //Async
 
 	/*
 	 * This is a debugging function for unhandled incoming MAC data
@@ -1126,7 +1161,7 @@ int PlatformRadioProcess(void){
 	return 0;
 }
 
-static struct DeviceCache * getCachedDevice(otExtAddress addr){
+static struct DeviceCache * deviceCache_getCachedDevice(otExtAddress addr){
 	struct DeviceCache * toReturn = NULL;
 	uint8_t foundEmpty = 0xFF;
 
@@ -1151,8 +1186,8 @@ static struct DeviceCache * getCachedDevice(otExtAddress addr){
 	return toReturn;
 }
 
-static void cacheDevices(){
-	for(uint8_t i = 0; i < curDeviceTableSize; i++){
+static void deviceCache_cacheDevices(){
+	for(uint8_t i = 0; i < sCurDeviceTableSize; i++){
 		uint8_t length;
 		struct M_DeviceDescriptor tDeviceDescriptor;
 
@@ -1165,7 +1200,7 @@ static void cacheDevices(){
 		otExtAddress cur;
 		struct DeviceCache * curCache;
 		memcpy(cur.m8, tDeviceDescriptor.ExtAddress, sizeof(cur));
-		curCache = getCachedDevice(cur);
+		curCache = deviceCache_getCachedDevice(cur);
 		memcpy(curCache->mFrameCounter, tDeviceDescriptor.FrameCounter, 4);
 		curCache->isActive = 2;
 	}
@@ -1185,7 +1220,7 @@ uint8_t otPlatRadioIsDeviceActive(otExtAddress addr){
 	//update cache
 	//TODO: Don't recache all devices every time -> just update the frame counter for the relevant one and
 	//recache all of the rest as the macDeviceTable is changed.
-	cacheDevices();
+	deviceCache_cacheDevices();
 
 	otExtAddress macAddr;
 	for(int i = 0; i < sizeof(otExtAddress); i++) macAddr.m8[i] = addr.m8[7 - i];
@@ -1209,14 +1244,7 @@ uint8_t otPlatRadioIsDeviceActive(otExtAddress addr){
 	return 0;
 }
 
-/*
- * The following functions exist to create a queue for in-transit data packets. The complete frames are not
- * stored, only the header information required to process the completion of the transmission. This is because
- * it is not guaranteed for these frames to transmit in order, and the destination address is required for
- *  post-transmission processing.
- */
-
-static int isHandleInUse(uint8_t handle){
+static int intransit_isHandleInUse(uint8_t handle){
 	pthread_mutex_lock(&intransit_mutex);
 	for(int i = 0; i < MAX_INTRANSITS; i++){
 		if(IntransitHandles[i] == handle){
@@ -1228,7 +1256,7 @@ static int isHandleInUse(uint8_t handle){
 	return 0;
 }
 
-static int putIntransitFrame(uint8_t handle, const RadioPacket * in, uint8_t headerSize){
+static int intransit_putFrame(uint8_t handle, const RadioPacket * in, uint8_t headerSize){
 	int i = 0;
 	uint8_t found = 0;
 
@@ -1252,7 +1280,7 @@ static int putIntransitFrame(uint8_t handle, const RadioPacket * in, uint8_t hea
 	return 0;
 }
 
-static int rmIntransitFrame(uint8_t handle){
+static int intransit_rmFrame(uint8_t handle){
 	//TODO: Overchecks for debugging purposes -> remove this once confident
 	uint8_t found = 0;
 
@@ -1272,7 +1300,7 @@ static int rmIntransitFrame(uint8_t handle){
 	return !found;	//0 if successfully removed
 }
 
-static RadioPacket * getIntransitFrame(uint8_t handle){
+static RadioPacket * intransit_getFrame(uint8_t handle){
 	pthread_mutex_lock(&intransit_mutex);
 
 	for(int i = 0; i < MAX_INTRANSITS; i++){
@@ -1285,37 +1313,30 @@ static RadioPacket * getIntransitFrame(uint8_t handle){
 	return NULL;
 }
 
-/*
- * The following functions create a thread safe system for allowing the worker thread to access openthread
- * functions safely. The main thread always has priority and must explicitly give control to the worker
- * thread while locking itself. This has ONLY been designed to work with ONE worker and ONE main, in a way
- * that causes the worker thread to run one operation per poll cycle as openthread was designed for.
- */
-
 //Lets the worker thread work synchronously if there is synchronous work to do
 static inline void barrier_main_letWorkerWork(){
-	pthread_mutex_lock(&barrierMutex);
+	pthread_mutex_lock(&barrier_mutex);
 	if(mbarrier_waiting == WAITING){
 		mbarrier_waiting = GREENLIGHT;
-		pthread_cond_broadcast(&barrierCondVar);
-		while(mbarrier_waiting != DONE) pthread_cond_wait(&barrierCondVar, &barrierMutex);	//The worker thread does work now
+		pthread_cond_broadcast(&barrier_cond);
+		while(mbarrier_waiting != DONE) pthread_cond_wait(&barrier_cond, &barrier_mutex);	//The worker thread does work now
 	}
 	mbarrier_waiting = NOT_WAITING;
-	pthread_cond_broadcast(&barrierCondVar);
-	pthread_mutex_unlock(&barrierMutex);
+	pthread_cond_broadcast(&barrier_cond);
+	pthread_mutex_unlock(&barrier_mutex);
 }
 
 static inline void barrier_worker_waitForMain(){
-	pthread_mutex_lock(&barrierMutex);
-	while(mbarrier_waiting != NOT_WAITING) pthread_cond_wait(&barrierCondVar, &barrierMutex);
+	pthread_mutex_lock(&barrier_mutex);
+	while(mbarrier_waiting != NOT_WAITING) pthread_cond_wait(&barrier_cond, &barrier_mutex);
 	selfpipe_push();
 	mbarrier_waiting = WAITING;
-	pthread_cond_broadcast(&barrierCondVar);
-	while(mbarrier_waiting != GREENLIGHT) pthread_cond_wait(&barrierCondVar, &barrierMutex); //wait for the main thread to signal worker to run
+	pthread_cond_broadcast(&barrier_cond);
+	while(mbarrier_waiting != GREENLIGHT) pthread_cond_wait(&barrier_cond, &barrier_mutex); //wait for the main thread to signal worker to run
 }
 
 static inline void barrier_worker_endWork(){
 	mbarrier_waiting = DONE;
-	pthread_cond_broadcast(&barrierCondVar);
-	pthread_mutex_unlock(&barrierMutex);
+	pthread_cond_broadcast(&barrier_cond);
+	pthread_mutex_unlock(&barrier_mutex);
 }
