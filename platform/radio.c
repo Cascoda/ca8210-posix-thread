@@ -33,7 +33,6 @@
  */
 
 #include <openthread-types.h>
-#include <openthread.h>
 
 #include <stdlib.h>
 #include <math.h>
