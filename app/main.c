@@ -34,8 +34,9 @@
 #include <cli/cli-uart.h>
 #include <posix-platform.h>
 
-void otSignalTaskletPending(void)
+void otSignalTaskletPending(otInstance *aInstance)
 {
+	(void)aInstance;
 }
 
 int main(int argc, char *argv[])
@@ -44,12 +45,12 @@ int main(int argc, char *argv[])
     NODE_ID = 1;
 
     posixPlatformInit();
-    otEnable();
-    otCliUartInit();
+    otEnable(OT_INSTANCE);
+    otCliUartInit(OT_INSTANCE);
 
     while (1)
     {
-        otProcessNextTasklet();
+        otProcessNextTasklet(OT_INSTANCE);
         posixPlatformProcessDrivers();
     }
 
