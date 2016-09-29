@@ -29,12 +29,12 @@
 #include <platform/misc.h>
 #include "posix-platform.h"
 
-void otPlatReset(void)
+void otPlatReset(otInstance *)
 {
     // This function does nothing on the Posix platform.
 }
 
-otPlatResetReason otPlatGetResetReason(void)
+otPlatResetReason otPlatGetResetReason(otInstance *)
 {
     return kPlatResetReason_PowerOn;
 }
