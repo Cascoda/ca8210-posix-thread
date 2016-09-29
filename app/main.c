@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
     NODE_ID = 1;
 
     posixPlatformInit();
-    otEnable(OT_INSTANCE);
+    OT_INSTANCE = otInstanceInit();
     otCliUartInit(OT_INSTANCE);
 
     while (1)
