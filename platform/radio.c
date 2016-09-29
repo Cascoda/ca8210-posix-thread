@@ -203,7 +203,7 @@ static void setChannel(uint8_t channel)
     }
 }
 
-ThreadError otPlatRadioActiveScan(otInstance *, uint32_t aScanChannels, uint16_t aScanDuration, otHandleActiveScanResult aCallback, void *aCallbackContext)
+ThreadError otPlatRadioActiveScan(otInstance *aInstance, uint32_t aScanChannels, uint16_t aScanDuration, otHandleActiveScanResult aCallback, void *aCallbackContext)
 {
 
 	/*
@@ -232,7 +232,7 @@ ThreadError otPlatRadioActiveScan(otInstance *, uint32_t aScanChannels, uint16_t
 	}
 }
 
-ThreadError otPlatRadioEnergyScan(otInstance *, uint32_t aScanChannels, uint16_t aScanDuration, otHandleEnergyScanResult aCallback, void *aCallbackContext){
+ThreadError otPlatRadioEnergyScan(otInstance *aInstance, uint32_t aScanChannels, uint16_t aScanDuration, otHandleEnergyScanResult aCallback, void *aCallbackContext){
 
 	/*
 	 * This function causes an energy scan to be run by the ca8210
@@ -261,16 +261,16 @@ ThreadError otPlatRadioEnergyScan(otInstance *, uint32_t aScanChannels, uint16_t
 	}
 }
 
-bool otPlatRadioIsEnergyScanInProgress(otInstance *){
+bool otPlatRadioIsEnergyScanInProgress(otInstance *aInstance){
 	return sEnergyScanInProgress;
 }
 
-bool otPlatRadioIsActiveScanInProgress(otInstance *)
+bool otPlatRadioIsActiveScanInProgress(otInstance *aInstance)
 {
     return sActiveScanInProgress;
 }
 
-ThreadError otPlatRadioSetNetworkName(otInstance *, const char *aNetworkName) {
+ThreadError otPlatRadioSetNetworkName(otInstance *aInstance, const char *aNetworkName) {
 
 	memcpy(mBeaconPayload + 2, aNetworkName, 16);
 	if ((MLME_SET_request_sync(
@@ -290,7 +290,7 @@ ThreadError otPlatRadioSetNetworkName(otInstance *, const char *aNetworkName) {
 	else return kThreadError_Failed;
 }
 
-ThreadError otPlatRadioSetExtendedPanId(otInstance *, const uint8_t *aExtPanId) {
+ThreadError otPlatRadioSetExtendedPanId(otInstance *aInstance, const uint8_t *aExtPanId) {
 
 	memcpy(mBeaconPayload + 18, aExtPanId, 8);
 	if ((MLME_SET_request_sync(
@@ -311,7 +311,7 @@ ThreadError otPlatRadioSetExtendedPanId(otInstance *, const uint8_t *aExtPanId) 
 	else return kThreadError_Failed;
 }
 
-ThreadError otPlatRadioSetPanId(otInstance *, uint16_t panid)
+ThreadError otPlatRadioSetPanId(otInstance *aInstance, uint16_t panid)
 {
 	uint8_t LEarray[2];
 	LEarray[0] = LS0_BYTE(panid);
@@ -327,7 +327,7 @@ ThreadError otPlatRadioSetPanId(otInstance *, uint16_t panid)
     else return kThreadError_Failed;
 }
 
-ThreadError otPlatRadioSetExtendedAddress(otInstance *, uint8_t *address)
+ThreadError otPlatRadioSetExtendedAddress(otInstance *aInstance, uint8_t *address)
 {
     if ( MLME_SET_request_sync(
         nsIEEEAddress,
@@ -342,7 +342,7 @@ ThreadError otPlatRadioSetExtendedAddress(otInstance *, uint8_t *address)
     else return kThreadError_Failed;
 }
 
-ThreadError otPlatRadioSetShortAddress(otInstance *, uint16_t address)
+ThreadError otPlatRadioSetShortAddress(otInstance *aInstance, uint16_t address)
 {
 	uint8_t LEarray[2];
 		LEarray[0] = LS0_BYTE(address);
@@ -449,7 +449,7 @@ void PlatformRadioInit(void)
 		pDeviceRef);
 }
 
-void otHardMacStateChangeCallback(otInstance *, uint32_t aFlags, void *aContext){
+void otHardMacStateChangeCallback(otInstance *aInstance, uint32_t aFlags, void *aContext){
 
 	/*
 	 * This function is called whenever there is an internal state change in thread
@@ -665,7 +665,7 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 	}
 }
 
-ThreadError otPlatRadioEnable(otInstance *)    //TODO:(lowpriority) port
+ThreadError otPlatRadioEnable(otInstance *aInstance)    //TODO:(lowpriority) port
 {
 	ThreadError error = kThreadError_Busy;
 
@@ -691,7 +691,7 @@ ThreadError otPlatRadioEnable(otInstance *)    //TODO:(lowpriority) port
     return error;
 }
 
-ThreadError otPlatRadioDisable(otInstance *)    //TODO:(lowpriority) port
+ThreadError otPlatRadioDisable(otInstance *aInstance)    //TODO:(lowpriority) port
 {
 	ThreadError error = kThreadError_Busy;
 
@@ -718,13 +718,13 @@ ThreadError otPlatRadioDisable(otInstance *)    //TODO:(lowpriority) port
     return error;
 }
 
-ThreadError otPlatRadioSleep(otInstance *)
+ThreadError otPlatRadioSleep(otInstance *aInstance)
 {
 	return kThreadError_None;
 	//This is handled by the hardmac and the state of rxOnWhenIdle
 }
 
-ThreadError otPlatRadioSetRxOnWhenIdle(otInstance *, uint8_t rxOnWhenIdle){
+ThreadError otPlatRadioSetRxOnWhenIdle(otInstance *aInstance, uint8_t rxOnWhenIdle){
 	ThreadError error = kThreadError_None;
 	uint8_t ret = 0;
 	rxOnWhenIdle = rxOnWhenIdle ? 1 : 0;
@@ -741,7 +741,7 @@ ThreadError otPlatRadioSetRxOnWhenIdle(otInstance *, uint8_t rxOnWhenIdle){
 	return error;
 }
 
-ThreadError otPlatRadioReceive(otInstance *, uint8_t aChannel)
+ThreadError otPlatRadioReceive(otInstance *aInstance, uint8_t aChannel)
 {
     ThreadError error = kThreadError_None;
 
@@ -754,12 +754,12 @@ exit:
     return error;
 }
 
-RadioPacket *otPlatRadioGetTransmitBuffer(otInstance *)
+RadioPacket *otPlatRadioGetTransmitBuffer(otInstance *aInstance)
 {
     return &sTransmitFrame;
 }
 
-ThreadError otPlatRadioTransmit(otInstance *, void * transmitContext)
+ThreadError otPlatRadioTransmit(otInstance *aInstance, void * transmitContext)
 {
 	/*
 	 * This Function converts the openthread-provided PHY frame into a MAC primitive to
@@ -897,17 +897,17 @@ exit:
     return error;
 }
 
-int8_t otPlatRadioGetNoiseFloor(otInstance *)
+int8_t otPlatRadioGetNoiseFloor(otInstance *aInstance)
 {
     return noiseFloor;
 }
 
-otRadioCaps otPlatRadioGetCaps(otInstance *)
+otRadioCaps otPlatRadioGetCaps(otInstance *aInstance)
 {
     return kRadioCapsAckTimeout;
 }
 
-bool otPlatRadioGetPromiscuous(otInstance *)
+bool otPlatRadioGetPromiscuous(otInstance *aInstance)
 {
 	if(sPromiscuousCache != tristate_uninit) return sPromiscuousCache;
 
@@ -926,7 +926,7 @@ bool otPlatRadioGetPromiscuous(otInstance *)
     return (bool) result;
 }
 
-void otPlatRadioSetPromiscuous(otInstance *, bool aEnable)
+void otPlatRadioSetPromiscuous(otInstance *aInstance, bool aEnable)
 {
 	uint8_t enable = aEnable ? 1 : 0;	//Just to be sure we match spec
     MLME_SET_request_sync(
@@ -1276,7 +1276,7 @@ static void deviceCache_cacheDevices(){
 	}
 }
 
-uint8_t otPlatRadioIsDeviceActive(otInstance *, otExtAddress addr){
+uint8_t otPlatRadioIsDeviceActive(otInstance *aInstance, otExtAddress addr){
 	//update cache
 	//TODO: Don't recache all devices every time -> just update the frame counter for the relevant one and
 	//recache all of the rest as the macDeviceTable is changed.
