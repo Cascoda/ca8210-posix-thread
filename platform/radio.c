@@ -545,7 +545,7 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 			uint8_t maxRouters = 5 - count;
 			otRouterInfo routers[maxRouters];
 			uint8_t numRouters;
-			otGetNeighborRouterInfo(routers, &numRouters, maxRouters);
+			otGetNeighborRouterInfo(NULL, routers, &numRouters, maxRouters);
 
 			for(int i = 0; i < numRouters; i++){
 				struct M_DeviceDescriptor tDeviceDescriptor;
