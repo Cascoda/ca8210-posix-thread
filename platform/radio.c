@@ -133,7 +133,7 @@ static inline void barrier_worker_endWork(void);		//Used by worker thread to end
  */
 static RadioPacket * intransit_getFrame(uint8_t handle);	//Return pointer to the relevant packet, or NULL
 static int intransit_rmFrame(uint8_t handle);	//Release dynamically allocated memory -- returns 0 for success, or an error code
-static int intransit_putFrame(uint8_t handle, const RadioPacket * in, uint8_t headerSize);	//returns 0 for success, or an error code
+static int intransit_putFrame(uint8_t handle, const RadioPacket * in);	//returns 0 for success, or an error code
 static int intransit_isHandleInUse(uint8_t handle); //returns 0 if the handle is free, or 1 if it is already in use
 
 #define MAX_INTRANSITS 7 /*TODO:  5 indirect frames +2 (perhaps need more?)*/
@@ -818,7 +818,7 @@ ThreadError otPlatRadioTransmit(void * transmitContext)
 
     if((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_DATA){
 		sTransmitFrame.mTransmitContext = transmitContext;
-		intransit_putFrame(handle, &sTransmitFrame, headerLength); //Don't need to store security information OR source address for intransits, just destination addressing info and fc (Max length 13 bytes)
+		intransit_putFrame(handle, &sTransmitFrame);
 	}
 
     if(frameControl & MAC_FC_SEC_ENA){	//if security is required
@@ -879,13 +879,13 @@ ThreadError otPlatRadioTransmit(void * transmitContext)
     		} while(ret == 0xFF && (count++ < 10));
 
     		if(ret == MAC_SUCCESS){
-    			otPlatRadioTransmitDone(true, error, &sTransmitFrame, transmitContext);
+    			otPlatRadioTransmitDone(true, error, transmitContext);
     		}
     		else if(ret == MAC_NO_DATA){
-    			otPlatRadioTransmitDone(false, error, &sTransmitFrame, transmitContext);
+    			otPlatRadioTransmitDone(false, error, transmitContext);
     		}
     		else{
-    			otPlatRadioTransmitDone(false, kThreadError_NoAck, &sTransmitFrame, transmitContext);
+    			otPlatRadioTransmitDone(false, kThreadError_NoAck, transmitContext);
     		}
     	}
     	else{
@@ -1074,7 +1074,7 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
 	assert(sentFrame != NULL);
 
     if(params->Status == MAC_SUCCESS){
-    	otPlatRadioTransmitDone(false, sTransmitError, sentFrame, sentFrame->mTransmitContext);
+    	otPlatRadioTransmitDone(false, sTransmitError, sentFrame->mTransmitContext);
     	sState = kStateReceive;
     	sTransmitError = kThreadError_None;
     }
@@ -1084,7 +1084,7 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
     	else if(params->Status == MAC_NO_ACK) sTransmitError = kThreadError_NoAck;
     	else sTransmitError = kThreadError_Abort;
     	otPlatLog(kLogLevelWarn, kLogRegionHardMac, "MCPS_DATA_confirm error: %#x \r\n", params->Status);
-    	otPlatRadioTransmitDone(false, sTransmitError, sentFrame, sentFrame->mTransmitContext);
+    	otPlatRadioTransmitDone(false, sTransmitError, sentFrame->mTransmitContext);
     	sState = kStateReceive;
     	sTransmitError = kThreadError_None;
     }
@@ -1316,7 +1316,7 @@ static int intransit_isHandleInUse(uint8_t handle){
 	return 0;
 }
 
-static int intransit_putFrame(uint8_t handle, const RadioPacket * in, uint8_t headerSize){
+static int intransit_putFrame(uint8_t handle, const RadioPacket * in){
 	int i = 0;
 	uint8_t found = 0;
 
@@ -1330,10 +1330,8 @@ static int intransit_putFrame(uint8_t handle, const RadioPacket * in, uint8_t he
 	}
 
 	IntransitHandles[i] = handle;
-
+	//TODO: Only store what is needed
 	memcpy(&IntransitPackets[i], in, sizeof(RadioPacket));
-	IntransitPackets[i].mPsdu = malloc((size_t)headerSize);
-	memcpy(IntransitPackets[i].mPsdu, in->mPsdu, headerSize);
 
 	pthread_mutex_unlock(&intransit_mutex);
 
@@ -1350,7 +1348,6 @@ static int intransit_rmFrame(uint8_t handle){
 		if(IntransitHandles[i] == handle){
 			assert(found == 0); //Crash if there was more than one instance of the same handle
 			found = 1;
-			free(IntransitPackets[i].mPsdu);
 			IntransitHandles[i] = 0;
 		}
 	}
