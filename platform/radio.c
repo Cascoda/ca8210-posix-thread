@@ -203,9 +203,31 @@ static void setChannel(uint8_t channel)
     }
 }
 
+
+void otPlatRadioEnableSrcMatch(otInstance *aInstance, bool aEnable)
+{(void) aInstance;(void) aEnable;}
+
+ThreadError otPlatRadioAddSrcMatchShortEntry(otInstance *aInstance, const uint16_t aShortAddress)
+{(void) aInstance;(void) aShortAddress; return kThreadError_None;}
+
+ThreadError otPlatRadioAddSrcMatchExtEntry(otInstance *aInstance, const uint8_t *aExtAddress)
+{(void) aInstance;(void) aExtAddress; return kThreadError_None;}
+
+ThreadError otPlatRadioClearSrcMatchShortEntry(otInstance *aInstance, const uint16_t aShortAddress)
+{(void) aInstance;(void) aShortAddress; return kThreadError_None;}
+
+ThreadError otPlatRadioClearSrcMatchExtEntry(otInstance *aInstance, const uint8_t *aExtAddress)
+{(void) aInstance;(void) aExtAddress; return kThreadError_None;}
+
+void otPlatRadioClearSrcMatchShortEntries(otInstance *aInstance)
+{(void) aInstance;}
+
+void otPlatRadioClearSrcMatchExtEntries(otInstance *aInstance)
+{(void) aInstance;}
+
+
 ThreadError otPlatRadioActiveScan(otInstance *aInstance, uint32_t aScanChannels, uint16_t aScanDuration, otHandleActiveScanResult aCallback, void *aCallbackContext)
 {
-
 	/*
 	 * This function causes an active scan to be run by the ca8210
 	 */
