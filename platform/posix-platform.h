@@ -38,6 +38,7 @@
 #include <stdint.h>
 #include <sys/select.h>
 #include <sys/time.h>
+#include <openthread-types.h>
 
 #ifdef __cplusplus
 extern "C" {
