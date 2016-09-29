@@ -39,13 +39,14 @@
 static bool s_is_running = false;
 static uint32_t s_alarm = 0;
 static struct timeval s_start;
+static otInstance * sInstance;
 
 void posixPlatformAlarmInit(void)
 {
     gettimeofday(&s_start, NULL);
 }
 
-uint32_t otPlatAlarmGetNow(otInstance *aInstance)
+uint32_t otPlatAlarmGetNow(void)
 {
     struct timeval tv;
 
@@ -57,12 +58,14 @@ uint32_t otPlatAlarmGetNow(otInstance *aInstance)
 
 void otPlatAlarmStartAt(otInstance *aInstance, uint32_t t0, uint32_t dt)
 {
+	sInstance = aInstance;
     s_alarm = t0 + dt;
     s_is_running = true;
 }
 
 void otPlatAlarmStop(otInstance *aInstance)
 {
+	sInstance = aInstance;
     s_is_running = false;
 }
 
@@ -108,7 +111,7 @@ void posixPlatformAlarmProcess(void)
         if (remaining <= 0)
         {
             s_is_running = false;
-            otPlatAlarmFired();
+            otPlatAlarmFired(sInstance);
         }
     }
 }
