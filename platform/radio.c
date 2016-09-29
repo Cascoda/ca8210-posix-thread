@@ -349,6 +349,16 @@ ThreadError otPlatRadioSetPanId(otInstance *aInstance, uint16_t panid)
     else return kThreadError_Failed;
 }
 
+void otPlatRadioGetIeeeEui64(otInstance *aInstance, uint8_t *aIeeeEui64){
+	//TODO: Implement properly with long lasting state
+	(void) aInstance;
+	for(int i = 0; i < 4; i += 1){
+		uint16_t random = otPlatRandomGet();
+		aIeeeEui64[2*i] = random & 0xFF;
+		aIeeeEui64[2*i + 1] = (random >> 4) & 0xFF;
+	}
+}
+
 ThreadError otPlatRadioSetExtendedAddress(otInstance *aInstance, uint8_t *address)
 {
     if ( MLME_SET_request_sync(
