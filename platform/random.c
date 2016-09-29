@@ -45,8 +45,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-static uint32_t s_state = 1;
-
 void posixPlatformRandomInit(void)
 {
     //nothing
@@ -55,13 +53,15 @@ void posixPlatformRandomInit(void)
 uint32_t otPlatRandomGet(void)
 {
 
-	uint8_t length1, length2;
+	uint8_t length1 = 0;
+	uint8_t length2 = 0;
 
 	union randBytes{
 		uint8_t randb[4];
 		uint32_t rand32i;
 	} randomBytes;
 
+	/*
     HWME_GET_request_sync(
     		HWME_RANDOMNUM,
 			&length1,
@@ -72,6 +72,7 @@ uint32_t otPlatRandomGet(void)
 			&length2,
 			randomBytes.randb + 2,
 			NULL);
+	*/
 
     if(length1 != 2 || length2 != 2){
 

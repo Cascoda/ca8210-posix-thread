@@ -42,6 +42,7 @@
 #include <platform/alarm.h>
 #include <platform/uart.h>
 #include <posix-platform.h>
+#include <selfpipe.h>
 
 uint32_t NODE_ID = 1;
 uint32_t WELLKNOWN_NODE_ID = 34;
@@ -66,11 +67,13 @@ void posixPlatformProcessDrivers(void)
     FD_ZERO(&write_fds);
 
     posixPlatformUartUpdateFdSet(&read_fds, &write_fds, &max_fd);
+    selfpipe_UpdateFdSet(&read_fds, &write_fds, &max_fd);
     posixPlatformAlarmUpdateTimeout(&timeout);
 
     if (!otAreTaskletsPending())
     {
         rval = select(max_fd + 1, &read_fds, &write_fds, NULL, &timeout);
+        selfpipe_pop();
         assert(rval >= 0 && errno != ETIME);
     }
 
