@@ -418,6 +418,7 @@ static int driverErrorCallback(int error_number){
 
 void PlatformRadioStop(void){
 	//Reset the MAC to a default state
+	otPlatLog(kLogLevelInfo, kLogRegionHardMac, "Resetting & Stopping Radio...\n\r");
 	MLME_RESET_request_sync(1, pDeviceRef);
 }
 
