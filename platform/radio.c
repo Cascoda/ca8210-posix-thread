@@ -397,11 +397,18 @@ static int driverErrorCallback(int error_number){
 	return 0;
 }
 
+void PlatformRadioStop(void){
+	//Reset the MAC to a default state
+	MLME_RESET_request_sync(1, pDeviceRef);
+}
+
 void PlatformRadioInit(void)
 {
     sTransmitFrame.mLength = 0;
     sTransmitFrame.mPsdu = sTransmitPsdu;
     
+    atexit(&PlatformRadioStop);
+
     pthread_mutex_lock(&receiveFrame_mutex);
 		sReceiveFrame.mLength = 0;
 		sReceiveFrame.mPsdu = sReceivePsdu;
@@ -1113,7 +1120,7 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
     else{
     	//TODO: Better handle the channel_access_failures
     	if(params->Status == MAC_CHANNEL_ACCESS_FAILURE) sTransmitError = kThreadError_ChannelAccessFailure;
-    	//TODO: handling MAC_TRANSACTION_OVERFLOW in this way isn't strictly correct
+    	//TODO: handling MAC_TRANSACTION_OVERFLOW in this way isn't strictly correct, but does cause a retry at a higher level
     	else if(params->Status == MAC_NO_ACK || params->Status == MAC_TRANSACTION_OVERFLOW) sTransmitError = kThreadError_NoAck;
     	else sTransmitError = kThreadError_Abort;
     	otPlatLog(kLogLevelWarn, kLogRegionHardMac, "MCPS_DATA_confirm error: %#x \r\n", params->Status);
