@@ -1141,6 +1141,8 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
     	if(params->Status == MAC_CHANNEL_ACCESS_FAILURE) sTransmitError = kThreadError_ChannelAccessFailure;
     	//TODO: handling MAC_TRANSACTION_OVERFLOW in this way isn't strictly correct, but does cause a retry at a higher level
     	else if(params->Status == MAC_NO_ACK || params->Status == MAC_TRANSACTION_OVERFLOW) sTransmitError = kThreadError_NoAck;
+    	//TODO: This isn't strictly the correct way to handle expired transactions either, but aids in reliability
+    	else if(params->Status == MAC_TRANSACTION_EXPIRED) sTransmitError = kThreadError_NoAck;
     	else sTransmitError = kThreadError_Abort;
     	otPlatLog(kLogLevelWarn, kLogRegionHardMac, "MCPS_DATA_confirm error: %#x \r\n", params->Status);
     	otPlatRadioTransmitDone(OT_INSTANCE, false, sTransmitError, sentFrame->mTransmitContext);
