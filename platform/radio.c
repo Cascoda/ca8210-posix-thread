@@ -225,6 +225,23 @@ void otPlatRadioClearSrcMatchShortEntries(otInstance *aInstance)
 void otPlatRadioClearSrcMatchExtEntries(otInstance *aInstance)
 {(void) aInstance;}
 
+//Platform independent integer log2 implementation
+//from http://stackoverflow.com/questions/11376288/fast-computing-of-log2-for-64-bit-integers
+const uint8_t tab32[32] = {
+     0,  9,  1, 10, 13, 21,  2, 29,
+    11, 14, 16, 18, 22, 25,  3, 30,
+     8, 12, 20, 28, 15, 17, 24,  7,
+    19, 27, 23,  6, 26,  5,  4, 31};
+
+uint8_t log2_32 (uint32_t value)
+{
+    value |= value >> 1;
+    value |= value >> 2;
+    value |= value >> 4;
+    value |= value >> 8;
+    value |= value >> 16;
+    return tab32[(uint32_t)(value*0x07C4ACDD) >> 27];
+}
 
 ThreadError otPlatRadioActiveScan(otInstance *aInstance, uint32_t aScanChannels, uint16_t aScanDuration, otHandleActiveScanResult aCallback, void *aCallbackContext)
 {
@@ -233,7 +250,8 @@ ThreadError otPlatRadioActiveScan(otInstance *aInstance, uint32_t aScanChannels,
 	 */
 	if(sActiveScanInProgress || sEnergyScanInProgress) return kThreadError_Busy;
 
-	uint8_t ScanDuration = 5; //0 to 14
+	uint8_t ScanDuration = log2_32(aScanDuration);//5; //0 to 14
+	if(ScanDuration > 14) ScanDuration = 14;
 	struct SecSpec pSecurity = {0};
 	if (aScanChannels == 0) aScanChannels = 0x07fff800; //11 to 26
 	sActiveScanCallback = aCallback;
@@ -262,7 +280,8 @@ ThreadError otPlatRadioEnergyScan(otInstance *aInstance, uint32_t aScanChannels,
 	if(sActiveScanInProgress || sEnergyScanInProgress) return kThreadError_Busy;
 
 	sEnergyScanMask = aScanChannels;
-	uint8_t ScanDuration = 6; //0 to 14
+	uint8_t ScanDuration = log2_32(aScanDuration);//6; //0 to 14
+	if(ScanDuration > 14) ScanDuration = 14;
 	struct SecSpec pSecurity = {0};
 	if (aScanChannels == 0) aScanChannels = 0x07fff800; //11 to 26
 	sEnergyScanCallback = aCallback;
