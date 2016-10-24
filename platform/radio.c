@@ -79,6 +79,9 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params);
 
 static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params);
 static int handleScanConfirm(struct MLME_SCAN_confirm_pset *params);
+
+static int handleCommStatusIndication(struct MLME_COMM_STATUS_indication_pset * params);
+
 static int handleGenericDispatchFrame(const uint8_t *buf, size_t len);
 //END CASCODA API CALLBACKS
 
@@ -258,7 +261,7 @@ ThreadError otPlatRadioActiveScan(otInstance *aInstance, uint32_t aScanChannels,
 		if(ScanDuration > 14) ScanDuration = 14;
 	}
 	else{
-		ScanDuration = 5;
+		ScanDuration = 4;
 	}
 
 	otPlatLog(kLogLevelDebg, kLogRegionHardMac, "aScanDuration: %d, ScanDuration: %d\n\r", aScanDuration, ScanDuration);
@@ -466,6 +469,7 @@ void PlatformRadioInit(void)
     callbacks.MCPS_DATA_confirm = &handleDataConfirm;
     callbacks.MLME_BEACON_NOTIFY_indication = &handleBeaconNotify;
     callbacks.MLME_SCAN_confirm = &handleScanConfirm;
+    callbacks.MLME_COMM_STATUS_indication = &handleCommStatusIndication;
     callbacks.generic_dispatch = &handleGenericDispatchFrame;	//UNCOMMENT TO ENABLE VIEWING UNHANDLED FRAMES
     cascoda_register_callbacks(&callbacks);
     
@@ -1267,6 +1271,22 @@ static int handleScanConfirm(struct MLME_SCAN_confirm_pset *params) { //Async
 							&sChannel,
 							pDeviceRef);
 		}
+	}
+
+	return 0;
+}
+
+static int handleCommStatusIndication(struct MLME_COMM_STATUS_indication_pset *params){ //Async
+
+	if(!otIsInterfaceUp(OT_INSTANCE)) return 1;
+
+	//Checking for unrecognised short addresses of child devices
+	//Such as the errors that are generated if a child polls a
+	//device which does not know of it's existence
+	if(params->Status == MAC_UNAVAILABLE_KEY && params->SrcAddrMode == 0x02 && params->SrcAddr[1] != 0){
+		//TODO: (repeat) Check that this has not been replaced
+		//WARNING: Openthread specific behaviour - not to spec
+		otPlatRadioRejectFrame(OT_INSTANCE, GETLE16(params->SrcAddr));
 	}
 
 	return 0;
