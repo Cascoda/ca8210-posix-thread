@@ -250,9 +250,18 @@ ThreadError otPlatRadioActiveScan(otInstance *aInstance, uint32_t aScanChannels,
 	 */
 	if(sActiveScanInProgress || sEnergyScanInProgress) return kThreadError_Busy;
 
-	//15 ~= (aBaseSuperframeDuration * aSymbolPeriod_us)/1000
-	uint8_t ScanDuration = log2_32(aScanDuration/15);//5; //0 to 14
-	if(ScanDuration > 14) ScanDuration = 14;
+	uint8_t ScanDuration;
+
+	if(aScanDuration >= 50){ //This 'if' structure is to cope with the aScanDurations of 0 that seem to be passed around
+		//15 ~= (aBaseSuperframeDuration * aSymbolPeriod_us)/1000
+		ScanDuration = log2_32(aScanDuration/15);//5; //0 to 14
+		if(ScanDuration > 14) ScanDuration = 14;
+	}
+	else{
+		ScanDuration = 5;
+	}
+
+
 	struct SecSpec pSecurity = {0};
 	if (aScanChannels == 0) aScanChannels = 0x07fff800; //11 to 26
 	sActiveScanCallback = aCallback;
@@ -280,10 +289,18 @@ ThreadError otPlatRadioEnergyScan(otInstance *aInstance, uint32_t aScanChannels,
 	 */
 	if(sActiveScanInProgress || sEnergyScanInProgress) return kThreadError_Busy;
 
+	uint8_t ScanDuration;
+
 	sEnergyScanMask = aScanChannels;
-	//15 ~= (aBaseSuperframeDuration * aSymbolPeriod_us)/1000
-	uint8_t ScanDuration = log2_32(aScanDuration/15);//6; //0 to 14
-	if(ScanDuration > 14) ScanDuration = 14;
+	if(aScanDuration >= 50){	//This 'if' structure is to cope with the aScanDurations of 0 that seem to be passed around
+		//15 ~= (aBaseSuperframeDuration * aSymbolPeriod_us)/1000
+		ScanDuration = log2_32(aScanDuration/15);//6; //0 to 14
+		if(ScanDuration > 14) ScanDuration = 14;
+	}
+	else{
+		ScanDuration = 6;
+	}
+
 	struct SecSpec pSecurity = {0};
 	if (aScanChannels == 0) aScanChannels = 0x07fff800; //11 to 26
 	sEnergyScanCallback = aCallback;
