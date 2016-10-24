@@ -80,8 +80,6 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params);
 static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params);
 static int handleScanConfirm(struct MLME_SCAN_confirm_pset *params);
 
-static int handleCommStatusIndication(struct MLME_COMM_STATUS_indication_pset * params);
-
 static int handleGenericDispatchFrame(const uint8_t *buf, size_t len);
 //END CASCODA API CALLBACKS
 
@@ -483,8 +481,7 @@ void PlatformRadioInit(void)
 		&enable,
 		pDeviceRef);
 
-	//TODO: This should be 3 according to thread spec, but openthread still needs to sort out the higher level retries
-	uint8_t retries = 7;	//Retry transmission 7 times if not acknowledged
+	uint8_t retries = 3;	//Retry transmission 3 times if not acknowledged
 	MLME_SET_request_sync(
 		macMaxFrameRetries,
 		0,
@@ -492,7 +489,7 @@ void PlatformRadioInit(void)
 		&retries,
 		pDeviceRef);
 
-	retries = 5;	//max 5 CSMA backoffs
+	retries = 4;	//max 4 CSMA backoffs
 	MLME_SET_request_sync(
 		macMaxCSMABackoffs,
 		0,
@@ -1163,11 +1160,9 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
     	sTransmitError = kThreadError_None;
     }
     else{
-    	//TODO: Better handle the channel_access_failures
     	if(params->Status == MAC_CHANNEL_ACCESS_FAILURE) sTransmitError = kThreadError_ChannelAccessFailure;
     	//TODO: handling MAC_TRANSACTION_OVERFLOW in this way isn't strictly correct, but does cause a retry at a higher level
     	else if(params->Status == MAC_NO_ACK || params->Status == MAC_TRANSACTION_OVERFLOW) sTransmitError = kThreadError_NoAck;
-    	//TODO: This isn't strictly the correct way to handle expired transactions either, but aids in reliability
     	else if(params->Status == MAC_TRANSACTION_EXPIRED) sTransmitError = kThreadError_NoAck;
     	else sTransmitError = kThreadError_Abort;
     	otPlatLog(kLogLevelWarn, kLogRegionHardMac, "MCPS_DATA_confirm error: %#x \r\n", params->Status);
@@ -1422,16 +1417,15 @@ static int intransit_putFrame(uint8_t handle, const RadioPacket * in){
 }
 
 static int intransit_rmFrame(uint8_t handle){
-	//TODO: Overchecks for debugging purposes -> remove this once confident
 	uint8_t found = 0;
 
 	pthread_mutex_lock(&intransit_mutex);
 
 	for(int i = 0; i < MAX_INTRANSITS; i++){
 		if(IntransitHandles[i] == handle){
-			assert(found == 0); //Crash if there was more than one instance of the same handle
 			found = 1;
 			IntransitHandles[i] = 0;
+			break;
 		}
 	}
 
