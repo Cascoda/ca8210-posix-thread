@@ -261,6 +261,7 @@ ThreadError otPlatRadioActiveScan(otInstance *aInstance, uint32_t aScanChannels,
 		ScanDuration = 5;
 	}
 
+	otPlatLog(kLogLevelDebg, kLogRegionHardMac, "aScanDuration: %d, ScanDuration: %d\n\r", aScanDuration, ScanDuration);
 
 	struct SecSpec pSecurity = {0};
 	if (aScanChannels == 0) aScanChannels = 0x07fff800; //11 to 26
@@ -300,6 +301,8 @@ ThreadError otPlatRadioEnergyScan(otInstance *aInstance, uint32_t aScanChannels,
 	else{
 		ScanDuration = 6;
 	}
+
+	otPlatLog(kLogLevelDebg, kLogRegionHardMac, "aScanDuration: %d, ScanDuration: %d\n\r", aScanDuration, ScanDuration);
 
 	struct SecSpec pSecurity = {0};
 	if (aScanChannels == 0) aScanChannels = 0x07fff800; //11 to 26
