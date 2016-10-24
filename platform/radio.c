@@ -606,10 +606,14 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 				PUTLE16(otGetPanId(OT_INSTANCE) ,tDeviceDescriptor.PANId);
 				PUTLE16(tChildInfo.mRloc16, tDeviceDescriptor.ShortAddress);
 				for(int j = 0; j < 8; j++) tDeviceDescriptor.ExtAddress[j] = tChildInfo.mExtAddress.m8[7-j];	//Flip endian
-				tDeviceDescriptor.FrameCounter[0] = 0;	//TODO: Use the frame cache to do frame counter properly - this method is temporarily breaking replay protection as replays using previous counter will still be successful
-				tDeviceDescriptor.FrameCounter[1] = 0;
-				tDeviceDescriptor.FrameCounter[2] = 0;
-				tDeviceDescriptor.FrameCounter[3] = 0;
+
+				otExtAddress tExtAddr;
+				memcpy(&tExtAddr, tDeviceDescriptor.ExtAddress, 8);
+				struct DeviceCache * curDeviceCache = deviceCache_getCachedDevice(tExtAddr);
+				tDeviceDescriptor.FrameCounter[0] = curDeviceCache->mFrameCounter[0];
+				tDeviceDescriptor.FrameCounter[1] = curDeviceCache->mFrameCounter[1];
+				tDeviceDescriptor.FrameCounter[2] = curDeviceCache->mFrameCounter[2];
+				tDeviceDescriptor.FrameCounter[3] = curDeviceCache->mFrameCounter[3];
 				tDeviceDescriptor.Exempt = 0;
 
 
@@ -634,10 +638,14 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 				PUTLE16(otGetPanId(OT_INSTANCE) ,tDeviceDescriptor.PANId);
 				PUTLE16(routers[i].mRloc16, tDeviceDescriptor.ShortAddress);
 				for(int j = 0; j < 8; j++) tDeviceDescriptor.ExtAddress[j] = routers[i].mExtAddress.m8[7-j];	//Flip endian
-				tDeviceDescriptor.FrameCounter[0] = 0;	//TODO: Use the frame cache to do frame counter properly - this method is temporarily breaking replay protection as replays using previous counter will still be successful
-				tDeviceDescriptor.FrameCounter[1] = 0;
-				tDeviceDescriptor.FrameCounter[2] = 0;
-				tDeviceDescriptor.FrameCounter[3] = 0;
+
+				otExtAddress tExtAddr;
+				memcpy(&tExtAddr, tDeviceDescriptor.ExtAddress, 8);
+				struct DeviceCache * curDeviceCache = deviceCache_getCachedDevice(tExtAddr);
+				tDeviceDescriptor.FrameCounter[0] = curDeviceCache->mFrameCounter[0];
+				tDeviceDescriptor.FrameCounter[1] = curDeviceCache->mFrameCounter[1];
+				tDeviceDescriptor.FrameCounter[2] = curDeviceCache->mFrameCounter[2];
+				tDeviceDescriptor.FrameCounter[3] = curDeviceCache->mFrameCounter[3];
 				tDeviceDescriptor.Exempt = 0;
 
 				MLME_SET_request_sync(
@@ -658,10 +666,14 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 				PUTLE16(otGetPanId(OT_INSTANCE), tDeviceDescriptor.PANId);
 				PUTLE16(tParentInfo.mRloc16, tDeviceDescriptor.ShortAddress);
 				for(int j = 0; j < 8; j++) tDeviceDescriptor.ExtAddress[j] = tParentInfo.mExtAddress.m8[7-j];	//Flip endian
-				tDeviceDescriptor.FrameCounter[0] = 0;	//TODO: Use the frame cache to do frame counter properly - this method is temporarily breaking replay protection as replays using previous counter will still be successful
-				tDeviceDescriptor.FrameCounter[1] = 0;
-				tDeviceDescriptor.FrameCounter[2] = 0;
-				tDeviceDescriptor.FrameCounter[3] = 0;
+
+				otExtAddress tExtAddr;
+				memcpy(&tExtAddr, tDeviceDescriptor.ExtAddress, 8);
+				struct DeviceCache * curDeviceCache = deviceCache_getCachedDevice(tExtAddr);
+				tDeviceDescriptor.FrameCounter[0] = curDeviceCache->mFrameCounter[0];
+				tDeviceDescriptor.FrameCounter[1] = curDeviceCache->mFrameCounter[1];
+				tDeviceDescriptor.FrameCounter[2] = curDeviceCache->mFrameCounter[2];
+				tDeviceDescriptor.FrameCounter[3] = curDeviceCache->mFrameCounter[3];
 				tDeviceDescriptor.Exempt = 0;
 
 				MLME_SET_request_sync(
