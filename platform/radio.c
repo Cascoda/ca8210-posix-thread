@@ -1190,8 +1190,6 @@ static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params)
 	 * and passing the relevant information to openthread in a struct.
 	 */
 
-	if(!otIsInterfaceUp(OT_INSTANCE)) return 1;
-
 	otActiveScanResult resultStruct;
 
 	uint8_t shortaddrs  = *((uint8_t*)params + 23) & 7;
@@ -1228,8 +1226,6 @@ exit:
 }
 
 static int handleScanConfirm(struct MLME_SCAN_confirm_pset *params) { //Async
-
-	if(!otIsInterfaceUp(OT_INSTANCE)) return 1;
 
 	if (params->Status != MAC_SCAN_IN_PROGRESS) {
 		if(sActiveScanInProgress){
