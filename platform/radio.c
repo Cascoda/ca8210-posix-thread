@@ -284,7 +284,11 @@ ThreadError otPlatRadioActiveScan(otInstance *aInstance, uint32_t aScanChannels,
 	}
 }
 
-ThreadError otPlatRadioEnergyScan(otInstance *aInstance, uint32_t aScanChannels, uint16_t aScanDuration, otHandleEnergyScanResult aCallback, void *aCallbackContext){
+ThreadError otPlatRadioEnergyScan(otInstance *aInstance, uint8_t aScanChannel, uint16_t aScanDuration){
+	return kThreadError_NotImplemented;	//We have a hardmac: Use the full one
+}
+
+ThreadError otPlatRadioEnergyScanFull(otInstance *aInstance, uint32_t aScanChannels, uint16_t aScanDuration, otHandleEnergyScanResult aCallback, void *aCallbackContext){
 
 	/*
 	 * This function causes an energy scan to be run by the ca8210
@@ -737,7 +741,7 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 		uint8_t storeCount = 0;
 		for(uint8_t i = 0; i < 3; i++){
 			if((tKeySeq + i) > 0){	//0 is invalid key sequence
-				memcpy(tKeyDescriptor.Fixed.Key, getMacKeyFromSequenceCounter(tKeySeq + i), 16);
+				memcpy(tKeyDescriptor.Fixed.Key, otGetMacKeyFromSequenceCounter(tKeySeq + i), 16);
 				tKeyDescriptor.KeyIdLookupList[0].LookupData[0] = ((tKeySeq + i) & 0x7F) + 1;
 
 				MLME_SET_request_sync(
