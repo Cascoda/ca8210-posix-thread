@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 
     while (1)
     {
-        otProcessNextTasklet(OT_INSTANCE);
+    	otProcessQueuedTasklets(OT_INSTANCE);
         posixPlatformProcessDrivers();
     }
 
