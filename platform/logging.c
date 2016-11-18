@@ -36,6 +36,7 @@
 #include <time.h>
 
 #include <platform/logging.h>
+#include <common/code_utils.hpp>
 
 // Macro to append content to end of the log string.
 
