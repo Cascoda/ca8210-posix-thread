@@ -34,6 +34,8 @@
 #include <cli/cli-uart.h>
 #include <posix-platform.h>
 
+#include <openthread-tasklet.h>
+
 void otSignalTaskletPending(otInstance *aInstance)
 {
 	(void)aInstance;
