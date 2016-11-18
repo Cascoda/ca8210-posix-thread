@@ -907,7 +907,7 @@ ThreadError otPlatRadioTransmit(otInstance *aInstance, RadioPacket *aPacket, voi
 
     if((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_DATA){
 		aPacket->mTransmitContext = transmitContext;
-		intransit_putFrame(handle, &aPacket);
+		intransit_putFrame(handle, aPacket);
 	}
 
     if(frameControl & MAC_FC_SEC_ENA){	//if security is required
