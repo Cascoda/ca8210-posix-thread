@@ -1158,7 +1158,9 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
 	 * This Function processes the MCPS_DATA_CONFIRM and passes the success or error
 	 * to openthread as appropriate.
 	 */
+	otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Data confirm received!\r\n");
 	if(!otIsInterfaceUp(OT_INSTANCE)) return 1;
+	otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Data confirm being processed!\r\n");
 
 	barrier_worker_waitForMain();
 
