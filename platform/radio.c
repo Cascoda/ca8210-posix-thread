@@ -1160,7 +1160,7 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
 	 */
 
 	if(!otIsInterfaceUp(OT_INSTANCE)) return 1;
-	otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Data confirm received!\r\n");
+	otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Data confirm received!");
 
 	barrier_worker_waitForMain();
 
