@@ -859,6 +859,8 @@ ThreadError otPlatRadioTransmit(otInstance *aInstance, RadioPacket *aPacket, voi
     static uint8_t handle = 0;
     handle++;
 
+    otPlatLog(kLogLevelDebg, kLogRegionHardMac, "otPlatRadioTransmit Called");
+
     while(intransit_isHandleInUse(handle)) handle++;  //make sure handle is available for use
 
     VerifyOrExit(sState != kStateDisabled, error = kThreadError_Busy);
