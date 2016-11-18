@@ -863,7 +863,7 @@ ThreadError otPlatRadioTransmit(otInstance *aInstance, RadioPacket *aPacket, voi
 
     VerifyOrExit(sState != kStateDisabled, error = kThreadError_Busy);
 
-    uint16_t frameControl = GETLE16(aPacket.mPsdu);
+    uint16_t frameControl = GETLE16(aPacket->mPsdu);
     VerifyOrExit(((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_DATA) || \
     	((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_COMMAND),         \
     	error = kThreadError_Abort;                                     \
@@ -872,7 +872,7 @@ ThreadError otPlatRadioTransmit(otInstance *aInstance, RadioPacket *aPacket, voi
     sState = kStateTransmit;
     sTransmitError = kThreadError_None;
 
-    setChannel(aPacket.mChannel);
+    setChannel(aPacket->mChannel);
 
     //transmit
     struct MCPS_DATA_request_pset curPacket;
@@ -884,19 +884,19 @@ ThreadError otPlatRadioTransmit(otInstance *aInstance, RadioPacket *aPacket, voi
     curPacket.SrcAddrMode = MAC_FC_SAM(frameControl);
     curPacket.Dst.AddressMode = MAC_FC_DAM(frameControl);
     curPacket.TxOptions = (frameControl & MAC_FC_ACK_REQ) ? 0x01 : 0x00;		//Set bit 0 for ack-requesting transmissions
-    curPacket.TxOptions |= aPacket.mDirectTransmission ? 0x00 : 1<<2;	//Set bit 2 for indirect transmissions
+    curPacket.TxOptions |= aPacket->mDirectTransmission ? 0x00 : 1<<2;	//Set bit 2 for indirect transmissions
     uint8_t isPanCompressed = frameControl & MAC_FC_PAN_COMP;
 
     uint8_t addressFieldLength = 0;
 
     if(curPacket.Dst.AddressMode == MAC_MODE_SHORT_ADDR){
-    	memcpy(curPacket.Dst.Address, aPacket.mPsdu+5, 2);
-    	memcpy(curPacket.Dst.PANId, aPacket.mPsdu+3, 2);
+    	memcpy(curPacket.Dst.Address, aPacket->mPsdu+5, 2);
+    	memcpy(curPacket.Dst.PANId, aPacket->mPsdu+3, 2);
     	addressFieldLength +=4;
     }
     else if(curPacket.Dst.AddressMode == MAC_MODE_LONG_ADDR){
-    	memcpy(curPacket.Dst.Address, aPacket.mPsdu+5, 8);
-    	memcpy(curPacket.Dst.PANId, aPacket.mPsdu+3, 2);
+    	memcpy(curPacket.Dst.Address, aPacket->mPsdu+5, 8);
+    	memcpy(curPacket.Dst.PANId, aPacket->mPsdu+3, 2);
     	addressFieldLength +=10;
     }
 
@@ -906,26 +906,26 @@ ThreadError otPlatRadioTransmit(otInstance *aInstance, RadioPacket *aPacket, voi
     headerLength = addressFieldLength + MAC_BASEHEADERLENGTH;
 
     if((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_DATA){
-		aPacket.mTransmitContext = transmitContext;
+		aPacket->mTransmitContext = transmitContext;
 		intransit_putFrame(handle, &aPacket);
 	}
 
     if(frameControl & MAC_FC_SEC_ENA){	//if security is required
     	uint8_t ASHloc = MAC_BASEHEADERLENGTH + addressFieldLength;
-    	uint8_t securityControl = *(uint8_t*)(aPacket.mPsdu + ASHloc);
+    	uint8_t securityControl = *(uint8_t*)(aPacket->mPsdu + ASHloc);
     	curSecSpec.SecurityLevel = MAC_SC_SECURITYLEVEL(securityControl);
     	curSecSpec.KeyIdMode = MAC_SC_KEYIDMODE(securityControl);
 
     	ASHloc += 5;//skip to key identifier
     	if(curSecSpec.KeyIdMode == 0x02){//Table 96
-    		memcpy(curSecSpec.KeySource, aPacket.mPsdu + ASHloc, 4);
+    		memcpy(curSecSpec.KeySource, aPacket->mPsdu + ASHloc, 4);
     		ASHloc += 4;
     	}
     	else if(curSecSpec.KeyIdMode == 0x03){//Table 96
-			memcpy(curSecSpec.KeySource, aPacket.mPsdu + ASHloc, 8);
+			memcpy(curSecSpec.KeySource, aPacket->mPsdu + ASHloc, 8);
 			ASHloc += 8;
 		}
-    	curSecSpec.KeyIndex = aPacket.mPsdu[ASHloc++];
+    	curSecSpec.KeyIndex = aPacket->mPsdu[ASHloc++];
     	headerLength = ASHloc;
     }
 
@@ -936,8 +936,8 @@ ThreadError otPlatRadioTransmit(otInstance *aInstance, RadioPacket *aPacket, voi
 
 		footerLength += 2; //MFR length
 
-		curPacket.MsduLength = aPacket.mLength - footerLength - headerLength;
-		memcpy(curPacket.Msdu, aPacket.mPsdu + headerLength, curPacket.MsduLength);
+		curPacket.MsduLength = aPacket->mLength - footerLength - headerLength;
+		memcpy(curPacket.Msdu, aPacket->mPsdu + headerLength, curPacket.MsduLength);
 		curPacket.MsduHandle = handle;
 
 		MCPS_DATA_request(
@@ -953,7 +953,7 @@ ThreadError otPlatRadioTransmit(otInstance *aInstance, RadioPacket *aPacket, voi
 			pDeviceRef);
     }
     else if((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_COMMAND){
-    	if(aPacket.mPsdu[headerLength] == 0x04){	//Data request command
+    	if(aPacket->mPsdu[headerLength] == 0x04){	//Data request command
 
     		uint8_t interval[2] = {0, 0};
     		uint8_t ret;
