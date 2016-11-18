@@ -68,7 +68,7 @@ void posixPlatformProcessDrivers(void)
     FD_ZERO(&read_fds);
     FD_ZERO(&write_fds);
 
-    posixPlatformUartUpdateFdSet(&read_fds, &write_fds, &max_fd);
+    platformUartUpdateFdSet(&read_fds, &write_fds, &max_fd);
     selfpipe_UpdateFdSet(&read_fds, &write_fds, &max_fd);
     posixPlatformAlarmUpdateTimeout(&timeout);
 
@@ -79,7 +79,7 @@ void posixPlatformProcessDrivers(void)
         assert(rval >= 0 && errno != ETIME);
     }
 
-    posixPlatformUartProcess();
+    platformUartProcess();
     PlatformRadioProcess();
     posixPlatformAlarmProcess();
 }
