@@ -940,6 +940,7 @@ ThreadError otPlatRadioTransmit(otInstance *aInstance, RadioPacket *aPacket, voi
 		memcpy(curPacket.Msdu, aPacket->mPsdu + headerLength, curPacket.MsduLength);
 		curPacket.MsduHandle = handle;
 
+		otPlatLog(kLogLevelDebg, kLogRegionHardMac, "Data Packet Sent");
 		MCPS_DATA_request(
 			curPacket.SrcAddrMode,
 			curPacket.Dst.AddressMode,
