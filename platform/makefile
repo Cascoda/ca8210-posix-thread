@@ -1,4 +1,4 @@
-TARGET = libraspcascoda.a
+TARGET = libotplatposixca8210.a
 LIBS = -lm
 CC = gcc
 INCLUDEDIRS := ./\
