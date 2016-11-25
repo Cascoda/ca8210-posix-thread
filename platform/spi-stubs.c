@@ -70,14 +70,3 @@ ThreadError otPlatSpiSlavePrepareTransaction(
     return kThreadError_NotImplemented;
 }
 
-// Uart
-
-void otPlatUartSendDone(void)
-{
-}
-
-void otPlatUartReceived(const uint8_t *aBuf, uint16_t aBufLength)
-{
-    (void)aBuf;
-    (void)aBufLength;
-}
