@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016, Nest Labs, Inc.
+ *  Copyright (c) 2016, The OpenThread Authors.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -26,35 +26,58 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "posix-platform.h"
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <platform/uart.h>
+#include <platform/spi-slave.h>
 
-#include <openthread.h>
-#include <cli/cli-uart.h>
-#include <posix-platform.h>
+// Spi-slave stubs
 
-#include <openthread-tasklet.h>
-
-void otSignalTaskletPending(otInstance *aInstance)
+ThreadError otPlatSpiSlaveEnable(
+    otPlatSpiSlaveTransactionCompleteCallback aCallback,
+    void *aContext
+)
 {
-	(void)aInstance;
+    (void)aCallback;
+    (void)aContext;
+
+    fprintf(stderr, "\nNo SPI support for posix platform.");
+    exit(0);
+
+    return kThreadError_NotImplemented;
 }
 
-int main(int argc, char *argv[])
+void otPlatSpiSlaveDisable(void)
 {
+}
 
-    NODE_ID = 1;
+ThreadError otPlatSpiSlavePrepareTransaction(
+    uint8_t *anOutputBuf,
+    uint16_t anOutputBufLen,
+    uint8_t *anInputBuf,
+    uint16_t anInputBufLen,
+    bool aRequestTransactionFlag
+)
+{
+    (void)anOutputBuf;
+    (void)anOutputBufLen;
+    (void)anInputBuf;
+    (void)anInputBufLen;
+    (void)aRequestTransactionFlag;
 
-    posixPlatformInit();
-    OT_INSTANCE = otInstanceInit();
-    otCliUartInit(OT_INSTANCE);
+    return kThreadError_NotImplemented;
+}
 
-    while (1)
-    {
-    	otProcessQueuedTasklets(OT_INSTANCE);
-        posixPlatformProcessDrivers();
-    }
+// Uart
 
-    return 0;
+void otPlatUartSendDone(void)
+{
+}
+
+void otPlatUartReceived(const uint8_t *aBuf, uint16_t aBufLength)
+{
+    (void)aBuf;
+    (void)aBufLength;
 }

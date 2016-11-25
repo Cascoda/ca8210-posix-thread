@@ -47,6 +47,8 @@
 uint32_t NODE_ID = 1;
 uint32_t WELLKNOWN_NODE_ID = 34;
 
+otInstance * OT_INSTANCE = NULL;
+
 void posixPlatformInit(void)
 {
     posixPlatformAlarmInit();
@@ -66,18 +68,18 @@ void posixPlatformProcessDrivers(void)
     FD_ZERO(&read_fds);
     FD_ZERO(&write_fds);
 
-    posixPlatformUartUpdateFdSet(&read_fds, &write_fds, &max_fd);
+    platformUartUpdateFdSet(&read_fds, &write_fds, &max_fd);
     selfpipe_UpdateFdSet(&read_fds, &write_fds, &max_fd);
     posixPlatformAlarmUpdateTimeout(&timeout);
 
-    if (!otAreTaskletsPending())
+    if (!otAreTaskletsPending(OT_INSTANCE))
     {
         rval = select(max_fd + 1, &read_fds, &write_fds, NULL, &timeout);
         selfpipe_pop();
         assert(rval >= 0 && errno != ETIME);
     }
 
-    posixPlatformUartProcess();
+    platformUartProcess();
     PlatformRadioProcess();
     posixPlatformAlarmProcess();
 }

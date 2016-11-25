@@ -41,6 +41,7 @@
 #include <assert.h>
 #include <common/code_utils.hpp>
 #include <platform/radio.h>
+#include <platform/random.h>
 #include <platform/logging.h>
 #include <cascoda_api.h>
 #include <kernel_exchange.h>
@@ -79,6 +80,7 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params);
 
 static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params);
 static int handleScanConfirm(struct MLME_SCAN_confirm_pset *params);
+
 static int handleGenericDispatchFrame(const uint8_t *buf, size_t len);
 //END CASCODA API CALLBACKS
 
@@ -133,7 +135,7 @@ static inline void barrier_worker_endWork(void);		//Used by worker thread to end
  */
 static RadioPacket * intransit_getFrame(uint8_t handle);	//Return pointer to the relevant packet, or NULL
 static int intransit_rmFrame(uint8_t handle);	//Release dynamically allocated memory -- returns 0 for success, or an error code
-static int intransit_putFrame(uint8_t handle, const RadioPacket * in, uint8_t headerSize);	//returns 0 for success, or an error code
+static int intransit_putFrame(uint8_t handle, const RadioPacket * in);	//returns 0 for success, or an error code
 static int intransit_isHandleInUse(uint8_t handle); //returns 0 if the handle is free, or 1 if it is already in use
 
 #define MAX_INTRANSITS 7 /*TODO:  5 indirect frames +2 (perhaps need more?)*/
@@ -156,9 +158,14 @@ pthread_cond_t receiveFrame_cond = PTHREAD_COND_INITIALIZER;
 //END FRAME DATA
 
 //SCAN DATA
-static otHandleActiveScanResult sScanCallback;
-static void * sScanContext;
+static otHandleActiveScanResult sActiveScanCallback;
+static void * sActiveScanContext;
 static uint8_t sActiveScanInProgress = 0;
+
+static otHandleEnergyScanResult sEnergyScanCallback;
+static void * sEnergyScanContext;
+static uint8_t sEnergyScanInProgress = 0;
+static uint32_t sEnergyScanMask = 0;
 //END SCAN DATA
 
 //For cascoda API
@@ -198,35 +205,141 @@ static void setChannel(uint8_t channel)
     }
 }
 
-ThreadError otPlatRadioActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, otHandleActiveScanResult aCallback, void *aCallbackContext)
-{
 
+void otPlatRadioEnableSrcMatch(otInstance *aInstance, bool aEnable)
+{(void) aInstance;(void) aEnable;}
+
+ThreadError otPlatRadioAddSrcMatchShortEntry(otInstance *aInstance, const uint16_t aShortAddress)
+{(void) aInstance;(void) aShortAddress; return kThreadError_None;}
+
+ThreadError otPlatRadioAddSrcMatchExtEntry(otInstance *aInstance, const uint8_t *aExtAddress)
+{(void) aInstance;(void) aExtAddress; return kThreadError_None;}
+
+ThreadError otPlatRadioClearSrcMatchShortEntry(otInstance *aInstance, const uint16_t aShortAddress)
+{(void) aInstance;(void) aShortAddress; return kThreadError_None;}
+
+ThreadError otPlatRadioClearSrcMatchExtEntry(otInstance *aInstance, const uint8_t *aExtAddress)
+{(void) aInstance;(void) aExtAddress; return kThreadError_None;}
+
+void otPlatRadioClearSrcMatchShortEntries(otInstance *aInstance)
+{(void) aInstance;}
+
+void otPlatRadioClearSrcMatchExtEntries(otInstance *aInstance)
+{(void) aInstance;}
+
+//Platform independent integer log2 implementation
+//from http://stackoverflow.com/questions/11376288/fast-computing-of-log2-for-64-bit-integers
+const uint8_t tab32[32] = {
+     0,  9,  1, 10, 13, 21,  2, 29,
+    11, 14, 16, 18, 22, 25,  3, 30,
+     8, 12, 20, 28, 15, 17, 24,  7,
+    19, 27, 23,  6, 26,  5,  4, 31};
+
+uint8_t log2_32 (uint32_t value)
+{
+    value |= value >> 1;
+    value |= value >> 2;
+    value |= value >> 4;
+    value |= value >> 8;
+    value |= value >> 16;
+    return tab32[(uint32_t)(value*0x07C4ACDD) >> 27];
+}
+
+ThreadError otPlatRadioActiveScan(otInstance *aInstance, uint32_t aScanChannels, uint16_t aScanDuration, otHandleActiveScanResult aCallback, void *aCallbackContext)
+{
 	/*
 	 * This function causes an active scan to be run by the ca8210
 	 */
+	if(sActiveScanInProgress || sEnergyScanInProgress) return kThreadError_Busy;
 
-	uint8_t ScanDuration = 5; //0 to 14
+	uint8_t ScanDuration;
+
+	if(aScanDuration >= 50){ //This 'if' structure is to cope with the aScanDurations of 0 that seem to be passed around
+		//15 ~= (aBaseSuperframeDuration * aSymbolPeriod_us)/1000
+		ScanDuration = log2_32(aScanDuration/15);//5; //0 to 14
+		if(ScanDuration > 14) ScanDuration = 14;
+	}
+	else{
+		ScanDuration = 4;
+	}
+
+	otPlatLog(kLogLevelDebg, kLogRegionHardMac, "aScanDuration: %d, ScanDuration: %d\n\r", aScanDuration, ScanDuration);
+
 	struct SecSpec pSecurity = {0};
 	if (aScanChannels == 0) aScanChannels = 0x07fff800; //11 to 26
-	sScanCallback = aCallback;
-	sScanContext = aCallbackContext;
+	sActiveScanCallback = aCallback;
+	sActiveScanContext = aCallbackContext;
 	uint8_t scanRequest = MLME_SCAN_request(
-			1,
+			1, //Active Scan
 			aScanChannels,
 			ScanDuration,
 			&pSecurity,
 			pDeviceRef);
 
-	if(scanRequest == MAC_SUCCESS) sActiveScanInProgress = 1;
-	return scanRequest;
+	if(scanRequest == MAC_SUCCESS){
+		sActiveScanInProgress = 1;
+		return kThreadError_None;
+	}
+	else{
+		return kThreadError_Busy;
+	}
 }
 
-bool otPlatRadioActiveScanInProgress(void)
+ThreadError otPlatRadioEnergyScan(otInstance *aInstance, uint8_t aScanChannel, uint16_t aScanDuration){
+	return kThreadError_NotImplemented;	//We have a hardmac: Use the full one
+}
+
+ThreadError otPlatRadioEnergyScanFull(otInstance *aInstance, uint32_t aScanChannels, uint16_t aScanDuration, otHandleEnergyScanResult aCallback, void *aCallbackContext){
+
+	/*
+	 * This function causes an energy scan to be run by the ca8210
+	 */
+	if(sActiveScanInProgress || sEnergyScanInProgress) return kThreadError_Busy;
+
+	uint8_t ScanDuration;
+
+	sEnergyScanMask = aScanChannels;
+	if(aScanDuration >= 50){	//This 'if' structure is to cope with the aScanDurations of 0 that seem to be passed around
+		//15 ~= (aBaseSuperframeDuration * aSymbolPeriod_us)/1000
+		ScanDuration = log2_32(aScanDuration/15);//6; //0 to 14
+		if(ScanDuration > 14) ScanDuration = 14;
+	}
+	else{
+		ScanDuration = 6;
+	}
+
+	otPlatLog(kLogLevelDebg, kLogRegionHardMac, "aScanDuration: %d, ScanDuration: %d\n\r", aScanDuration, ScanDuration);
+
+	struct SecSpec pSecurity = {0};
+	if (aScanChannels == 0) aScanChannels = 0x07fff800; //11 to 26
+	sEnergyScanCallback = aCallback;
+	sEnergyScanContext = aCallbackContext;
+	uint8_t scanRequest = MLME_SCAN_request(
+			0, //Energy Scan
+			aScanChannels,
+			ScanDuration,
+			&pSecurity,
+			pDeviceRef);
+
+	if(scanRequest == MAC_SUCCESS){
+		sEnergyScanInProgress = 1;
+		return kThreadError_None;
+	}
+	else{
+		return kThreadError_Busy;
+	}
+}
+
+bool otPlatRadioIsEnergyScanInProgress(otInstance *aInstance){
+	return sEnergyScanInProgress;
+}
+
+bool otPlatRadioIsActiveScanInProgress(otInstance *aInstance)
 {
     return sActiveScanInProgress;
 }
 
-ThreadError otPlatRadioSetNetworkName(const char *aNetworkName) {
+ThreadError otPlatRadioSetNetworkName(otInstance *aInstance, const char *aNetworkName) {
 
 	memcpy(mBeaconPayload + 2, aNetworkName, 16);
 	if ((MLME_SET_request_sync(
@@ -246,7 +359,7 @@ ThreadError otPlatRadioSetNetworkName(const char *aNetworkName) {
 	else return kThreadError_Failed;
 }
 
-ThreadError otPlatRadioSetExtendedPanId(const uint8_t *aExtPanId) {
+ThreadError otPlatRadioSetExtendedPanId(otInstance *aInstance, const uint8_t *aExtPanId) {
 
 	memcpy(mBeaconPayload + 18, aExtPanId, 8);
 	if ((MLME_SET_request_sync(
@@ -267,51 +380,50 @@ ThreadError otPlatRadioSetExtendedPanId(const uint8_t *aExtPanId) {
 	else return kThreadError_Failed;
 }
 
-ThreadError otPlatRadioSetPanId(uint16_t panid)
+void otPlatRadioSetPanId(otInstance *aInstance, uint16_t panid)
 {
 	uint8_t LEarray[2];
 	LEarray[0] = LS0_BYTE(panid);
 	LEarray[1] = LS1_BYTE(panid);
-    if ( MLME_SET_request_sync(
+    MLME_SET_request_sync(
         macPANId,
         0,
         sizeof(panid),
         LEarray,
-        pDeviceRef) == MAC_SUCCESS)
-            return kThreadError_None;
-
-    else return kThreadError_Failed;
+        pDeviceRef);
 }
 
-ThreadError otPlatRadioSetExtendedAddress(uint8_t *address)
+void otPlatRadioGetIeeeEui64(otInstance *aInstance, uint8_t *aIeeeEui64){
+	//TODO: Implement properly with long lasting state
+	(void) aInstance;
+	for(int i = 0; i < 4; i += 1){
+		uint16_t random = otPlatRandomGet();
+		aIeeeEui64[2*i] = random & 0xFF;
+		aIeeeEui64[2*i + 1] = (random >> 4) & 0xFF;
+	}
+}
+
+void otPlatRadioSetExtendedAddress(otInstance *aInstance, uint8_t *address)
 {
-    if ( MLME_SET_request_sync(
+    MLME_SET_request_sync(
         nsIEEEAddress,
         0,
         OT_EXT_ADDRESS_SIZE, 
         address,
-        pDeviceRef) == MAC_SUCCESS){
-
-        return kThreadError_None;
-    }
-
-    else return kThreadError_Failed;
+        pDeviceRef);
 }
 
-ThreadError otPlatRadioSetShortAddress(uint16_t address)
+void otPlatRadioSetShortAddress(otInstance *aInstance, uint16_t address)
 {
 	uint8_t LEarray[2];
 		LEarray[0] = LS0_BYTE(address);
 		LEarray[1] = LS1_BYTE(address);
-    if ( MLME_SET_request_sync(
+    MLME_SET_request_sync(
         macShortAddress,
         0,
         sizeof(address),
         LEarray,
-        pDeviceRef) == MAC_SUCCESS)
-            return kThreadError_None;
-
-    else return kThreadError_Failed;
+        pDeviceRef);
 }
 
 static int driverErrorCallback(int error_number){
@@ -321,11 +433,19 @@ static int driverErrorCallback(int error_number){
 	return 0;
 }
 
+void PlatformRadioStop(void){
+	//Reset the MAC to a default state
+	otPlatLog(kLogLevelInfo, kLogRegionHardMac, "Resetting & Stopping Radio...\n\r");
+	MLME_RESET_request_sync(1, pDeviceRef);
+}
+
 void PlatformRadioInit(void)
 {
     sTransmitFrame.mLength = 0;
     sTransmitFrame.mPsdu = sTransmitPsdu;
     
+    atexit(&PlatformRadioStop);
+
     pthread_mutex_lock(&receiveFrame_mutex);
 		sReceiveFrame.mLength = 0;
 		sReceiveFrame.mPsdu = sReceivePsdu;
@@ -355,8 +475,7 @@ void PlatformRadioInit(void)
 		&enable,
 		pDeviceRef);
 
-	//TODO: This should be 3 according to thread spec, but openthread still needs to sort out the higher level retries
-	uint8_t retries = 7;	//Retry transmission 7 times if not acknowledged
+	uint8_t retries = 3;	//Retry transmission 3 times if not acknowledged
 	MLME_SET_request_sync(
 		macMaxFrameRetries,
 		0,
@@ -364,7 +483,7 @@ void PlatformRadioInit(void)
 		&retries,
 		pDeviceRef);
 
-	retries = 5;	//max 5 CSMA backoffs
+	retries = 4;	//max 4 CSMA backoffs
 	MLME_SET_request_sync(
 		macMaxCSMABackoffs,
 		0,
@@ -405,7 +524,7 @@ void PlatformRadioInit(void)
 		pDeviceRef);
 }
 
-void otHardMacStateChangeCallback(uint32_t aFlags, void *aContext){
+void otHardMacStateChangeCallback(otInstance *aInstance, uint32_t aFlags, void *aContext){
 
 	/*
 	 * This function is called whenever there is an internal state change in thread
@@ -424,10 +543,10 @@ static void coordChangeCallback(uint32_t aFlags, void *aContext) {
 
 	if(aFlags & OT_NET_ROLE){
 		struct SecSpec securityLevel = {0};
-		if(otGetDeviceRole() == kDeviceRoleRouter || otGetDeviceRole() == kDeviceRoleLeader){
+		if(otGetDeviceRole(OT_INSTANCE) == kDeviceRoleRouter || otGetDeviceRole(OT_INSTANCE) == kDeviceRoleLeader){
 			if(!sIsCoordinator) {
 				MLME_START_request_sync(
-						otGetPanId(),
+						otGetPanId(OT_INSTANCE),
 						sChannel,
 						15,
 						15,
@@ -453,18 +572,20 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 	 * ca8210 whenever there is a new key or new device to communicate with.
 	 */
 
-	if((aFlags & (OT_NET_KEY_SEQUENCE | OT_THREAD_CHILD_ADDED | OT_THREAD_CHILD_REMOVED | OT_NET_ROLE | OT_THREAD_LINK_ACCEPT))){	//The thrKeySequenceCounter has changed or device descriptors need updating
+	if((aFlags & (OT_NET_KEY_SEQUENCE_COUNTER | OT_THREAD_CHILD_ADDED | OT_THREAD_CHILD_REMOVED | OT_NET_ROLE | OT_THREAD_LINK_ACCEPT))){	//The thrKeySequenceCounter has changed or device descriptors need updating
 		//Therefore update the keys stored in the macKeytable
-		//TODO: (low priority) Utilise the device cache to speed this up
+		//TODO: (low priority) Utilise the device cache to reduce number of writes
+		//Cache devices so the frame counters are correct
+		deviceCache_cacheDevices();
 		otPlatLog(kLogLevelDebg, kLogRegionHardMac, "Updating keys\n\r");
-		if(otGetKeySequenceCounter() == 0) otSetKeySequenceCounter(2);
-		uint32_t tKeySeq = otGetKeySequenceCounter() - 1;
+		if(otGetKeySequenceCounter(OT_INSTANCE) == 0) otSetKeySequenceCounter(OT_INSTANCE, 2);
+		uint32_t tKeySeq = otGetKeySequenceCounter(OT_INSTANCE) - 1;
 
 		uint8_t count = 0;	//Update device list
-		if(otGetDeviceRole() != kDeviceRoleChild){
+		if(otGetDeviceRole(OT_INSTANCE) != kDeviceRoleChild){
 			for(uint8_t i = 0; i < 5; i++){
 				otChildInfo tChildInfo;
-				otGetChildInfoByIndex(i, &tChildInfo);
+				otGetChildInfoByIndex(OT_INSTANCE, i, &tChildInfo);
 
 				//Do not register invalid devices
 				uint8_t isValid = 0;
@@ -478,13 +599,17 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 
 				struct M_DeviceDescriptor tDeviceDescriptor;
 
-				PUTLE16(otGetPanId() ,tDeviceDescriptor.PANId);
+				PUTLE16(otGetPanId(OT_INSTANCE) ,tDeviceDescriptor.PANId);
 				PUTLE16(tChildInfo.mRloc16, tDeviceDescriptor.ShortAddress);
 				for(int j = 0; j < 8; j++) tDeviceDescriptor.ExtAddress[j] = tChildInfo.mExtAddress.m8[7-j];	//Flip endian
-				tDeviceDescriptor.FrameCounter[0] = 0;	//TODO: Use the frame cache to do frame counter properly - this method is temporarily breaking replay protection as replays using previous counter will still be successful
-				tDeviceDescriptor.FrameCounter[1] = 0;
-				tDeviceDescriptor.FrameCounter[2] = 0;
-				tDeviceDescriptor.FrameCounter[3] = 0;
+
+				otExtAddress tExtAddr;
+				memcpy(&tExtAddr, tDeviceDescriptor.ExtAddress, 8);
+				struct DeviceCache * curDeviceCache = deviceCache_getCachedDevice(tExtAddr);
+				tDeviceDescriptor.FrameCounter[0] = curDeviceCache->mFrameCounter[0];
+				tDeviceDescriptor.FrameCounter[1] = curDeviceCache->mFrameCounter[1];
+				tDeviceDescriptor.FrameCounter[2] = curDeviceCache->mFrameCounter[2];
+				tDeviceDescriptor.FrameCounter[3] = curDeviceCache->mFrameCounter[3];
 				tDeviceDescriptor.Exempt = 0;
 
 
@@ -501,18 +626,22 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 			uint8_t maxRouters = 5 - count;
 			otRouterInfo routers[maxRouters];
 			uint8_t numRouters;
-			otGetNeighborRouterInfo(routers, &numRouters, maxRouters);
+			otGetNeighborRouterInfo(OT_INSTANCE, routers, &numRouters, maxRouters);
 
 			for(int i = 0; i < numRouters; i++){
 				struct M_DeviceDescriptor tDeviceDescriptor;
 
-				PUTLE16(otGetPanId() ,tDeviceDescriptor.PANId);
+				PUTLE16(otGetPanId(OT_INSTANCE) ,tDeviceDescriptor.PANId);
 				PUTLE16(routers[i].mRloc16, tDeviceDescriptor.ShortAddress);
 				for(int j = 0; j < 8; j++) tDeviceDescriptor.ExtAddress[j] = routers[i].mExtAddress.m8[7-j];	//Flip endian
-				tDeviceDescriptor.FrameCounter[0] = 0;	//TODO: Use the frame cache to do frame counter properly - this method is temporarily breaking replay protection as replays using previous counter will still be successful
-				tDeviceDescriptor.FrameCounter[1] = 0;
-				tDeviceDescriptor.FrameCounter[2] = 0;
-				tDeviceDescriptor.FrameCounter[3] = 0;
+
+				otExtAddress tExtAddr;
+				memcpy(&tExtAddr, tDeviceDescriptor.ExtAddress, 8);
+				struct DeviceCache * curDeviceCache = deviceCache_getCachedDevice(tExtAddr);
+				tDeviceDescriptor.FrameCounter[0] = curDeviceCache->mFrameCounter[0];
+				tDeviceDescriptor.FrameCounter[1] = curDeviceCache->mFrameCounter[1];
+				tDeviceDescriptor.FrameCounter[2] = curDeviceCache->mFrameCounter[2];
+				tDeviceDescriptor.FrameCounter[3] = curDeviceCache->mFrameCounter[3];
 				tDeviceDescriptor.Exempt = 0;
 
 				MLME_SET_request_sync(
@@ -527,16 +656,20 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 		}
 		else{
 			otRouterInfo tParentInfo;
-			if(otGetParentInfo(&tParentInfo) == kThreadError_None){
+			if(otGetParentInfo(OT_INSTANCE, &tParentInfo) == kThreadError_None){
 				struct M_DeviceDescriptor tDeviceDescriptor;
 
-				PUTLE16(otGetPanId(), tDeviceDescriptor.PANId);
+				PUTLE16(otGetPanId(OT_INSTANCE), tDeviceDescriptor.PANId);
 				PUTLE16(tParentInfo.mRloc16, tDeviceDescriptor.ShortAddress);
 				for(int j = 0; j < 8; j++) tDeviceDescriptor.ExtAddress[j] = tParentInfo.mExtAddress.m8[7-j];	//Flip endian
-				tDeviceDescriptor.FrameCounter[0] = 0;	//TODO: Use the frame cache to do frame counter properly - this method is temporarily breaking replay protection as replays using previous counter will still be successful
-				tDeviceDescriptor.FrameCounter[1] = 0;
-				tDeviceDescriptor.FrameCounter[2] = 0;
-				tDeviceDescriptor.FrameCounter[3] = 0;
+
+				otExtAddress tExtAddr;
+				memcpy(&tExtAddr, tDeviceDescriptor.ExtAddress, 8);
+				struct DeviceCache * curDeviceCache = deviceCache_getCachedDevice(tExtAddr);
+				tDeviceDescriptor.FrameCounter[0] = curDeviceCache->mFrameCounter[0];
+				tDeviceDescriptor.FrameCounter[1] = curDeviceCache->mFrameCounter[1];
+				tDeviceDescriptor.FrameCounter[2] = curDeviceCache->mFrameCounter[2];
+				tDeviceDescriptor.FrameCounter[3] = curDeviceCache->mFrameCounter[3];
 				tDeviceDescriptor.Exempt = 0;
 
 				MLME_SET_request_sync(
@@ -598,7 +731,7 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 		uint8_t storeCount = 0;
 		for(uint8_t i = 0; i < 3; i++){
 			if((tKeySeq + i) > 0){	//0 is invalid key sequence
-				memcpy(tKeyDescriptor.Fixed.Key, getMacKeyFromSequenceCounter(tKeySeq + i), 16);
+				memcpy(tKeyDescriptor.Fixed.Key, otGetMacKeyFromSequenceCounter(OT_INSTANCE, tKeySeq + i), 16);
 				tKeyDescriptor.KeyIdLookupList[0].LookupData[0] = ((tKeySeq + i) & 0x7F) + 1;
 
 				MLME_SET_request_sync(
@@ -621,7 +754,7 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 	}
 }
 
-ThreadError otPlatRadioEnable(void)    //TODO:(lowpriority) port 
+ThreadError otPlatRadioEnable(otInstance *aInstance)    //TODO:(lowpriority) port
 {
 	ThreadError error = kThreadError_Busy;
 
@@ -647,7 +780,7 @@ ThreadError otPlatRadioEnable(void)    //TODO:(lowpriority) port
     return error;
 }
 
-ThreadError otPlatRadioDisable(void)    //TODO:(lowpriority) port 
+ThreadError otPlatRadioDisable(otInstance *aInstance)    //TODO:(lowpriority) port
 {
 	ThreadError error = kThreadError_Busy;
 
@@ -674,13 +807,13 @@ ThreadError otPlatRadioDisable(void)    //TODO:(lowpriority) port
     return error;
 }
 
-ThreadError otPlatRadioSleep(void)
+ThreadError otPlatRadioSleep(otInstance *aInstance)
 {
 	return kThreadError_None;
 	//This is handled by the hardmac and the state of rxOnWhenIdle
 }
 
-ThreadError otPlatRadioSetRxOnWhenIdle(uint8_t rxOnWhenIdle){
+ThreadError otPlatRadioSetRxOnWhenIdle(otInstance *aInstance, uint8_t rxOnWhenIdle){
 	ThreadError error = kThreadError_None;
 	uint8_t ret = 0;
 	rxOnWhenIdle = rxOnWhenIdle ? 1 : 0;
@@ -697,7 +830,7 @@ ThreadError otPlatRadioSetRxOnWhenIdle(uint8_t rxOnWhenIdle){
 	return error;
 }
 
-ThreadError otPlatRadioReceive(uint8_t aChannel)
+ThreadError otPlatRadioReceive(otInstance *aInstance, uint8_t aChannel)
 {
     ThreadError error = kThreadError_None;
 
@@ -710,12 +843,12 @@ exit:
     return error;
 }
 
-RadioPacket *otPlatRadioGetTransmitBuffer(void)
+RadioPacket *otPlatRadioGetTransmitBuffer(otInstance *aInstance)
 {
     return &sTransmitFrame;
 }
 
-ThreadError otPlatRadioTransmit(void * transmitContext)
+ThreadError otPlatRadioTransmit(otInstance *aInstance, RadioPacket *aPacket, void * transmitContext)
 {
 	/*
 	 * This Function converts the openthread-provided PHY frame into a MAC primitive to
@@ -726,11 +859,13 @@ ThreadError otPlatRadioTransmit(void * transmitContext)
     static uint8_t handle = 0;
     handle++;
 
+    otPlatLog(kLogLevelDebg, kLogRegionHardMac, "otPlatRadioTransmit Called");
+
     while(intransit_isHandleInUse(handle)) handle++;  //make sure handle is available for use
 
     VerifyOrExit(sState != kStateDisabled, error = kThreadError_Busy);
 
-    uint16_t frameControl = GETLE16(sTransmitFrame.mPsdu);
+    uint16_t frameControl = GETLE16(aPacket->mPsdu);
     VerifyOrExit(((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_DATA) || \
     	((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_COMMAND),         \
     	error = kThreadError_Abort;                                     \
@@ -739,7 +874,7 @@ ThreadError otPlatRadioTransmit(void * transmitContext)
     sState = kStateTransmit;
     sTransmitError = kThreadError_None;
 
-    setChannel(sTransmitFrame.mChannel);
+    setChannel(aPacket->mChannel);
 
     //transmit
     struct MCPS_DATA_request_pset curPacket;
@@ -751,19 +886,19 @@ ThreadError otPlatRadioTransmit(void * transmitContext)
     curPacket.SrcAddrMode = MAC_FC_SAM(frameControl);
     curPacket.Dst.AddressMode = MAC_FC_DAM(frameControl);
     curPacket.TxOptions = (frameControl & MAC_FC_ACK_REQ) ? 0x01 : 0x00;		//Set bit 0 for ack-requesting transmissions
-    curPacket.TxOptions |= sTransmitFrame.mDirectTransmission ? 0x00 : 1<<2;	//Set bit 2 for indirect transmissions
+    curPacket.TxOptions |= aPacket->mDirectTransmission ? 0x00 : 1<<2;	//Set bit 2 for indirect transmissions
     uint8_t isPanCompressed = frameControl & MAC_FC_PAN_COMP;
 
     uint8_t addressFieldLength = 0;
 
     if(curPacket.Dst.AddressMode == MAC_MODE_SHORT_ADDR){
-    	memcpy(curPacket.Dst.Address, sTransmitFrame.mPsdu+5, 2);
-    	memcpy(curPacket.Dst.PANId, sTransmitFrame.mPsdu+3, 2);
+    	memcpy(curPacket.Dst.Address, aPacket->mPsdu+5, 2);
+    	memcpy(curPacket.Dst.PANId, aPacket->mPsdu+3, 2);
     	addressFieldLength +=4;
     }
     else if(curPacket.Dst.AddressMode == MAC_MODE_LONG_ADDR){
-    	memcpy(curPacket.Dst.Address, sTransmitFrame.mPsdu+5, 8);
-    	memcpy(curPacket.Dst.PANId, sTransmitFrame.mPsdu+3, 2);
+    	memcpy(curPacket.Dst.Address, aPacket->mPsdu+5, 8);
+    	memcpy(curPacket.Dst.PANId, aPacket->mPsdu+3, 2);
     	addressFieldLength +=10;
     }
 
@@ -773,26 +908,26 @@ ThreadError otPlatRadioTransmit(void * transmitContext)
     headerLength = addressFieldLength + MAC_BASEHEADERLENGTH;
 
     if((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_DATA){
-		sTransmitFrame.mTransmitContext = transmitContext;
-		intransit_putFrame(handle, &sTransmitFrame, headerLength); //Don't need to store security information OR source address for intransits, just destination addressing info and fc (Max length 13 bytes)
+		aPacket->mTransmitContext = transmitContext;
+		intransit_putFrame(handle, aPacket);
 	}
 
     if(frameControl & MAC_FC_SEC_ENA){	//if security is required
     	uint8_t ASHloc = MAC_BASEHEADERLENGTH + addressFieldLength;
-    	uint8_t securityControl = *(uint8_t*)(sTransmitFrame.mPsdu + ASHloc);
+    	uint8_t securityControl = *(uint8_t*)(aPacket->mPsdu + ASHloc);
     	curSecSpec.SecurityLevel = MAC_SC_SECURITYLEVEL(securityControl);
     	curSecSpec.KeyIdMode = MAC_SC_KEYIDMODE(securityControl);
 
     	ASHloc += 5;//skip to key identifier
     	if(curSecSpec.KeyIdMode == 0x02){//Table 96
-    		memcpy(curSecSpec.KeySource, sTransmitFrame.mPsdu + ASHloc, 4);
+    		memcpy(curSecSpec.KeySource, aPacket->mPsdu + ASHloc, 4);
     		ASHloc += 4;
     	}
     	else if(curSecSpec.KeyIdMode == 0x03){//Table 96
-			memcpy(curSecSpec.KeySource, sTransmitFrame.mPsdu + ASHloc, 8);
+			memcpy(curSecSpec.KeySource, aPacket->mPsdu + ASHloc, 8);
 			ASHloc += 8;
 		}
-    	curSecSpec.KeyIndex = sTransmitFrame.mPsdu[ASHloc++];
+    	curSecSpec.KeyIndex = aPacket->mPsdu[ASHloc++];
     	headerLength = ASHloc;
     }
 
@@ -803,10 +938,11 @@ ThreadError otPlatRadioTransmit(void * transmitContext)
 
 		footerLength += 2; //MFR length
 
-		curPacket.MsduLength = sTransmitFrame.mLength - footerLength - headerLength;
-		memcpy(curPacket.Msdu, sTransmitFrame.mPsdu + headerLength, curPacket.MsduLength);
+		curPacket.MsduLength = aPacket->mLength - footerLength - headerLength;
+		memcpy(curPacket.Msdu, aPacket->mPsdu + headerLength, curPacket.MsduLength);
 		curPacket.MsduHandle = handle;
 
+		otPlatLog(kLogLevelDebg, kLogRegionHardMac, "Data Packet Sent");
 		MCPS_DATA_request(
 			curPacket.SrcAddrMode,
 			curPacket.Dst.AddressMode,
@@ -820,7 +956,7 @@ ThreadError otPlatRadioTransmit(void * transmitContext)
 			pDeviceRef);
     }
     else if((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_COMMAND){
-    	if(sTransmitFrame.mPsdu[headerLength] == 0x04){	//Data request command
+    	if(aPacket->mPsdu[headerLength] == 0x04){	//Data request command
 
     		uint8_t interval[2] = {0, 0};
     		uint8_t ret;
@@ -835,13 +971,13 @@ ThreadError otPlatRadioTransmit(void * transmitContext)
     		} while(ret == 0xFF && (count++ < 10));
 
     		if(ret == MAC_SUCCESS){
-    			otPlatRadioTransmitDone(true, error, &sTransmitFrame, transmitContext);
+    			otPlatRadioTransmitDone(OT_INSTANCE, aPacket, true, error, transmitContext);
     		}
     		else if(ret == MAC_NO_DATA){
-    			otPlatRadioTransmitDone(false, error, &sTransmitFrame, transmitContext);
+    			otPlatRadioTransmitDone(OT_INSTANCE, aPacket, false, error, transmitContext);
     		}
     		else{
-    			otPlatRadioTransmitDone(false, kThreadError_NoAck, &sTransmitFrame, transmitContext);
+    			otPlatRadioTransmitDone(OT_INSTANCE, aPacket, false, kThreadError_NoAck, transmitContext);
     		}
     	}
     	else{
@@ -853,17 +989,17 @@ exit:
     return error;
 }
 
-int8_t otPlatRadioGetNoiseFloor(void)
+int8_t otPlatRadioGetNoiseFloor(otInstance *aInstance)
 {
     return noiseFloor;
 }
 
-otRadioCaps otPlatRadioGetCaps(void)
+otRadioCaps otPlatRadioGetCaps(otInstance *aInstance)
 {
     return kRadioCapsAckTimeout;
 }
 
-bool otPlatRadioGetPromiscuous(void)
+bool otPlatRadioGetPromiscuous(otInstance *aInstance)
 {
 	if(sPromiscuousCache != tristate_uninit) return sPromiscuousCache;
 
@@ -882,7 +1018,7 @@ bool otPlatRadioGetPromiscuous(void)
     return (bool) result;
 }
 
-void otPlatRadioSetPromiscuous(bool aEnable)
+void otPlatRadioSetPromiscuous(otInstance *aInstance, bool aEnable)
 {
 	uint8_t enable = aEnable ? 1 : 0;	//Just to be sure we match spec
     MLME_SET_request_sync(
@@ -904,7 +1040,7 @@ static int handleDataIndication(struct MCPS_DATA_indication_pset *params)   //As
 	 * approves it.
 	 */
 
-	if(!otIsInterfaceUp()) return 1;
+	if(!otIsInterfaceUp(OT_INSTANCE)) return 1;
 
     pthread_mutex_lock(&receiveFrame_mutex);
 	//wait until the main thread is free to process the frame
@@ -1007,7 +1143,7 @@ static int handleDataIndication(struct MCPS_DATA_indication_pset *params)   //As
 
     barrier_worker_waitForMain();
 	sState = kStateReceive;
-	otPlatRadioReceiveDone(&sReceiveFrame, sReceiveError);
+	otPlatRadioReceiveDone(OT_INSTANCE, &sReceiveFrame, sReceiveError);
 	barrier_worker_endWork();
 
     PlatformRadioSignal();
@@ -1022,7 +1158,9 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
 	 * This Function processes the MCPS_DATA_CONFIRM and passes the success or error
 	 * to openthread as appropriate.
 	 */
-	if(!otIsInterfaceUp()) return 1;
+
+	if(!otIsInterfaceUp(OT_INSTANCE)) return 1;
+	otPlatLog(kLogLevelDebg, kLogRegionHardMac, "Data confirm received!");
 
 	barrier_worker_waitForMain();
 
@@ -1030,17 +1168,18 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
 	assert(sentFrame != NULL);
 
     if(params->Status == MAC_SUCCESS){
-    	otPlatRadioTransmitDone(false, sTransmitError, sentFrame, sentFrame->mTransmitContext);
+    	otPlatRadioTransmitDone(OT_INSTANCE, sentFrame, false, sTransmitError, sentFrame->mTransmitContext);
     	sState = kStateReceive;
     	sTransmitError = kThreadError_None;
     }
     else{
-    	//TODO: Better handle the channel_access_failures
     	if(params->Status == MAC_CHANNEL_ACCESS_FAILURE) sTransmitError = kThreadError_ChannelAccessFailure;
-    	else if(params->Status == MAC_NO_ACK) sTransmitError = kThreadError_NoAck;
+    	//TODO: handling MAC_TRANSACTION_OVERFLOW in this way isn't strictly correct, but does cause a retry at a higher level
+    	else if(params->Status == MAC_NO_ACK || params->Status == MAC_TRANSACTION_OVERFLOW) sTransmitError = kThreadError_NoAck;
+    	else if(params->Status == MAC_TRANSACTION_EXPIRED) sTransmitError = kThreadError_NoAck;
     	else sTransmitError = kThreadError_Abort;
     	otPlatLog(kLogLevelWarn, kLogRegionHardMac, "MCPS_DATA_confirm error: %#x \r\n", params->Status);
-    	otPlatRadioTransmitDone(false, sTransmitError, sentFrame, sentFrame->mTransmitContext);
+    	otPlatRadioTransmitDone(OT_INSTANCE, sentFrame, false, sTransmitError, sentFrame->mTransmitContext);
     	sState = kStateReceive;
     	sTransmitError = kThreadError_None;
     }
@@ -1061,8 +1200,6 @@ static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params)
 	 * This Function processes an incoming beacon from an activeScan, processing the payload
 	 * and passing the relevant information to openthread in a struct.
 	 */
-
-	if(!otIsInterfaceUp()) return 1;
 
 	otActiveScanResult resultStruct;
 
@@ -1090,7 +1227,7 @@ static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params)
 			memcpy(&resultStruct.mNetworkName, ((char*)Sdu) + 2, sizeof(resultStruct.mNetworkName));
 			memcpy(&resultStruct.mExtendedPanId, Sdu + 18, sizeof(resultStruct.mExtendedPanId));
 			barrier_worker_waitForMain();
-			sScanCallback(&resultStruct, sScanContext);
+			sActiveScanCallback(sActiveScanContext, &resultStruct);
 			barrier_worker_endWork();
 		}
 	}
@@ -1101,19 +1238,48 @@ exit:
 
 static int handleScanConfirm(struct MLME_SCAN_confirm_pset *params) { //Async
 
-	if(!otIsInterfaceUp()) return 1;
-
 	if (params->Status != MAC_SCAN_IN_PROGRESS) {
-		barrier_worker_waitForMain();
-		sScanCallback(NULL, sScanContext);
-		sActiveScanInProgress = 1;
-		barrier_worker_endWork();
-		MLME_SET_request_sync(
-		    			phyCurrentChannel,
-		    	        0,
-		    	        sizeof(sChannel),
-		    	        &sChannel,
-		    	        pDeviceRef);
+		if(sActiveScanInProgress){
+			barrier_worker_waitForMain();
+			sActiveScanCallback(sActiveScanContext, NULL);
+			sActiveScanInProgress = 0;
+			barrier_worker_endWork();
+			MLME_SET_request_sync(
+							phyCurrentChannel,
+							0,
+							sizeof(sChannel),
+							&sChannel,
+							pDeviceRef);
+		}
+		else if(sEnergyScanInProgress){
+			barrier_worker_waitForMain();
+			uint8_t curMinChannel = 11;
+
+			//Iterate through the result list to trigger the resultCallback for each result
+			for(int i = 0; i < params->ResultListSize; i++){
+				otEnergyScanResult result;
+				result.mMaxRssi = params->ResultList[i];
+				result.mChannel = curMinChannel;
+				sEnergyScanCallback(sActiveScanContext, &result);
+
+				while(!(sEnergyScanMask & 1 << curMinChannel)){
+					result.mChannel = curMinChannel++;
+
+					// clear the bit for the channel just handled
+					sEnergyScanMask &= sEnergyScanMask - 1;
+				}
+			}
+			//Send completion callback
+			sEnergyScanCallback(sActiveScanContext, NULL);
+			sEnergyScanInProgress = 0;
+			barrier_worker_endWork();
+			MLME_SET_request_sync(
+							phyCurrentChannel,
+							0,
+							sizeof(sChannel),
+							&sChannel,
+							pDeviceRef);
+		}
 	}
 
 	return 0;
@@ -1203,7 +1369,7 @@ static void deviceCache_cacheDevices(){
 	}
 }
 
-uint8_t otPlatRadioIsDeviceActive(otExtAddress addr){
+uint8_t otPlatRadioIsDeviceActive(otInstance *aInstance, otExtAddress addr){
 	//update cache
 	//TODO: Don't recache all devices every time -> just update the frame counter for the relevant one and
 	//recache all of the rest as the macDeviceTable is changed.
@@ -1243,7 +1409,7 @@ static int intransit_isHandleInUse(uint8_t handle){
 	return 0;
 }
 
-static int intransit_putFrame(uint8_t handle, const RadioPacket * in, uint8_t headerSize){
+static int intransit_putFrame(uint8_t handle, const RadioPacket * in){
 	int i = 0;
 	uint8_t found = 0;
 
@@ -1257,10 +1423,8 @@ static int intransit_putFrame(uint8_t handle, const RadioPacket * in, uint8_t he
 	}
 
 	IntransitHandles[i] = handle;
-
+	//TODO: Only store what is needed
 	memcpy(&IntransitPackets[i], in, sizeof(RadioPacket));
-	IntransitPackets[i].mPsdu = malloc((size_t)headerSize);
-	memcpy(IntransitPackets[i].mPsdu, in->mPsdu, headerSize);
 
 	pthread_mutex_unlock(&intransit_mutex);
 
@@ -1268,17 +1432,15 @@ static int intransit_putFrame(uint8_t handle, const RadioPacket * in, uint8_t he
 }
 
 static int intransit_rmFrame(uint8_t handle){
-	//TODO: Overchecks for debugging purposes -> remove this once confident
 	uint8_t found = 0;
 
 	pthread_mutex_lock(&intransit_mutex);
 
 	for(int i = 0; i < MAX_INTRANSITS; i++){
 		if(IntransitHandles[i] == handle){
-			assert(found == 0); //Crash if there was more than one instance of the same handle
 			found = 1;
-			free(IntransitPackets[i].mPsdu);
 			IntransitHandles[i] = 0;
+			break;
 		}
 	}
 

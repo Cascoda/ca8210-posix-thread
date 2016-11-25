@@ -38,6 +38,7 @@
 #include <stdint.h>
 #include <sys/select.h>
 #include <sys/time.h>
+#include <openthread-types.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -54,6 +55,12 @@ extern uint32_t NODE_ID;
  *
  */
 extern uint32_t WELLKNOWN_NODE_ID;
+
+/**
+ * Instance reference for the openthread API
+ *
+ */
+extern otInstance * OT_INSTANCE;
 
 /**
  * This method performs all platform-specific initialization.
