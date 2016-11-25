@@ -33,6 +33,3 @@
  */
 
 #include <posix-platform.h>
-
-uint32_t NODE_ID = 1;
-
