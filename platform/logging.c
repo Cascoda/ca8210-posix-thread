@@ -37,6 +37,7 @@
 
 #include <platform/logging.h>
 #include <common/code_utils.hpp>
+#include <openthread-core-config.h>
 
 // Macro to append content to end of the log string.
 
@@ -54,6 +55,8 @@ void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat
     unsigned int offset;
     int charsWritten;
     va_list args;
+
+    if(aLogLevel > OPENTHREAD_CONFIG_LOG_LEVEL) return;
 
     offset = 0;
 
