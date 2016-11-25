@@ -1,4 +1,4 @@
-cd app
+cd example
 make clean
 cd ..
 make
