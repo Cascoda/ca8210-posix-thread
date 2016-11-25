@@ -18,7 +18,7 @@ example: full-lib
 clean: $(CLEANSUBDIRS)
 
 full-lib: ca8210-kernel-exchange openthread platform
-	ar cqT  $(LIBPACKED) $(LIBPACK) && echo -e 'create $(LIBPACKED)\naddlib $(LIBPACKED)\nsave\nend' | ar -M
+	ar -M < libscript.mri
 
 $(CLEANSUBDIRS):
 	$(MAKE) -C $(subst .clean,,$@) clean

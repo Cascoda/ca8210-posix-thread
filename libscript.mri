@@ -1,0 +1,7 @@
+create libotposixca8210.a
+addlib openthread/src/core/libopenthread.a
+addlib ca8210-kernel-exchange/libca8210.a
+addlib platform/libotplatposixca8210.a
+addlib openthread/third_party/mbedtls/libmbedcrypto.a
+save
+end
