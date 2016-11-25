@@ -19,7 +19,11 @@ For usage with a custom program, see the example makefile provided. To summarise
 
 ##Build instructions for debian-like systems:
 
-Set the permissions for the cloned repo, you can use the included fix_permissions.sh script to do this, just change pi:pi in the first line to be your own username in the form <username>:<group>
+Set the permissions for the cloned repo, you can use the included fix_permissions.sh script to do this, just change pi:pi in the first line to be your own username in the form:
+
+```
+chown <username>:<group> -R .
+```
 
 ```bash
 sudo ./fix_permissions.sh
