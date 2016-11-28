@@ -1,4 +1,4 @@
 cd openthread/
 ./bootstrap
-./configure --enable-cli
+./configure --enable-cli --disable-docs --disable-tools --build=arm-linux
 cd ../
