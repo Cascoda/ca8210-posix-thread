@@ -58,5 +58,5 @@ and prepare openthread for compilation
 
 And finally, build everything
 ```bash
-make
+./build_nuc970.sh
 ```
