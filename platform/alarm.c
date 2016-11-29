@@ -27,6 +27,7 @@
  */
 
 #define _DEFAULT_SOURCE 1
+#define _POSIX_SOURCE 1
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -50,7 +51,15 @@ uint32_t otPlatAlarmGetNow(void)
     struct timeval tv;
 
     gettimeofday(&tv, NULL);
-    timersub(&tv, &s_start, &tv);
+
+    tv.tv_sec = tv.tv_sec - s_start.tv_sec;
+    tv.tv_usec = tv.tv_usec - s_start.tv_usec;
+
+    if (tv.tv_usec < 0)
+    {
+        --tv.tv_sec;
+        tv.tv_usec += 1000000;
+    }
 
     return (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
 }
