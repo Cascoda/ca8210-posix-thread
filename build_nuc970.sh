@@ -1,12 +1,10 @@
-make \
-PREFIX=arm-linux-gnueabi- \
-CC=$(PREFIX)cc \
-LD=$(PREFIX)ld \
-CXX=$(PREFIX)g++ \
-STRIP=$(PREFIX)strip \
-AR=$(PREFIX)ar \
-RANLIB=$(PREFIX)ranlib \
-AS=$(PREFIX)as \
-NM=$(PREFIX)nm \
-OBJCOPY=$(PREFIX)objcopy \
-OBJDUMP=$(PREFIX)objdump
+make CC=arm-linux-gcc \
+LD=arm-linux-ld \
+CXX=arm-linux-g++ \
+STRIP=arm-linux-strip \
+AR=arm-linux-ar \
+RANLIB=arm-linux-ranlib \
+AS=arm-linux-as \
+NM=arm-linux-nm \
+OBJCOPY=arm-linux-objcopy \
+OBJDUMP=arm-linux-objdump
