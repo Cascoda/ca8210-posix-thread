@@ -185,7 +185,7 @@ static uint8_t sIsCoordinator = 0;
 //BEACON DATA
 #define BEACON_PAYLOAD_LENGTH 32
 static const uint8_t kBeaconPayloadLength = BEACON_PAYLOAD_LENGTH;
-static uint8_t mBeaconPayload[BEACON_PAYLOAD_LENGTH] = {3, 0x91};
+static uint8_t mBeaconPayload[BEACON_PAYLOAD_LENGTH] = {3, 0x92};
 //END BEACON DATA
 
 static int8_t noiseFloor = 127;
@@ -1209,7 +1209,7 @@ static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params)
 	if ((params->PanDescriptor.Coord.AddressMode) == 3) {
 		memcpy(resultStruct.mExtAddress.m8, params->PanDescriptor.Coord.Address, 8);
 	} else {
-    	otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Invalid beacon received!\r\n");
+    	otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Invalid beacon received!");
 		return 1;
 	}
 	resultStruct.mPanId = GETLE16(params->PanDescriptor.Coord.PANId);
@@ -1222,8 +1222,11 @@ static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params)
 	uint8_t *sduLength = (uint8_t*)params + (24 + (2 * shortaddrs) + (8 * extaddrs));
 	if (*sduLength > 0) {
 		uint8_t *Sdu = (uint8_t*)params + (25 + 2 * shortaddrs + 8 * extaddrs);
-		uint8_t version = (*((uint8_t*)Sdu + 1) & 15);
-		if(*Sdu == 3 && version == 1) {
+		uint8_t version = (*((uint8_t*)Sdu + 1) & 0x0F);
+		if(version != mBeaconPayload[1] & 0x0F){
+			otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Beacon received is from different Thread version");
+		}
+		if(*Sdu == 3) {
 			memcpy(&resultStruct.mNetworkName, ((char*)Sdu) + 2, sizeof(resultStruct.mNetworkName));
 			memcpy(&resultStruct.mExtendedPanId, Sdu + 18, sizeof(resultStruct.mExtendedPanId));
 			barrier_worker_waitForMain();
