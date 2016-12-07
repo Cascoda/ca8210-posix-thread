@@ -1223,7 +1223,7 @@ static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params)
 	if (*sduLength > 0) {
 		uint8_t *Sdu = (uint8_t*)params + (25 + 2 * shortaddrs + 8 * extaddrs);
 		uint8_t version = (*((uint8_t*)Sdu + 1) & 0x0F);
-		if(version != mBeaconPayload[1] & 0x0F){
+		if(version != (mBeaconPayload[1] & 0x0F)){
 			otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Beacon received is from different Thread version");
 		}
 		if(*Sdu == 3) {
