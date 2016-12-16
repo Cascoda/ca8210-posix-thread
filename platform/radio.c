@@ -1002,6 +1002,11 @@ ThreadError otPlatRadioTransmit(otInstance *aInstance, RadioPacket *aPacket, voi
 		memcpy(curPacket.Msdu, aPacket->mPsdu + headerLength, curPacket.MsduLength);
 		curPacket.MsduHandle = handle;
 
+		if(curSecSpec.KeyIdMode == 0x02){
+			//Don't use keyIdMode 2 for sending. It is optional for thread and requires changing ext address
+			memset(&curSecSpec, 0, sizeof(curSecSpec));
+		}
+
 		otPlatLog(kLogLevelDebg, kLogRegionHardMac, "Data Packet Sent");
 		MCPS_DATA_request(
 			curPacket.SrcAddrMode,
