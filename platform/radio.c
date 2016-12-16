@@ -59,6 +59,7 @@
 #define MAC_SC_KEYIDMODE(sc) ((sc>>3)&0x03)
 #define MAC_KEYIDMODE_SC(keyidmode) ((keyidmode&0x03)<<3)
 #define MAC_BASEHEADERLENGTH 3
+#define MAX_DYNAMIC_DEVICES ( DEVICE_TABLE_SIZE - 1 )
 
 enum
 {
@@ -109,6 +110,18 @@ static uint8_t sCurDeviceTableSize = 0;
 static void deviceCache_cacheDevices(void);                                 //updates all devices in the cache
 static struct DeviceCache * deviceCache_getCachedDevice(otExtAddress addr); //returns a pointer to the requred cached device
 //END DEVICE FRAME COUNTER CACHING
+
+//KEY MODE 2 DATA
+static const uint8_t sMode2Key[] =
+{
+    0x78, 0x58, 0x16, 0x86, 0xfd, 0xb4, 0x58, 0x0f, 0xb0, 0x92, 0x54, 0x6a, 0xec, 0xbd, 0x15, 0x66
+};
+
+static const otExtAddress sMode2ExtAddress =
+{
+    { 0x35, 0x06, 0xfe, 0xb8, 0x23, 0xd4, 0x87, 0x12 },
+};
+//END KEY MODE 2 DATA
 
 //BARRIER
 /*
@@ -582,8 +595,9 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 		uint32_t tKeySeq = otGetKeySequenceCounter(OT_INSTANCE) - 1;
 
 		uint8_t count = 0;	//Update device list
+
 		if(otGetDeviceRole(OT_INSTANCE) != kDeviceRoleChild){
-			for(uint8_t i = 0; i < 5; i++){
+			for(uint8_t i = 0; i < MAX_DYNAMIC_DEVICES && i < OPENTHREAD_CONFIG_MAX_CHILDREN; i++){
 				otChildInfo tChildInfo;
 				otGetChildInfoByIndex(OT_INSTANCE, i, &tChildInfo);
 
@@ -623,7 +637,7 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 
 			}
 
-			uint8_t maxRouters = 5 - count;
+			uint8_t maxRouters = MAX_DYNAMIC_DEVICES - count;
 			otRouterInfo routers[maxRouters];
 			uint8_t numRouters;
 			otGetNeighborRouterInfo(OT_INSTANCE, routers, &numRouters, maxRouters);
@@ -685,6 +699,29 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 			}
 		}
 
+		{//Key Mode 2 device
+			struct M_DeviceDescriptor tDeviceDescriptor;
+
+			PUTLE16(0xFFFF, tDeviceDescriptor.PANId);
+			PUTLE16(0xFFFF, tDeviceDescriptor.ShortAddress);
+			for(int j = 0; j < 8; j++) tDeviceDescriptor.ExtAddress[j] = sMode2ExtAddress.m8[7-j];	//Flip endian
+
+			otExtAddress tExtAddr;
+			tDeviceDescriptor.FrameCounter[0] = 0;
+			tDeviceDescriptor.FrameCounter[1] = 0;
+			tDeviceDescriptor.FrameCounter[2] = 0;
+			tDeviceDescriptor.FrameCounter[3] = 0;
+			tDeviceDescriptor.Exempt = 0;
+
+			MLME_SET_request_sync(
+					macDeviceTable,
+					count++,
+					sizeof(tDeviceDescriptor),
+					&tDeviceDescriptor,
+					pDeviceRef
+					);
+		}
+
 		MLME_SET_request_sync(
 				macDeviceTableEntries,
 				0,
@@ -693,10 +730,12 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 				pDeviceRef
 				);
 
+		count -= 1; //Remove the mode2 device for all future logic
+
 		struct M_KeyDescriptor_thread {
 			struct M_KeyTableEntryFixed    Fixed;
 			struct M_KeyIdLookupDesc       KeyIdLookupList[1];
-			uint8_t                        flags[7];
+			uint8_t                        flags[MAX_DYNAMIC_DEVICES + 2];
 			//struct M_KeyDeviceDesc         KeyDeviceList[count];
 			//struct M_KeyUsageDesc          KeyUsageList[2];
 		}tKeyDescriptor;
@@ -737,12 +776,33 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 				MLME_SET_request_sync(
 					macKeyTable,
 					storeCount++,
-					sizeof(tKeyDescriptor) - (5-count),	/*dont send the unused bytes (those not counted by count)*/
+					sizeof(tKeyDescriptor) - (MAX_DYNAMIC_DEVICES-count),	/*dont send the unused bytes (those not counted by count)*/
 					&tKeyDescriptor,
 					pDeviceRef
 					);
 			}
 		}
+
+		{//Set the Mode 2 key
+			memcpy(tKeyDescriptor.Fixed.Key, sMode2Key, 16);
+			memset(tKeyDescriptor.KeyIdLookupList[0].LookupData, 0xFF, 5);
+			tKeyDescriptor.Fixed.KeyIdLookupListEntries = 1;
+			tKeyDescriptor.Fixed.KeyUsageListEntries = 1;
+			tKeyDescriptor.Fixed.KeyDeviceListEntries = 1;
+
+			tKeyDescriptor.KeyIdLookupList[0].LookupDataSizeCode = 0; //0 indicates 5 octets length
+			tKeyDescriptor.flags[0] = count;	//Device number for the mode2 device
+			tKeyDescriptor.flags[1] = (MAC_FC_FT_DATA & KUD_FrameTypeMask);	//data usage
+
+			MLME_SET_request_sync(
+				macKeyTable,
+				storeCount++,
+				sizeof(tKeyDescriptor) - (MAX_DYNAMIC_DEVICES),	/*dont send the unused bytes (only 2 flags needed)*/
+				&tKeyDescriptor,
+				pDeviceRef
+				);
+		}
+
 		MLME_SET_request_sync(
 			macKeyTableEntries,
 			0,
@@ -989,7 +1049,7 @@ exit:
     return error;
 }
 
-int8_t otPlatRadioGetNoiseFloor(otInstance *aInstance)
+int8_t otPlatRadioGetRssi(otInstance *aInstance)
 {
     return noiseFloor;
 }
