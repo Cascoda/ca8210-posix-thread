@@ -1,6 +1,5 @@
 TARGET = libotplatposixca8210.a
 LIBS = -lm
-CC = gcc
 INCLUDEDIRS := ./\
 	../openthread/include/platform/\
 	../openthread/include/cli/\
@@ -30,7 +29,7 @@ HEADERS := $(HEADERS) $(foreach DIR,$(INCLUDEDIRS),$(notdir $(wildcard $(DIR)*.h
 .PRECIOUS: $(TARGET) $(OBJECTS)
 
 $(TARGET): $(OBJECTS)
-	ar rcs $(TARGET) $^
+	$(AR) rcs $(TARGET) $^
 
 clean:
 	-rm -f *.o
