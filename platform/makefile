@@ -5,7 +5,7 @@ INCLUDEDIRS := ./\
 	../openthread/include/cli/\
 	../openthread/include/crypto/\
 	../openthread/include/\
-	../ca8210-kernel-exchange/cascoda-api/include/\
+	../ca8210-kernel-exchange/ca821x-api/include/\
 	../ca8210-kernel-exchange/\
 	../openthread/src/core/\
 	../openthread/src/core/common/
