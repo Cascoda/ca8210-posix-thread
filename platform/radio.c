@@ -591,7 +591,6 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 		//Cache devices so the frame counters are correct
 		deviceCache_cacheDevices();
 		otPlatLog(kLogLevelDebg, kLogRegionHardMac, "Updating keys\n\r");
-		if(otGetKeySequenceCounter(OT_INSTANCE) == 0) otSetKeySequenceCounter(OT_INSTANCE, 2);
 		uint32_t tKeySeq = otGetKeySequenceCounter(OT_INSTANCE) - 1;
 
 		uint8_t count = 0;	//Update device list
