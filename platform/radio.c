@@ -768,18 +768,16 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 		//Generate and store the keys for the current, previous, and next rotations
 		uint8_t storeCount = 0;
 		for(uint8_t i = 0; i < 3; i++){
-			if((tKeySeq + i) > 0){	//0 is invalid key sequence
-				memcpy(tKeyDescriptor.Fixed.Key, otGetMacKeyFromSequenceCounter(OT_INSTANCE, tKeySeq + i), 16);
-				tKeyDescriptor.KeyIdLookupList[0].LookupData[0] = ((tKeySeq + i) & 0x7F) + 1;
+			memcpy(tKeyDescriptor.Fixed.Key, otGetMacKeyFromSequenceCounter(OT_INSTANCE, tKeySeq + i), 16);
+			tKeyDescriptor.KeyIdLookupList[0].LookupData[0] = ((tKeySeq + i) & 0x7F) + 1;
 
-				MLME_SET_request_sync(
-					macKeyTable,
-					storeCount++,
-					sizeof(tKeyDescriptor) - (MAX_DYNAMIC_DEVICES-count),	/*dont send the unused bytes (those not counted by count)*/
-					&tKeyDescriptor,
-					pDeviceRef
-					);
-			}
+			MLME_SET_request_sync(
+				macKeyTable,
+				storeCount++,
+				sizeof(tKeyDescriptor) - (MAX_DYNAMIC_DEVICES-count),	/*dont send the unused bytes (those not counted by count)*/
+				&tKeyDescriptor,
+				pDeviceRef
+				);
 		}
 
 		{//Set the Mode 2 key
