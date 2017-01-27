@@ -610,7 +610,7 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 	 * ca8210 whenever there is a new key or new device to communicate with.
 	 */
 
-	if((aFlags & (OT_NET_KEY_SEQUENCE_COUNTER | OT_THREAD_CHILD_ADDED | OT_THREAD_CHILD_REMOVED | OT_NET_ROLE | OT_THREAD_LINK_ACCEPT))){	//The thrKeySequenceCounter has changed or device descriptors need updating
+	if((aFlags & (OT_NET_KEY_SEQUENCE_COUNTER | OT_THREAD_CHILD_ADDED | OT_THREAD_CHILD_REMOVED | OT_NET_ROLE | OT_THREAD_LINK_STATUS))){	//The thrKeySequenceCounter has changed or device descriptors need updating
 		//Therefore update the keys stored in the macKeytable
 		//TODO: (low priority) Utilise the device cache to reduce number of writes
 		//Cache devices so the frame counters are correct
