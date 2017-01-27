@@ -615,12 +615,12 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 		//TODO: (low priority) Utilise the device cache to reduce number of writes
 		//Cache devices so the frame counters are correct
 		deviceCache_cacheDevices();
-		otPlatLog(kLogLevelDebg, kLogRegionHardMac, "Updating keys\n\r");
+		otPlatLog(kLogLevelInfo, kLogRegionHardMac, "Updating keys for flags: %x", aFlags);
 		uint32_t tKeySeq = otGetKeySequenceCounter(OT_INSTANCE) - 1;
 
 		uint8_t count = 0;	//Update device list
 
-		if(otGetDeviceRole(OT_INSTANCE) != kDeviceRoleChild){
+		if(otGetDeviceRole(OT_INSTANCE) != kDeviceRoleChild && otGetDeviceRole(OT_INSTANCE) != kDeviceRoleDetached){
 			for(uint8_t i = 0; i < MAX_DYNAMIC_DEVICES && i < OPENTHREAD_CONFIG_MAX_CHILDREN; i++){
 				otChildInfo tChildInfo;
 				otGetChildInfoByIndex(OT_INSTANCE, i, &tChildInfo);
