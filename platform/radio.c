@@ -121,6 +121,8 @@ static const otExtAddress sMode2ExtAddress =
 {
     { 0x35, 0x06, 0xfe, 0xb8, 0x23, 0xd4, 0x87, 0x12 },
 };
+
+static uint8_t sMode2DeviceIndex = 100; //Used to track the location of the Mode 2 device in the PIB
 //END KEY MODE 2 DATA
 
 //BARRIER
@@ -578,6 +580,29 @@ static void coordChangeCallback(uint32_t aFlags, void *aContext) {
 	}
 }
 
+static void resetMode2Device(){
+	struct M_DeviceDescriptor tDeviceDescriptor;
+
+	PUTLE16(0xFFFF, tDeviceDescriptor.PANId);
+	PUTLE16(0xFFFF, tDeviceDescriptor.ShortAddress);
+	for(int j = 0; j < 8; j++) tDeviceDescriptor.ExtAddress[j] = sMode2ExtAddress.m8[7-j];	//Flip endian
+
+	otExtAddress tExtAddr;
+	tDeviceDescriptor.FrameCounter[0] = 0;
+	tDeviceDescriptor.FrameCounter[1] = 0;
+	tDeviceDescriptor.FrameCounter[2] = 0;
+	tDeviceDescriptor.FrameCounter[3] = 0;
+	tDeviceDescriptor.Exempt = 0;
+
+	MLME_SET_request_sync(
+			macDeviceTable,
+			sMode2DeviceIndex,
+			sizeof(tDeviceDescriptor),
+			&tDeviceDescriptor,
+			pDeviceRef
+			);
+}
+
 static void keyChangeCallback(uint32_t aFlags, void *aContext){
 
 	/*
@@ -698,28 +723,10 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 			}
 		}
 
-		{//Key Mode 2 device
-			struct M_DeviceDescriptor tDeviceDescriptor;
 
-			PUTLE16(0xFFFF, tDeviceDescriptor.PANId);
-			PUTLE16(0xFFFF, tDeviceDescriptor.ShortAddress);
-			for(int j = 0; j < 8; j++) tDeviceDescriptor.ExtAddress[j] = sMode2ExtAddress.m8[7-j];	//Flip endian
+		sMode2DeviceIndex = count++;
 
-			otExtAddress tExtAddr;
-			tDeviceDescriptor.FrameCounter[0] = 0;
-			tDeviceDescriptor.FrameCounter[1] = 0;
-			tDeviceDescriptor.FrameCounter[2] = 0;
-			tDeviceDescriptor.FrameCounter[3] = 0;
-			tDeviceDescriptor.Exempt = 0;
-
-			MLME_SET_request_sync(
-					macDeviceTable,
-					count++,
-					sizeof(tDeviceDescriptor),
-					&tDeviceDescriptor,
-					pDeviceRef
-					);
-		}
+		resetMode2Device();
 
 		MLME_SET_request_sync(
 				macDeviceTableEntries,
@@ -1171,6 +1178,7 @@ static int handleDataIndication(struct MCPS_DATA_indication_pset *params)   //As
 
 		ASHloc += 5;//skip to key identifier
 		if(curSecSpec->KeyIdMode == 0x02){//Table 96
+			resetMode2Device();
 			memcpy(sReceiveFrame.mPsdu + ASHloc, curSecSpec->KeySource, 4);
 			ASHloc += 4;
 		}
