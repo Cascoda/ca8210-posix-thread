@@ -482,6 +482,9 @@ void PlatformRadioInit(void)
     //Reset the MAC to a default state
     MLME_RESET_request_sync(1, pDeviceRef);
 
+    uint8_t disable = 0; //Disable low LQI rejection @ MAC Layer
+    HWME_SET_request_sync(0x11, 1, &disable);
+
     uint8_t enable = 1;	//enable security
 	MLME_SET_request_sync(
 		macSecurityEnabled,
