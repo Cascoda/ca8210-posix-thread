@@ -148,12 +148,14 @@ static inline void barrier_worker_endWork(void);		//Used by worker thread to end
  * it is not guaranteed for these frames to transmit in order, and the destination address is required for
  *  post-transmission processing.
  */
+static RadioPacket * intransit_getFrame(uint8_t handle);	//Return pointer to the relevant packet, or NULL
 static int intransit_rmFrame(uint8_t handle);	//Release dynamically allocated memory -- returns 0 for success, or an error code
 static int intransit_putFrame(uint8_t handle, const RadioPacket * in);	//returns 0 for success, or an error code
 static int intransit_isHandleInUse(uint8_t handle); //returns 0 if the handle is free, or 1 if it is already in use
 
 #define MAX_INTRANSITS 7 /*TODO:  5 indirect frames +2 (perhaps need more?)*/
 uint8_t IntransitHandles[MAX_INTRANSITS] = {0};
+RadioPacket IntransitPackets[MAX_INTRANSITS];
 static pthread_mutex_t intransit_mutex = PTHREAD_MUTEX_INITIALIZER;
 //END INTRANSIT
 
@@ -1235,7 +1237,8 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
 
 	barrier_worker_waitForMain();
 
-	RadioPacket * sentFrame = NULL;
+	RadioPacket * sentFrame = intransit_getFrame(params->MsduHandle);
+	assert(sentFrame != NULL);
 
     if(params->Status == MAC_SUCCESS){
     	otPlatRadioTransmitDone(OT_INSTANCE, sentFrame, false, sTransmitError, sentFrame->mTransmitContext);
@@ -1496,6 +1499,8 @@ static int intransit_putFrame(uint8_t handle, const RadioPacket * in){
 	}
 
 	IntransitHandles[i] = handle;
+	//TODO: Only store what is needed
+	memcpy(&IntransitPackets[i], in, sizeof(RadioPacket));
 
 	pthread_mutex_unlock(&intransit_mutex);
 
@@ -1518,6 +1523,19 @@ static int intransit_rmFrame(uint8_t handle){
 	pthread_mutex_unlock(&intransit_mutex);
 
 	return !found;	//0 if successfully removed
+}
+
+static RadioPacket * intransit_getFrame(uint8_t handle){
+	pthread_mutex_lock(&intransit_mutex);
+
+	for(int i = 0; i < MAX_INTRANSITS; i++){
+		if(IntransitHandles[i] == handle){
+			pthread_mutex_unlock(&intransit_mutex);
+			return &IntransitPackets[i];
+		}
+	}
+	pthread_mutex_unlock(&intransit_mutex);
+	return NULL;
 }
 
 //Lets the worker thread work synchronously if there is synchronous work to do
