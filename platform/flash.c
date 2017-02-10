@@ -36,7 +36,7 @@
 #include <string.h>
 
 #include <openthread-config.h>
-#include <utils/flash.h>
+#include "flash.h"
 
 #include <common/code_utils.hpp>
 
