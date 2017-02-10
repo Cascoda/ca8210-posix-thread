@@ -590,7 +590,6 @@ static void resetMode2Device(){
 	PUTLE16(0xFFFF, tDeviceDescriptor.ShortAddress);
 	for(int j = 0; j < 8; j++) tDeviceDescriptor.ExtAddress[j] = sMode2ExtAddress.m8[7-j];	//Flip endian
 
-	otExtAddress tExtAddr;
 	tDeviceDescriptor.FrameCounter[0] = 0;
 	tDeviceDescriptor.FrameCounter[1] = 0;
 	tDeviceDescriptor.FrameCounter[2] = 0;
@@ -690,7 +689,7 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 	else{
 		otRouterInfo tParentInfo;
 		if(otGetParentInfo(OT_INSTANCE, &tParentInfo) == kThreadError_None){
-			putDeviceDescriptor(tParentInfo.mRloc16, tParentInfo.mExtAddress.m8, count++)
+			putDeviceDescriptor(tParentInfo.mRloc16, tParentInfo.mExtAddress.m8, count++);
 		}
 		else{
 			otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Error retrieving parent!\n\r");
