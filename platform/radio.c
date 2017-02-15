@@ -125,6 +125,11 @@ static const otExtAddress sMode2ExtAddress =
 static uint8_t sMode2DeviceIndex = 100; //Used to track the location of the Mode 2 device in the PIB
 //END KEY MODE 2 DATA
 
+//COMMISSIONING & JOINING
+uint8_t sKekInUse = 0;
+uint8_t sKekDeviceIndex = 0;
+//END COMMISSIONING & JOINING
+
 //BARRIER
 /*
  * The following functions create a thread safe system for allowing the worker thread to access openthread
@@ -702,6 +707,21 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 
 	resetMode2Device();
 
+	if(count < MAX_DYNAMIC_DEVICES){
+		//KEK possible
+		//TODO: send to openthread
+
+		//TODO: Check if there is a device requiring a KEK and add it
+		if(false){
+			sKekInUse = 1;
+			sKekDeviceIndex = count++;
+		}
+	}
+	else{
+		//TODO: disable commissioning
+		sKekInUse = 0;
+	}
+
 	MLME_SET_request_sync(
 			macDeviceTableEntries,
 			0,
@@ -774,6 +794,18 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 			&tKeyDescriptor,
 			pDeviceRef
 			);
+	}
+
+	if(sKekInUse){
+		//TODO: Finish filling in the keyDescriptor
+		//TODO: Fill in the LookupData with the counterpart MAC address
+		tKeyDescriptor.Fixed.KeyIdLookupListEntries = 1;
+		tKeyDescriptor.Fixed.KeyUsageListEntries = 1;
+		tKeyDescriptor.Fixed.KeyDeviceListEntries = 1;
+
+		tKeyDescriptor.KeyIdLookupList[0].LookupDataSizeCode = 1; //1 indicates 9 octets length
+		tKeyDescriptor.flags[0] = sKekDeviceIndex;	//Device number for the mode2 device
+		tKeyDescriptor.flags[1] = (MAC_FC_FT_DATA & KUD_FrameTypeMask);	//data usage
 	}
 
 	MLME_SET_request_sync(
