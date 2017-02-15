@@ -177,16 +177,11 @@ exit:
     return error;
 }
 
-void platformUartUpdateFdSet(fd_set *aReadFdSet, fd_set *aWriteFdSet, fd_set *aErrorFdSet, int *aMaxFd)
+void platformUartUpdateFdSet(fd_set *aReadFdSet, fd_set *aWriteFdSet, int *aMaxFd)
 {
     if (aReadFdSet != NULL)
     {
         FD_SET(s_in_fd, aReadFdSet);
-
-        if (aErrorFdSet != NULL)
-        {
-            FD_SET(s_in_fd, aErrorFdSet);
-        }
 
         if (aMaxFd != NULL && *aMaxFd < s_in_fd)
         {
@@ -197,11 +192,6 @@ void platformUartUpdateFdSet(fd_set *aReadFdSet, fd_set *aWriteFdSet, fd_set *aE
     if ((aWriteFdSet != NULL) && (s_write_length > 0))
     {
         FD_SET(s_out_fd, aWriteFdSet);
-
-        if (aErrorFdSet != NULL)
-        {
-            FD_SET(s_out_fd, aErrorFdSet);
-        }
 
         if (aMaxFd != NULL && *aMaxFd < s_out_fd)
         {
