@@ -1,12 +1,11 @@
 TARGET = libotplatposixca8210.a
 LIBS = -lm
-CC = gcc
 INCLUDEDIRS := ./\
 	../openthread/include/platform/\
 	../openthread/include/cli/\
 	../openthread/include/crypto/\
 	../openthread/include/\
-	../ca8210-kernel-exchange/cascoda-api/include/\
+	../ca8210-kernel-exchange/ca821x-api/include/\
 	../ca8210-kernel-exchange/\
 	../openthread/src/core/\
 	../openthread/src/core/common/
@@ -30,7 +29,7 @@ HEADERS := $(HEADERS) $(foreach DIR,$(INCLUDEDIRS),$(notdir $(wildcard $(DIR)*.h
 .PRECIOUS: $(TARGET) $(OBJECTS)
 
 $(TARGET): $(OBJECTS)
-	ar rcs $(TARGET) $^
+	$(AR) rcs $(TARGET) $^
 
 clean:
 	-rm -f *.o
