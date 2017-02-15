@@ -28,6 +28,9 @@
 
 #include "posix-platform.h"
 
+//This define enables pread and pwrite
+#define _XOPEN_SOURCE 500
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
