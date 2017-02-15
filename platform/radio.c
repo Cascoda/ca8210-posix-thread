@@ -696,6 +696,7 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 		}
 	}
 
+	uint8_t activeDevices = count;
 
 	sMode2DeviceIndex = count++;
 
@@ -709,8 +710,6 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 			pDeviceRef
 			);
 
-	count -= 1; //Remove the mode2 device for all future logic
-
 	struct M_KeyDescriptor_thread {
 		struct M_KeyTableEntryFixed    Fixed;
 		struct M_KeyIdLookupDesc       KeyIdLookupList[1];
@@ -723,12 +722,12 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 	//Table 7-5 in section 7.2.2.2.1 of thread spec
 	tKeyDescriptor.Fixed.KeyIdLookupListEntries = 1;
 	tKeyDescriptor.Fixed.KeyUsageListEntries = 2;
-	tKeyDescriptor.Fixed.KeyDeviceListEntries = count;
-	sCurDeviceTableSize = count;
+	tKeyDescriptor.Fixed.KeyDeviceListEntries = activeDevices;
+	sCurDeviceTableSize = activeDevices;
 
 	//Flags according to Cascoda API 5.3.1
-	tKeyDescriptor.flags[count + 0] = (MAC_FC_FT_DATA & KUD_FrameTypeMask);	//data usage
-	tKeyDescriptor.flags[count + 1] = (MAC_FC_FT_COMMAND & KUD_FrameTypeMask) | ((CMD_DATA_REQ << KUD_CommandFrameIdentifierShift) & KUD_CommandFrameIdentifierMask);	//Data req usage
+	tKeyDescriptor.flags[activeDevices + 0] = (MAC_FC_FT_DATA & KUD_FrameTypeMask);	//data usage
+	tKeyDescriptor.flags[activeDevices + 1] = (MAC_FC_FT_COMMAND & KUD_FrameTypeMask) | ((CMD_DATA_REQ << KUD_CommandFrameIdentifierShift) & KUD_CommandFrameIdentifierMask);	//Data req usage
 
 
 	tKeyDescriptor.KeyIdLookupList[0].LookupDataSizeCode = 1; //1 means length 9
@@ -738,7 +737,7 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 
 
 	//Fill the deviceListEntries
-	for(int i = 0; i < count; i++){
+	for(int i = 0; i < activeDevices; i++){
 		tKeyDescriptor.flags[i] = i;
 	}
 
@@ -751,7 +750,7 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 		MLME_SET_request_sync(
 			macKeyTable,
 			storeCount++,
-			sizeof(tKeyDescriptor) - (MAX_DYNAMIC_DEVICES-count),	/*dont send the unused bytes (those not counted by count)*/
+			sizeof(tKeyDescriptor) - (MAX_DYNAMIC_DEVICES-activeDevices),	/*dont send the unused bytes (those not counted by count)*/
 			&tKeyDescriptor,
 			pDeviceRef
 			);
@@ -765,7 +764,7 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 		tKeyDescriptor.Fixed.KeyDeviceListEntries = 1;
 
 		tKeyDescriptor.KeyIdLookupList[0].LookupDataSizeCode = 0; //0 indicates 5 octets length
-		tKeyDescriptor.flags[0] = count;	//Device number for the mode2 device
+		tKeyDescriptor.flags[0] = sMode2DeviceIndex;	//Device number for the mode2 device
 		tKeyDescriptor.flags[1] = (MAC_FC_FT_DATA & KUD_FrameTypeMask);	//data usage
 
 		MLME_SET_request_sync(
