@@ -203,9 +203,9 @@ static enum tristateCache sPromiscuousCache = tristate_uninit;
 static uint8_t sIsCoordinator = 0;
 
 //BEACON DATA
-#define BEACON_PAYLOAD_LENGTH 32
+#define BEACON_PAYLOAD_LENGTH 26
 static const uint8_t kBeaconPayloadLength = BEACON_PAYLOAD_LENGTH;
-static uint8_t mBeaconPayload[BEACON_PAYLOAD_LENGTH] = {3, 0x02};
+static uint8_t mBeaconPayload[BEACON_PAYLOAD_LENGTH] = {3, 0x20};
 //END BEACON DATA
 
 static int8_t noiseFloor = 127;
