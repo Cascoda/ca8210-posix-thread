@@ -204,6 +204,7 @@ static uint8_t sIsCoordinator = 0;
 
 //BEACON DATA
 #define BEACON_PAYLOAD_LENGTH 26
+#define BEACON_JOIN_BIT (1 << 3)
 static const uint8_t kBeaconPayloadLength = BEACON_PAYLOAD_LENGTH;
 static uint8_t mBeaconPayload[BEACON_PAYLOAD_LENGTH] = {3, 0x20};
 //END BEACON DATA
@@ -375,6 +376,31 @@ ThreadError otPlatRadioSetNetworkName(otInstance *aInstance, const char *aNetwor
 			&kBeaconPayloadLength,
 			pDeviceRef) == MAC_SUCCESS)) {
         return kThreadError_None;
+	}
+	else return kThreadError_Failed;
+}
+
+ThreadError otPlatRadioSetJoiningEnabled(otInstance *aInstance, uint8_t isEnabled){
+	if(isEnabled){
+		macBeaconPayload[1] |= BEACON_JOIN_BIT;
+	}
+	else{
+		macBeaconPayload[1] &= ~BEACON_JOIN_BIT;
+	}
+
+	if ((MLME_SET_request_sync(
+			macBeaconPayload,
+			0,
+			kBeaconPayloadLength,
+			mBeaconPayload,
+			pDeviceRef) == MAC_SUCCESS) &&
+		(MLME_SET_request_sync(
+			macBeaconPayloadLength,
+			0,
+			1,
+			&kBeaconPayloadLength,
+			pDeviceRef) == MAC_SUCCESS)) {
+		return kThreadError_None;
 	}
 	else return kThreadError_Failed;
 }
