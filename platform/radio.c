@@ -129,7 +129,8 @@ static uint8_t sMode2DeviceIndex = 100; //Used to track the location of the Mode
 static uint8_t sKekInUse = 0;
 static uint8_t sKekDeviceIndex = 0;
 static uint8_t sKekIsJoining = 0;
-static uint8_t sKek[16];
+static uint8_t sKekCounterpart[8];
+static uint8_t sKekMessageHandle = 0;
 //END COMMISSIONING & JOINING
 
 //BARRIER
@@ -618,20 +619,6 @@ static void coordChangeCallback(uint32_t aFlags, void *aContext) {
 	}
 }
 
-void otPlatRadioSetJoinerState(otInstance *aInstance, uint8_t isJoining){
-	sKekIsJoining = isJoining;
-	(void) aInstance;
-}
-
-void otPlatRadioSetKek(otInstance *aInstance, uint8_t * Kek){
-	memcpy(sKek, Kek, 16);
-	sKekInUse = true;
-}
-
-void otPlatRadioDisableKek(otInstance *aInstance){
-	memset(sKek, 0, 16);
-	sKekInUse = false;
-}
 
 static void resetMode2Device(){
 	struct M_DeviceDescriptor tDeviceDescriptor;
@@ -690,16 +677,18 @@ static void putFinalKey(){
 		//struct M_KeyUsageDesc          KeyUsageList[2];
 	}tKeyDescriptor;
 
-	if(sKekInUse && !sKekIsJoining){//Joiner router - replace mode2 key for a few milliseconds
+	if(sKekInUse && !otPlatRadioIsJoining()){//Joiner router - replace mode2 key for a few milliseconds to send
 		//TODO: Finish filling in the keyDescriptor
 		//TODO: Fill in the LookupData with the counterpart MAC address for the joiner
-		memcpy(tKeyDescriptor.Fixed.Key, otGetMacKeyFromSequenceCounter(OT_INSTANCE, 1), 16);
+		otGetKek(OT_INSTANCE, tKeyDescriptor.Fixed.Key);
 		tKeyDescriptor.Fixed.KeyIdLookupListEntries = 1;
 		tKeyDescriptor.Fixed.KeyUsageListEntries = 1;
 
 		tKeyDescriptor.Fixed.KeyDeviceListEntries = 0;
 
 		tKeyDescriptor.KeyIdLookupList[0].LookupDataSizeCode = 1; //1 indicates 9 octets length
+		tKeyDescriptor.KeyIdLookupList[0].LookupData[0] = 0;
+		for(int i = 0; i < 8; i++)tKeyDescriptor.KeyIdLookupList[i] = sKekCounterpart[i];
 		tKeyDescriptor.flags[0] = (MAC_FC_FT_DATA & KUD_FrameTypeMask);	//data usage
 	}
 	else{
@@ -723,33 +712,17 @@ static void putFinalKey(){
 		&tKeyDescriptor,
 		pDeviceRef
 		);
+}
 
-	if(sKekInUse && sKekIsJoining){//Joiner
-		//TODO: Finish filling in the keyDescriptor
-		//TODO: Fill in the LookupData with the counterpart MAC address for the joiner
-		memcpy(tKeyDescriptor.Fixed.Key, otGetMacKeyFromSequenceCounter(OT_INSTANCE, 1), 16);
-		tKeyDescriptor.Fixed.KeyIdLookupListEntries = 1;
-		tKeyDescriptor.Fixed.KeyUsageListEntries = 1;
+void otPlatRadioSetKek(otInstance *aInstance, uint8_t * otherAddress){
+	memcpy(sKekCounterpart, otherAddress, 8);
+	sKekInUse = true;
+}
 
-		if(sKekIsJoining){//joiner
-			tKeyDescriptor.Fixed.KeyDeviceListEntries = 1;
-			tKeyDescriptor.flags[0] = sKekDeviceIndex;	//Device number for the Kek device
-		}
-		else{ //joiner router
-			tKeyDescriptor.Fixed.KeyDeviceListEntries = 0;
-		}
-
-		tKeyDescriptor.KeyIdLookupList[0].LookupDataSizeCode = 1; //1 indicates 9 octets length
-		tKeyDescriptor.flags[0] = (MAC_FC_FT_DATA & KUD_FrameTypeMask);	//data usage
-
-		MLME_SET_request_sync(	//Joiner isn't associated with a network, so replace whatever is in the last key slot
-			macKeyTable,
-			2,
-			sizeof(tKeyDescriptor),
-			&tKeyDescriptor,
-			pDeviceRef
-			);
-	}
+void otPlatRadioDisableKek(otInstance *aInstance){
+	memset(sKekCounterpart, 0, 8);
+	sKekInUse = false;
+	sKekMessageHandle = 0;
 }
 
 static void keyChangeCallback(uint32_t aFlags, void *aContext){
@@ -1064,6 +1037,11 @@ ThreadError otPlatRadioTransmit(otInstance *aInstance, RadioPacket *aPacket, voi
 			memcpy(curSecSpec.KeySource, aPacket->mPsdu + ASHloc, 8);
 			ASHloc += 8;
 		}
+    	else if(curSecSpec.KeyIdMode == 0x00){//Table 96
+    		//This should be using the KeK
+			otPlatRadioSetKek(OT_INSTANCE, curPacket.Dst.Address);
+			putFinalKey();
+		}
     	curSecSpec.KeyIndex = aPacket->mPsdu[ASHloc++];
     	headerLength = ASHloc;
     }
@@ -1309,6 +1287,12 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
 
 	RadioPacket * sentFrame = intransit_getFrame(params->MsduHandle);
 	assert(sentFrame != NULL);
+
+	if(sKekInUse && params->MsduHandle == sKekMessageHandle){
+		sKekMessageHandle = 0;
+		otPlatRadioDisableKek(OT_INSTANCE);
+		putFinalKey();
+	}
 
     if(params->Status == MAC_SUCCESS){
     	otPlatRadioTransmitDone(OT_INSTANCE, sentFrame, false, sTransmitError, sentFrame->mTransmitContext);
