@@ -126,8 +126,10 @@ static uint8_t sMode2DeviceIndex = 100; //Used to track the location of the Mode
 //END KEY MODE 2 DATA
 
 //COMMISSIONING & JOINING
-uint8_t sKekInUse = 0;
-uint8_t sKekDeviceIndex = 0;
+static uint8_t sKekInUse = 0;
+static uint8_t sKekDeviceIndex = 0;
+static uint8_t sKekIsJoining = 0;
+static uint8_t sKek[16];
 //END COMMISSIONING & JOINING
 
 //BARRIER
@@ -381,6 +383,7 @@ ThreadError otPlatRadioSetNetworkName(otInstance *aInstance, const char *aNetwor
 }
 
 ThreadError otPlatRadioSetJoiningEnabled(otInstance *aInstance, uint8_t isEnabled){
+
 	if(isEnabled){
 		macBeaconPayload[1] |= BEACON_JOIN_BIT;
 	}
@@ -403,6 +406,7 @@ ThreadError otPlatRadioSetJoiningEnabled(otInstance *aInstance, uint8_t isEnable
 		return kThreadError_None;
 	}
 	else return kThreadError_Failed;
+
 }
 
 ThreadError otPlatRadioSetExtendedPanId(otInstance *aInstance, const uint8_t *aExtPanId) {
@@ -614,6 +618,21 @@ static void coordChangeCallback(uint32_t aFlags, void *aContext) {
 	}
 }
 
+void otPlatRadioSetJoinerState(otInstance *aInstance, uint8_t isJoining){
+	sKekIsJoining = isJoining;
+	(void) aInstance;
+}
+
+void otPlatRadioSetKek(otInstance *aInstance, uint8_t * Kek){
+	memcpy(sKek, Kek, 16);
+	sKekInUse = true;
+}
+
+void otPlatRadioDisableKek(otInstance *aInstance){
+	memset(sKek, 0, 16);
+	sKekInUse = false;
+}
+
 static void resetMode2Device(){
 	struct M_DeviceDescriptor tDeviceDescriptor;
 
@@ -660,6 +679,77 @@ static void putDeviceDescriptor(uint16_t shortAddr, uint8_t * extAddr, uint8_t c
 			&tDeviceDescriptor,
 			pDeviceRef
 			);
+}
+
+static void putFinalKey(){
+	struct M_KeyDescriptor_thread {
+		struct M_KeyTableEntryFixed    Fixed;
+		struct M_KeyIdLookupDesc       KeyIdLookupList[1];
+		uint8_t                        flags[2];
+		//struct M_KeyDeviceDesc         KeyDeviceList[count];
+		//struct M_KeyUsageDesc          KeyUsageList[2];
+	}tKeyDescriptor;
+
+	if(sKekInUse && !sKekIsJoining){//Joiner router - replace mode2 key for a few milliseconds
+		//TODO: Finish filling in the keyDescriptor
+		//TODO: Fill in the LookupData with the counterpart MAC address for the joiner
+		memcpy(tKeyDescriptor.Fixed.Key, otGetMacKeyFromSequenceCounter(OT_INSTANCE, 1), 16);
+		tKeyDescriptor.Fixed.KeyIdLookupListEntries = 1;
+		tKeyDescriptor.Fixed.KeyUsageListEntries = 1;
+
+		tKeyDescriptor.Fixed.KeyDeviceListEntries = 0;
+
+		tKeyDescriptor.KeyIdLookupList[0].LookupDataSizeCode = 1; //1 indicates 9 octets length
+		tKeyDescriptor.flags[0] = (MAC_FC_FT_DATA & KUD_FrameTypeMask);	//data usage
+	}
+	else{
+		memcpy(tKeyDescriptor.Fixed.Key, sMode2Key, 16);
+		memset(tKeyDescriptor.KeyIdLookupList[0].LookupData, 0xFF, 5);
+		tKeyDescriptor.Fixed.KeyIdLookupListEntries = 1;
+		tKeyDescriptor.Fixed.KeyUsageListEntries = 1;
+		tKeyDescriptor.Fixed.KeyDeviceListEntries = 1;
+
+		tKeyDescriptor.KeyIdLookupList[0].LookupDataSizeCode = 0; //0 indicates 5 octets length
+		tKeyDescriptor.flags[0] = sMode2DeviceIndex;	//Device number for the mode2 device
+		tKeyDescriptor.flags[1] = (MAC_FC_FT_DATA & KUD_FrameTypeMask);	//data usage
+	}
+
+	uint8_t unusedBytes = 1 - tKeyDescriptor.Fixed.KeyDeviceListEntries;
+
+	MLME_SET_request_sync(
+		macKeyTable,
+		3,
+		sizeof(tKeyDescriptor) - unusedBytes,	/*dont send the unused bytes */
+		&tKeyDescriptor,
+		pDeviceRef
+		);
+
+	if(sKekInUse && sKekIsJoining){//Joiner
+		//TODO: Finish filling in the keyDescriptor
+		//TODO: Fill in the LookupData with the counterpart MAC address for the joiner
+		memcpy(tKeyDescriptor.Fixed.Key, otGetMacKeyFromSequenceCounter(OT_INSTANCE, 1), 16);
+		tKeyDescriptor.Fixed.KeyIdLookupListEntries = 1;
+		tKeyDescriptor.Fixed.KeyUsageListEntries = 1;
+
+		if(sKekIsJoining){//joiner
+			tKeyDescriptor.Fixed.KeyDeviceListEntries = 1;
+			tKeyDescriptor.flags[0] = sKekDeviceIndex;	//Device number for the Kek device
+		}
+		else{ //joiner router
+			tKeyDescriptor.Fixed.KeyDeviceListEntries = 0;
+		}
+
+		tKeyDescriptor.KeyIdLookupList[0].LookupDataSizeCode = 1; //1 indicates 9 octets length
+		tKeyDescriptor.flags[0] = (MAC_FC_FT_DATA & KUD_FrameTypeMask);	//data usage
+
+		MLME_SET_request_sync(	//Joiner isn't associated with a network, so replace whatever is in the last key slot
+			macKeyTable,
+			2,
+			sizeof(tKeyDescriptor),
+			&tKeyDescriptor,
+			pDeviceRef
+			);
+	}
 }
 
 static void keyChangeCallback(uint32_t aFlags, void *aContext){
@@ -733,21 +823,6 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 
 	resetMode2Device();
 
-	if(count < MAX_DYNAMIC_DEVICES){
-		//KEK possible
-		//TODO: send to openthread
-
-		//TODO: Check if there is a device requiring a KEK and add it
-		if(false){
-			sKekInUse = 1;
-			sKekDeviceIndex = count++;
-		}
-	}
-	else{
-		//TODO: disable commissioning
-		sKekInUse = 0;
-	}
-
 	MLME_SET_request_sync(
 			macDeviceTableEntries,
 			0,
@@ -789,6 +864,7 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 
 	//Generate and store the keys for the current, previous, and next rotations
 	uint8_t storeCount = 0;
+
 	for(uint8_t i = 0; i < 3; i++){
 		memcpy(tKeyDescriptor.Fixed.Key, otGetMacKeyFromSequenceCounter(OT_INSTANCE, tKeySeq + i), 16);
 		tKeyDescriptor.KeyIdLookupList[0].LookupData[0] = ((tKeySeq + i) & 0x7F) + 1;
@@ -802,37 +878,9 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 			);
 	}
 
-	{//Set the Mode 2 key
-		memcpy(tKeyDescriptor.Fixed.Key, sMode2Key, 16);
-		memset(tKeyDescriptor.KeyIdLookupList[0].LookupData, 0xFF, 5);
-		tKeyDescriptor.Fixed.KeyIdLookupListEntries = 1;
-		tKeyDescriptor.Fixed.KeyUsageListEntries = 1;
-		tKeyDescriptor.Fixed.KeyDeviceListEntries = 1;
-
-		tKeyDescriptor.KeyIdLookupList[0].LookupDataSizeCode = 0; //0 indicates 5 octets length
-		tKeyDescriptor.flags[0] = sMode2DeviceIndex;	//Device number for the mode2 device
-		tKeyDescriptor.flags[1] = (MAC_FC_FT_DATA & KUD_FrameTypeMask);	//data usage
-
-		MLME_SET_request_sync(
-			macKeyTable,
-			storeCount++,
-			sizeof(tKeyDescriptor) - (MAX_DYNAMIC_DEVICES),	/*dont send the unused bytes (only 2 flags needed)*/
-			&tKeyDescriptor,
-			pDeviceRef
-			);
-	}
-
-	if(sKekInUse){
-		//TODO: Finish filling in the keyDescriptor
-		//TODO: Fill in the LookupData with the counterpart MAC address
-		tKeyDescriptor.Fixed.KeyIdLookupListEntries = 1;
-		tKeyDescriptor.Fixed.KeyUsageListEntries = 1;
-		tKeyDescriptor.Fixed.KeyDeviceListEntries = 1;
-
-		tKeyDescriptor.KeyIdLookupList[0].LookupDataSizeCode = 1; //1 indicates 9 octets length
-		tKeyDescriptor.flags[0] = sKekDeviceIndex;	//Device number for the mode2 device
-		tKeyDescriptor.flags[1] = (MAC_FC_FT_DATA & KUD_FrameTypeMask);	//data usage
-	}
+	//Mode2/KEK
+	storeCount++;
+	putFinalKey();
 
 	MLME_SET_request_sync(
 		macKeyTableEntries,
