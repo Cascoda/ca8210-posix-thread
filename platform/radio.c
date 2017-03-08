@@ -128,7 +128,6 @@ static uint8_t sMode2DeviceIndex = 100; //Used to track the location of the Mode
 //COMMISSIONING & JOINING
 static uint8_t sKekInUse = 0;
 static uint8_t sKekDeviceIndex = 0;
-static uint8_t sKekIsJoining = 0;
 static uint8_t sKekCounterpart[8];
 static uint8_t sKekMessageHandle = 0;
 //END COMMISSIONING & JOINING
@@ -584,11 +583,11 @@ void otHardMacStateChangeCallback(otInstance *aInstance, uint32_t aFlags, void *
 	 * This function is called whenever there is an internal state change in thread
 	 */
 
-	keyChangeCallback(aFlags, aContext);
-	coordChangeCallback(aFlags, aContext);
+	keyChangeCallback(aFlags, aInstance);
+	coordChangeCallback(aFlags, aInstance);
 }
 
-static void coordChangeCallback(uint32_t aFlags, void *aContext) {
+static void coordChangeCallback(uint32_t aFlags, otInstance *aInstance) {
 
 	/*
 	 * This function sets the node as an 802.15.4 coordinator when it is set to act as a thread
@@ -679,7 +678,6 @@ static void putFinalKey(){
 
 	if(sKekInUse && !otPlatRadioIsJoining()){//Joiner router - replace mode2 key for a few milliseconds to send
 		//TODO: Finish filling in the keyDescriptor
-		//TODO: Fill in the LookupData with the counterpart MAC address for the joiner
 		otGetKek(OT_INSTANCE, tKeyDescriptor.Fixed.Key);
 		tKeyDescriptor.Fixed.KeyIdLookupListEntries = 1;
 		tKeyDescriptor.Fixed.KeyUsageListEntries = 1;
@@ -690,6 +688,7 @@ static void putFinalKey(){
 		tKeyDescriptor.KeyIdLookupList[0].LookupData[0] = 0;
 		for(int i = 0; i < 8; i++)tKeyDescriptor.KeyIdLookupList[i] = sKekCounterpart[i];
 		tKeyDescriptor.flags[0] = (MAC_FC_FT_DATA & KUD_FrameTypeMask);	//data usage
+		otPlatLog(kLogLevelInfo, kLogRegionHardMac, "JoinerRouter KEK added to table");
 	}
 	else{
 		memcpy(tKeyDescriptor.Fixed.Key, sMode2Key, 16);
@@ -701,6 +700,7 @@ static void putFinalKey(){
 		tKeyDescriptor.KeyIdLookupList[0].LookupDataSizeCode = 0; //0 indicates 5 octets length
 		tKeyDescriptor.flags[0] = sMode2DeviceIndex;	//Device number for the mode2 device
 		tKeyDescriptor.flags[1] = (MAC_FC_FT_DATA & KUD_FrameTypeMask);	//data usage
+		otPlatLog(kLogLevelInfo, kLogRegionHardMac, "Mode2 Key added to table");
 	}
 
 	uint8_t unusedBytes = 1 - tKeyDescriptor.Fixed.KeyDeviceListEntries;
@@ -714,18 +714,52 @@ static void putFinalKey(){
 		);
 }
 
-void otPlatRadioSetKek(otInstance *aInstance, uint8_t * otherAddress){
+void otPlatRadioSetKekCounterpart(otInstance *aInstance, uint8_t * otherAddress){
 	memcpy(sKekCounterpart, otherAddress, 8);
 	sKekInUse = true;
+	otPlatLog(kLogLevelInfo, kLogRegionHardMac, "KEK counterpart set");
+}
+
+static void putJoinerKek(){
+	struct M_KeyDescriptor_thread {
+		struct M_KeyTableEntryFixed    Fixed;
+		struct M_KeyIdLookupDesc       KeyIdLookupList[1];
+		uint8_t                        flags[2];
+		//struct M_KeyDeviceDesc         KeyDeviceList[count];
+		//struct M_KeyUsageDesc          KeyUsageList[2];
+	}tKeyDescriptor;
+
+	otGetKek(OT_INSTANCE, tKeyDescriptor.Fixed.Key);
+	tKeyDescriptor.Fixed.KeyIdLookupListEntries = 1;
+	tKeyDescriptor.Fixed.KeyUsageListEntries = 1;
+
+	tKeyDescriptor.Fixed.KeyDeviceListEntries = 1;
+
+	tKeyDescriptor.KeyIdLookupList[0].LookupDataSizeCode = 1; //1 indicates 9 octets length
+	tKeyDescriptor.KeyIdLookupList[0].LookupData[0] = 0;
+	for(int i = 0; i < 8; i++)tKeyDescriptor.KeyIdLookupList[i] = sKekCounterpart[i];
+	tKeyDescriptor.flags[0] = (sKekDeviceIndex);	//device
+	tKeyDescriptor.flags[1] = (MAC_FC_FT_DATA & KUD_FrameTypeMask);	//data usage
+	uint8_t unusedBytes = 1 - tKeyDescriptor.Fixed.KeyDeviceListEntries;
+	MLME_SET_request_sync(
+			macKeyTable,
+			0,
+			sizeof(tKeyDescriptor),
+			&tKeyDescriptor,
+			pDeviceRef
+			);
+
+	otPlatLog(kLogLevelInfo, kLogRegionHardMac, "Joiner KEK added to table");
 }
 
 void otPlatRadioDisableKek(otInstance *aInstance){
 	memset(sKekCounterpart, 0, 8);
 	sKekInUse = false;
 	sKekMessageHandle = 0;
+	otPlatLog(kLogLevelInfo, kLogRegionHardMac, "KEK disabled");
 }
 
-static void keyChangeCallback(uint32_t aFlags, void *aContext){
+static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance){
 
 	/*
 	 * This Function updates the keytable and devicetable entries stored on the
@@ -792,6 +826,11 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 
 	uint8_t activeDevices = count;
 
+	if(sKekInUse && otPlatRadioIsJoining(aInstance)){
+		sKekDeviceIndex = count;
+		putDeviceDescriptor(0xFFFF, sKekCounterpart, count++);
+	}
+
 	sMode2DeviceIndex = count++;
 
 	resetMode2Device();
@@ -839,7 +878,8 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 	uint8_t storeCount = 0;
 
 	for(uint8_t i = 0; i < 3; i++){
-		memcpy(tKeyDescriptor.Fixed.Key, otGetMacKeyFromSequenceCounter(OT_INSTANCE, tKeySeq + i), 16);
+		if(i == 0 && sKekInUse && otPlatRadioIsJoining(aInstance)) continue; //If joining, replace the first key (useless anyway) with the KEK
+		memcpy(tKeyDescriptor.Fixed.Key, otGetMacKeyFromSequenceCounter(aInstance, tKeySeq + i), 16);
 		tKeyDescriptor.KeyIdLookupList[0].LookupData[0] = ((tKeySeq + i) & 0x7F) + 1;
 
 		MLME_SET_request_sync(
@@ -849,6 +889,11 @@ static void keyChangeCallback(uint32_t aFlags, void *aContext){
 			&tKeyDescriptor,
 			pDeviceRef
 			);
+	}
+
+	//Kek
+	if(sKekInUse && otPlatRadioIsJoining(aInstance)){
+		putJoinerKek();
 	}
 
 	//Mode2/KEK
@@ -1039,7 +1084,8 @@ ThreadError otPlatRadioTransmit(otInstance *aInstance, RadioPacket *aPacket, voi
 		}
     	else if(curSecSpec.KeyIdMode == 0x00){//Table 96
     		//This should be using the KeK
-			otPlatRadioSetKek(OT_INSTANCE, curPacket.Dst.Address);
+    		sKekMessageHandle = handle;
+			otPlatRadioSetKekCounterpart(OT_INSTANCE, curPacket.Dst.Address);
 			putFinalKey();
 		}
     	curSecSpec.KeyIndex = aPacket->mPsdu[ASHloc++];
