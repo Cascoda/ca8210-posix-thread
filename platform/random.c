@@ -39,6 +39,7 @@
 #include <cascoda_api.h>
 #include <hwme_tdme.h>
 #include <assert.h>
+#include <common/code_utils.hpp>
 
 #include <sys/types.h>
 #include <sys/stat.h>
