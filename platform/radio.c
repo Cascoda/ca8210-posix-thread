@@ -876,8 +876,8 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance){
 	uint8_t storeCount = 0;
 
 	for(uint8_t i = 0; i < 3; i++){
-		if(i == 0 && sKekInUse && otPlatRadioIsJoining(aInstance)) continue; //If joining, replace the first key (useless anyway) with the KEK
-		memcpy(tKeyDescriptor.Fixed.Key, otGetMacKeyFromSequenceCounter(aInstance, tKeySeq + i), 16);
+		if(i == 0 && sKekInUse && otPlatRadioIsJoining(OT_INSTANCE)) continue; //If joining, replace the first key (useless anyway) with the KEK
+		memcpy(tKeyDescriptor.Fixed.Key, otGetMacKeyFromSequenceCounter(OT_INSTANCE, tKeySeq + i), 16);
 		tKeyDescriptor.KeyIdLookupList[0].LookupData[0] = ((tKeySeq + i) & 0x7F) + 1;
 
 		MLME_SET_request_sync(
@@ -890,7 +890,7 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance){
 	}
 
 	//Kek
-	if(sKekInUse && otPlatRadioIsJoining(aInstance)){
+	if(sKekInUse && otPlatRadioIsJoining(OT_INSTANCE)){
 		putJoinerKek();
 	}
 
