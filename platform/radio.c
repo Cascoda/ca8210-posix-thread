@@ -86,8 +86,8 @@ static int handleGenericDispatchFrame(const uint8_t *buf, size_t len);
 //END CASCODA API CALLBACKS
 
 //OPENTHREAD API CALLBACKS
-static void keyChangeCallback(uint32_t aFlags, void *aContext);   //Used to update the keys and deviceTable
-static void coordChangeCallback(uint32_t aFlags, void *aContext); //Used to change the device to and from a coordinator
+static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance);   //Used to update the keys and deviceTable
+static void coordChangeCallback(uint32_t aFlags, otInstance *aInstance); //Used to change the device to and from a coordinator
 //END OPENTHREAD API CALLBACKS
 
 //DEVICE FRAME COUNTER CACHING
@@ -385,10 +385,10 @@ ThreadError otPlatRadioSetNetworkName(otInstance *aInstance, const char *aNetwor
 ThreadError otPlatRadioSetJoiningEnabled(otInstance *aInstance, uint8_t isEnabled){
 
 	if(isEnabled){
-		macBeaconPayload[1] |= BEACON_JOIN_BIT;
+		mBeaconPayload[1] |= BEACON_JOIN_BIT;
 	}
 	else{
-		macBeaconPayload[1] &= ~BEACON_JOIN_BIT;
+		mBeaconPayload[1] &= ~BEACON_JOIN_BIT;
 	}
 
 	if ((MLME_SET_request_sync(
@@ -676,7 +676,7 @@ static void putFinalKey(){
 		//struct M_KeyUsageDesc          KeyUsageList[2];
 	}tKeyDescriptor;
 
-	if(sKekInUse && !otPlatRadioIsJoining()){//Joiner router - replace mode2 key for a few milliseconds to send
+	if(sKekInUse && !otPlatRadioIsJoining(OT_INSTANCE)){//Joiner router - replace mode2 key for a few milliseconds to send
 		//TODO: Finish filling in the keyDescriptor
 		otGetKek(OT_INSTANCE, tKeyDescriptor.Fixed.Key);
 		tKeyDescriptor.Fixed.KeyIdLookupListEntries = 1;
@@ -686,7 +686,7 @@ static void putFinalKey(){
 
 		tKeyDescriptor.KeyIdLookupList[0].LookupDataSizeCode = 1; //1 indicates 9 octets length
 		tKeyDescriptor.KeyIdLookupList[0].LookupData[0] = 0;
-		for(int i = 0; i < 8; i++)tKeyDescriptor.KeyIdLookupList[i] = sKekCounterpart[i];
+		for(int i = 0; i < 8; i++)tKeyDescriptor.KeyIdLookupList.LookupData[i] = sKekCounterpart[i];
 		tKeyDescriptor.flags[0] = (MAC_FC_FT_DATA & KUD_FrameTypeMask);	//data usage
 		otPlatLog(kLogLevelInfo, kLogRegionHardMac, "JoinerRouter KEK added to table");
 	}
@@ -737,10 +737,9 @@ static void putJoinerKek(){
 
 	tKeyDescriptor.KeyIdLookupList[0].LookupDataSizeCode = 1; //1 indicates 9 octets length
 	tKeyDescriptor.KeyIdLookupList[0].LookupData[0] = 0;
-	for(int i = 0; i < 8; i++)tKeyDescriptor.KeyIdLookupList[i] = sKekCounterpart[i];
+	for(int i = 0; i < 8; i++)tKeyDescriptor.KeyIdLookupList.LookupData[i] = sKekCounterpart[i];
 	tKeyDescriptor.flags[0] = (sKekDeviceIndex);	//device
 	tKeyDescriptor.flags[1] = (MAC_FC_FT_DATA & KUD_FrameTypeMask);	//data usage
-	uint8_t unusedBytes = 1 - tKeyDescriptor.Fixed.KeyDeviceListEntries;
 	MLME_SET_request_sync(
 			macKeyTable,
 			0,
