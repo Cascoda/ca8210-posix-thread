@@ -32,7 +32,6 @@
  *
  */
 
-#include <openthread.h>
 #include <openthread-types.h>
 
 #include <stdlib.h>
@@ -825,7 +824,7 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance){
 
 	uint8_t activeDevices = count;
 
-	if(sKekInUse && otPlatRadioIsJoining(aInstance)){
+	if(sKekInUse && otPlatRadioIsJoining(OT_INSTANCE)){
 		sKekDeviceIndex = count;
 		putDeviceDescriptor(0xFFFF, sKekCounterpart, count++);
 	}
