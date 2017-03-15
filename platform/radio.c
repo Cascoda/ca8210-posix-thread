@@ -685,7 +685,7 @@ static void putFinalKey(){
 
 		tKeyDescriptor.KeyIdLookupList[0].LookupDataSizeCode = 1; //1 indicates 9 octets length
 		tKeyDescriptor.KeyIdLookupList[0].LookupData[0] = 0;
-		for(int i = 0; i < 8; i++)tKeyDescriptor.KeyIdLookupList[0].LookupData[i] = sKekCounterpart[i];
+		for(int i = 0; i < 8; i++)tKeyDescriptor.KeyIdLookupList[0].LookupData[i] = sKekCounterpart[7-i]; //Flip Endian
 		tKeyDescriptor.flags[0] = (MAC_FC_FT_DATA & KUD_FrameTypeMask);	//data usage
 		otPlatLog(kLogLevelInfo, kLogRegionHardMac, "JoinerRouter KEK added to table");
 	}
