@@ -1086,7 +1086,8 @@ ThreadError otPlatRadioTransmit(otInstance *aInstance, RadioPacket *aPacket, voi
 			otPlatRadioSetKekCounterpart(OT_INSTANCE, curPacket.Dst.Address);
 			putFinalKey();
 		}
-    	curSecSpec.KeyIndex = aPacket->mPsdu[ASHloc++];
+
+    	if(curSecSpec.KeyIdMode != 0x00)curSecSpec.KeyIndex = aPacket->mPsdu[ASHloc++];
     	headerLength = ASHloc;
     }
 
