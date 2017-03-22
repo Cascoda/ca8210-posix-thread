@@ -1284,7 +1284,8 @@ static int handleDataIndication(struct MCPS_DATA_indication_pset *params)   //As
 		else if(curSecSpec->KeyIdMode == 0x00){//Table 96
 			otPlatLog(kLogLevelInfo, kLogRegionHardMac, "Key Mode 0 received");
 		}
-		sReceiveFrame.mPsdu[ASHloc++] = curSecSpec->KeyIndex;
+
+		if(curSecSpec->KeyIdMode != 0x00) sReceiveFrame.mPsdu[ASHloc++] = curSecSpec->KeyIndex;
 		headerLength = ASHloc;
 	}
 
