@@ -34,7 +34,7 @@
 #include <cli.h>
 #include <posix-platform.h>
 
-#include <openthread-tasklet.h>
+#include <tasklet.h>
 
 void otSignalTaskletPending(otInstance *aInstance)
 {
@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 
     while (1)
     {
-    	otProcessQueuedTasklets(OT_INSTANCE);
+    	otTaskletsProcess(OT_INSTANCE);
         posixPlatformProcessDrivers();
     }
 
