@@ -595,10 +595,10 @@ static void coordChangeCallback(uint32_t aFlags, otInstance *aInstance) {
 
 	if(aFlags & OT_NET_ROLE){
 		struct SecSpec securityLevel = {0};
-		if(otGetDeviceRole(OT_INSTANCE) == kDeviceRoleRouter || otGetDeviceRole(OT_INSTANCE) == kDeviceRoleLeader){
+		if(otThreadGetDeviceRole(OT_INSTANCE) == kDeviceRoleRouter || otThreadGetDeviceRole(OT_INSTANCE) == kDeviceRoleLeader){
 			if(!sIsCoordinator) {
 				MLME_START_request_sync(
-						otGetPanId(OT_INSTANCE),
+						otLinkGetPanId(OT_INSTANCE),
 						sChannel,
 						15,
 						15,
@@ -643,7 +643,7 @@ static void resetMode2Device(){
 static void putDeviceDescriptor(uint16_t shortAddr, uint8_t * extAddr, uint8_t count){
 	struct M_DeviceDescriptor tDeviceDescriptor;
 
-	PUTLE16(otGetPanId(OT_INSTANCE) ,tDeviceDescriptor.PANId);
+	PUTLE16(otLinkGetPanId(OT_INSTANCE) ,tDeviceDescriptor.PANId);
 	PUTLE16(shortAddr, tDeviceDescriptor.ShortAddress);
 	for(int j = 0; j < 8; j++) tDeviceDescriptor.ExtAddress[j] = extAddr[7-j];	//Flip endian
 
@@ -779,14 +779,14 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance){
 	//Cache devices so the frame counters are correct
 	deviceCache_cacheDevices();
 	otPlatLog(kLogLevelInfo, kLogRegionHardMac, "Updating keys for flags: %x", aFlags);
-	uint32_t tKeySeq = otGetKeySequenceCounter(OT_INSTANCE) - 1;
+	uint32_t tKeySeq = otNodeGetKeySequenceCounter(OT_INSTANCE) - 1;
 
 	uint8_t count = 0;	//Update device list
 
-	if(otGetDeviceRole(OT_INSTANCE) != kDeviceRoleChild && otGetDeviceRole(OT_INSTANCE) != kDeviceRoleDetached){
+	if(otThreadGetDeviceRole(OT_INSTANCE) != kDeviceRoleChild && otThreadGetDeviceRole(OT_INSTANCE) != kDeviceRoleDetached){
 		for(uint8_t i = 0; i < MAX_DYNAMIC_DEVICES && i < OPENTHREAD_CONFIG_MAX_CHILDREN; i++){
 			otChildInfo tChildInfo;
-			otGetChildInfoByIndex(OT_INSTANCE, i, &tChildInfo);
+			otThreadGetChildInfoByIndex(OT_INSTANCE, i, &tChildInfo);
 
 			//Do not register invalid devices
 			uint8_t isValid = 0;
