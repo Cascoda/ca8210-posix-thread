@@ -31,7 +31,7 @@
 #include <stdio.h>
 
 #include <openthread.h>
-#include <cli/cli-uart.h>
+#include <cli.h>
 #include <posix-platform.h>
 
 #include <openthread-tasklet.h>
