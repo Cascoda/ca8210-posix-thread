@@ -53,12 +53,12 @@ int main(int argc, char *argv[])
     /* Test harness specific config */
 #ifdef TESTHARNESS
     otSetNetworkName(OT_INSTANCE, "GRL");
-    otSetPanId(OT_INSTANCE, 0xface);
+    otLinkSetPanId(OT_INSTANCE, 0xface);
     uint8_t extPanId[] = {0x00, 0x0d, 0xb8, 0x00, 0x00, 0x00, 0x00, 0x00};
     otSetExtendedPanId(OT_INSTANCE, extPanId);
     otSetChannel(OT_INSTANCE, 20);
 #else
-    otSetPanId(OT_INSTANCE, 0x1234); //Convenience
+    otLinkSetPanId(OT_INSTANCE, 0x1234); //Convenience
 #endif
 
     while (1)

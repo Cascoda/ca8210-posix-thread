@@ -39,7 +39,7 @@
 #include <sys/time.h>
 
 #include <openthread.h>
-#include <openthread-tasklet.h>
+#include <tasklet.h>
 #include <platform/alarm.h>
 #include <platform/uart.h>
 #include <posix-platform.h>
