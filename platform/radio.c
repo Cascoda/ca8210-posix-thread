@@ -44,6 +44,7 @@
 #include <platform/logging.h>
 #include <cascoda_api.h>
 #include <kernel_exchange.h>
+#include <link.h>
 #include <string.h>
 #include <mac_messages.h>
 #include "posix-platform.h"

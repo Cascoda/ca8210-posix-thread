@@ -1,9 +1,8 @@
 TARGET = libotplatposixca8210.a
 LIBS = -lm
 INCLUDEDIRS := ./\
-	../openthread/include/platform/\
-	../openthread/include/cli/\
-	../openthread/include/crypto/\
+	../openthread/include/openthread/platform/\
+	../openthread/include/openthread/\
 	../openthread/include/\
 	../ca8210-kernel-exchange/ca821x-api/include/\
 	../ca8210-kernel-exchange/\
