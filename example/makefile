@@ -4,8 +4,8 @@ LIBSEARCH := $(addprefix -L,$(LIBDIRS))
 LIBS = -lm -lotposixca8210-ftd -lopenthread-cli -lstdc++ -lpthread
 CC = gcc
 INCLUDEDIRS := ./\
-	../openthread/include/cli/\
 	../openthread/include/\
+	../openthread/include/openthread/\
 	../openthread/src/core/\
 	./include/\
 	../platform/\
