@@ -813,7 +813,7 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance){
 		uint8_t maxRouters = MAX_DYNAMIC_DEVICES - count;
 		otRouterInfo routers[maxRouters];
 		uint8_t numRouters;
-		otGetThreadNeighborRouterInfo(OT_INSTANCE, routers, &numRouters, maxRouters);
+		otThreadGetNeighborRouterInfo(OT_INSTANCE, routers, &numRouters, maxRouters);
 
 		for(int i = 0; i < numRouters; i++){
 			putDeviceDescriptor(routers[i].mRloc16, routers[i].mExtAddress.m8, count++);
