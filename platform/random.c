@@ -36,7 +36,7 @@
 
 #include <platform/random.h>
 #include <posix-platform.h>
-#include <cascoda_api.h>
+#include <ca821x_api.h>
 #include <hwme_tdme.h>
 #include <assert.h>
 #include <common/code_utils.hpp>

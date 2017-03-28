@@ -42,7 +42,7 @@
 #include <platform/radio.h>
 #include <platform/random.h>
 #include <platform/logging.h>
-#include <cascoda_api.h>
+#include <ca821x_api.h.h>
 #include <kernel_exchange.h>
 #include <string.h>
 #include <mac_messages.h>
@@ -512,13 +512,13 @@ void PlatformRadioInit(void)
 
     kernel_exchange_init_withhandler(driverErrorCallback);
 
-    struct cascoda_api_callbacks callbacks = {0};
+    struct ca821x_api_callbacks callbacks = {0};
     callbacks.MCPS_DATA_indication = &handleDataIndication;
     callbacks.MCPS_DATA_confirm = &handleDataConfirm;
     callbacks.MLME_BEACON_NOTIFY_indication = &handleBeaconNotify;
     callbacks.MLME_SCAN_confirm = &handleScanConfirm;
     callbacks.generic_dispatch = &handleGenericDispatchFrame;	//UNCOMMENT TO ENABLE VIEWING UNHANDLED FRAMES
-    cascoda_register_callbacks(&callbacks);
+    ca821x_register_callbacks(&callbacks);
     
     //Reset the MAC to a default state
     MLME_RESET_request_sync(1, pDeviceRef);
