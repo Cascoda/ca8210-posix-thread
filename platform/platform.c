@@ -58,6 +58,10 @@ void posixPlatformInit(void)
     otPlatUartEnable();
 }
 
+void otTaskletsSignalPending(otInstance *aInstance){
+	selfpipe_push();
+}
+
 void posixPlatformProcessDrivers(void)
 {
     fd_set read_fds;
@@ -73,7 +77,7 @@ void posixPlatformProcessDrivers(void)
     selfpipe_UpdateFdSet(&read_fds, &write_fds, &max_fd);
     posixPlatformAlarmUpdateTimeout(&timeout);
 
-    if (!otAreTaskletsPending(OT_INSTANCE))
+    if (!otTaskletsArePending(OT_INSTANCE))
     {
         rval = select(max_fd + 1, &read_fds, &write_fds, NULL, &timeout);
         selfpipe_pop();

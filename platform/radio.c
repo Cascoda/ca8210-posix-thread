@@ -475,6 +475,13 @@ void otPlatRadioSetShortAddress(otInstance *aInstance, uint16_t address)
         pDeviceRef);
 }
 
+void otPlatRadioSetDefaultTxPower(otInstance *aInstance, int8_t aPower)
+{
+    // TODO: Create a proper implementation for this driver.
+    (void)aInstance;
+    (void)aPower;
+}
+
 static int driverErrorCallback(int error_number){
 	otPlatLog(kLogLevelCrit, kLogRegionHardMac, "DRIVER FAILED WITH ERROR %d\n\r", error_number);
 	//TODO: Fail gracefully
@@ -677,7 +684,7 @@ static void putFinalKey(){
 
 	if(sKekInUse && !otPlatRadioIsJoining(OT_INSTANCE)){//Joiner router - replace mode2 key for a few milliseconds to send
 		//TODO: Finish filling in the keyDescriptor
-		otGetKek(OT_INSTANCE, tKeyDescriptor.Fixed.Key);
+		otThreadGetKek(OT_INSTANCE, tKeyDescriptor.Fixed.Key);
 		tKeyDescriptor.Fixed.KeyIdLookupListEntries = 1;
 		tKeyDescriptor.Fixed.KeyUsageListEntries = 1;
 
@@ -728,7 +735,7 @@ static void putJoinerKek(){
 		//struct M_KeyUsageDesc          KeyUsageList[2];
 	}tKeyDescriptor;
 
-	otGetKek(OT_INSTANCE, tKeyDescriptor.Fixed.Key);
+	otThreadGetKek(OT_INSTANCE, tKeyDescriptor.Fixed.Key);
 	tKeyDescriptor.Fixed.KeyIdLookupListEntries = 1;
 	tKeyDescriptor.Fixed.KeyUsageListEntries = 1;
 
@@ -779,7 +786,7 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance){
 	//Cache devices so the frame counters are correct
 	deviceCache_cacheDevices();
 	otPlatLog(kLogLevelInfo, kLogRegionHardMac, "Updating keys for flags: %x", aFlags);
-	uint32_t tKeySeq = otNodeGetKeySequenceCounter(OT_INSTANCE) - 1;
+	uint32_t tKeySeq = otThreadGetKeySequenceCounter(OT_INSTANCE) - 1;
 
 	uint8_t count = 0;	//Update device list
 
@@ -805,7 +812,7 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance){
 		uint8_t maxRouters = MAX_DYNAMIC_DEVICES - count;
 		otRouterInfo routers[maxRouters];
 		uint8_t numRouters;
-		otGetNeighborRouterInfo(OT_INSTANCE, routers, &numRouters, maxRouters);
+		GetThreadNeighborRouterInfo(OT_INSTANCE, routers, &numRouters, maxRouters);
 
 		for(int i = 0; i < numRouters; i++){
 			putDeviceDescriptor(routers[i].mRloc16, routers[i].mExtAddress.m8, count++);
@@ -814,7 +821,7 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance){
 	}
 	else{
 		otRouterInfo tParentInfo;
-		if(otGetParentInfo(OT_INSTANCE, &tParentInfo) == kThreadError_None){
+		if(otThreadGetParentInfo(OT_INSTANCE, &tParentInfo) == kThreadError_None){
 			putDeviceDescriptor(tParentInfo.mRloc16, tParentInfo.mExtAddress.m8, count++);
 		}
 		else{
@@ -877,7 +884,7 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance){
 
 	for(uint8_t i = 0; i < 3; i++){
 		if(i == 0 && sKekInUse && otPlatRadioIsJoining(OT_INSTANCE)) continue; //If joining, replace the first key (useless anyway) with the KEK
-		memcpy(tKeyDescriptor.Fixed.Key, otGetMacKeyFromSequenceCounter(OT_INSTANCE, tKeySeq + i), 16);
+		memcpy(tKeyDescriptor.Fixed.Key, otThreadGetMacKeyFromSequenceCounter(OT_INSTANCE, tKeySeq + i), 16);
 		tKeyDescriptor.KeyIdLookupList[0].LookupData[0] = ((tKeySeq + i) & 0x7F) + 1;
 
 		MLME_SET_request_sync(
@@ -1205,7 +1212,7 @@ static int handleDataIndication(struct MCPS_DATA_indication_pset *params)   //As
 	 * approves it.
 	 */
 
-	if(!otIsInterfaceUp(OT_INSTANCE)) return 1;
+	if(!otIp6IsEnabled(OT_INSTANCE)) return 1;
 
     pthread_mutex_lock(&receiveFrame_mutex);
 	//wait until the main thread is free to process the frame
@@ -1329,7 +1336,7 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
 	 * to openthread as appropriate.
 	 */
 
-	if(!otIsInterfaceUp(OT_INSTANCE)) return 1;
+	if(!otIp6IsEnabled(OT_INSTANCE)) return 1;
 	otPlatLog(kLogLevelDebg, kLogRegionHardMac, "Data confirm received!");
 
 	barrier_worker_waitForMain();
