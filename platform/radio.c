@@ -42,7 +42,7 @@
 #include <platform/radio.h>
 #include <platform/random.h>
 #include <platform/logging.h>
-#include <ca821x_api.h.h>
+#include <ca821x_api.h>
 #include <kernel_exchange.h>
 #include <string.h>
 #include <mac_messages.h>
