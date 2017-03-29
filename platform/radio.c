@@ -1418,7 +1418,7 @@ static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params)
 			memcpy(&resultStruct.mNetworkName, ((char*)Sdu) + 2, sizeof(resultStruct.mNetworkName));
 			memcpy(&resultStruct.mExtendedPanId, Sdu + 18, sizeof(resultStruct.mExtendedPanId));
 			barrier_worker_waitForMain();
-			sActiveScanCallback(sActiveScanContext, &resultStruct);
+			sActiveScanCallback(&resultStruct, sActiveScanContext);
 			barrier_worker_endWork();
 		}
 	}
@@ -1432,7 +1432,7 @@ static int handleScanConfirm(struct MLME_SCAN_confirm_pset *params) { //Async
 	if (params->Status != MAC_SCAN_IN_PROGRESS) {
 		if(sActiveScanInProgress){
 			barrier_worker_waitForMain();
-			sActiveScanCallback(sActiveScanContext, NULL);
+			sActiveScanCallback(NULL, sActiveScanContext);
 			sActiveScanInProgress = 0;
 			barrier_worker_endWork();
 			MLME_SET_request_sync(
@@ -1451,7 +1451,7 @@ static int handleScanConfirm(struct MLME_SCAN_confirm_pset *params) { //Async
 				otEnergyScanResult result;
 				result.mMaxRssi = params->ResultList[i];
 				result.mChannel = curMinChannel;
-				sEnergyScanCallback(sActiveScanContext, &result);
+				sEnergyScanCallback(&result, sActiveScanContext);
 
 				while(!(sEnergyScanMask & 1 << curMinChannel)){
 					result.mChannel = curMinChannel++;
@@ -1461,7 +1461,7 @@ static int handleScanConfirm(struct MLME_SCAN_confirm_pset *params) { //Async
 				}
 			}
 			//Send completion callback
-			sEnergyScanCallback(sActiveScanContext, NULL);
+			sEnergyScanCallback(NULL, sActiveScanContext);
 			sEnergyScanInProgress = 0;
 			barrier_worker_endWork();
 			MLME_SET_request_sync(
