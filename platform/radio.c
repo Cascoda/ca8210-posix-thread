@@ -1407,7 +1407,7 @@ static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params)
 	VerifyOrExit(params->PanDescriptor.Security.SecurityLevel == 0,;);
 	//Asset security = 0
 	uint8_t *sduLength = (uint8_t*)params + (24 + (2 * shortaddrs) + (8 * extaddrs));
-	if (*sduLength >= 28) {
+	if (*sduLength >= 26) {
 		uint8_t *Sdu = (uint8_t*)params + (25 + 2 * shortaddrs + 8 * extaddrs);
 		uint8_t version = (*((uint8_t*)Sdu + 1) & 0x0F);
 		if(version != (mBeaconPayload[1] & 0x0F)){
