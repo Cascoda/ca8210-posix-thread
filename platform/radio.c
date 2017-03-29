@@ -667,7 +667,7 @@ static void putDeviceDescriptor(uint16_t shortAddr, uint8_t * extAddr, uint8_t c
 
 	MLME_SET_request_sync(
 			macDeviceTable,
-			count++,
+			count,
 			sizeof(tDeviceDescriptor),
 			&tDeviceDescriptor,
 			pDeviceRef
@@ -794,7 +794,10 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance){
 	if(otThreadGetDeviceRole(OT_INSTANCE) != kDeviceRoleChild && otThreadGetDeviceRole(OT_INSTANCE) != kDeviceRoleDetached){
 		for(uint8_t i = 0; i < MAX_DYNAMIC_DEVICES && i < OPENTHREAD_CONFIG_MAX_CHILDREN; i++){
 			otChildInfo tChildInfo;
-			otThreadGetChildInfoByIndex(OT_INSTANCE, i, &tChildInfo);
+
+			if(otThreadGetChildInfoByIndex(OT_INSTANCE, i, &tChildInfo) != kThreadError_None){
+				continue;
+			}
 
 			//Do not register invalid devices
 			uint8_t isValid = 0;
