@@ -52,7 +52,6 @@ otInstance * OT_INSTANCE = NULL;
 
 void posixPlatformInit(void)
 {
-	atexit(&otPlatUartDisable); //Close pipes to stop ruining terminal upon exit
     posixPlatformAlarmInit();
     otPlatUartEnable();
     PlatformRadioInit();
