@@ -53,9 +53,9 @@ otInstance * OT_INSTANCE = NULL;
 void posixPlatformInit(void)
 {
     posixPlatformAlarmInit();
+    otPlatUartEnable();
     PlatformRadioInit();
     posixPlatformRandomInit();
-    otPlatUartEnable();
 }
 
 void otTaskletsSignalPending(otInstance *aInstance){
