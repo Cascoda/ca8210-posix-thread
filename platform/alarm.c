@@ -99,7 +99,7 @@ void posixPlatformAlarmUpdateTimeout(struct timeval *aTimeout)
     }
 }
 
-void posixPlatformAlarmProcess(void)
+void posixPlatformAlarmProcess(otInstance *aInstance)
 {
     int32_t remaining;
 
@@ -110,7 +110,7 @@ void posixPlatformAlarmProcess(void)
         if (remaining <= 0)
         {
             s_is_running = false;
-            otPlatAlarmFired(OT_INSTANCE);
+            otPlatAlarmFired(aInstance);
         }
     }
 }

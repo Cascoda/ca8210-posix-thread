@@ -36,6 +36,8 @@
 
 #include <tasklet.h>
 
+static otInstance * OT_INSTANCE;
+
 void otSignalTaskletPending(otInstance *aInstance)
 {
 	(void)aInstance;
@@ -64,7 +66,7 @@ int main(int argc, char *argv[])
     while (1)
     {
     	otTaskletsProcess(OT_INSTANCE);
-        posixPlatformProcessDrivers();
+        posixPlatformProcessDrivers(OT_INSTANCE);
     }
 
     return 0;

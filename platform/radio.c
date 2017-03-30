@@ -53,7 +53,6 @@
 
 #include "selfpipe.h"
 
-
 //Mac tools
 #define MAC_SC_SECURITYLEVEL(sc) (sc&0x07)
 #define MAC_SC_KEYIDMODE(sc) ((sc>>3)&0x03)
@@ -74,6 +73,8 @@ enum
 };
 
 int PlatformRadioSignal(void);
+
+otInstance * OT_INSTANCE;
 
 //CASCODA API CALLBACKS
 static int handleDataIndication(struct MCPS_DATA_indication_pset *params);
@@ -603,10 +604,10 @@ static void coordChangeCallback(uint32_t aFlags, otInstance *aInstance) {
 
 	if(aFlags & OT_NET_ROLE){
 		struct SecSpec securityLevel = {0};
-		if(otThreadGetDeviceRole(OT_INSTANCE) == kDeviceRoleRouter || otThreadGetDeviceRole(OT_INSTANCE) == kDeviceRoleLeader){
+		if(otThreadGetDeviceRole(aInstance) == kDeviceRoleRouter || otThreadGetDeviceRole(aInstance) == kDeviceRoleLeader){
 			if(!sIsCoordinator) {
 				MLME_START_request_sync(
-						otLinkGetPanId(OT_INSTANCE),
+						otLinkGetPanId(aInstance),
 						sChannel,
 						15,
 						15,
@@ -648,10 +649,10 @@ static void resetMode2Device(){
 			);
 }
 
-static void putDeviceDescriptor(uint16_t shortAddr, uint8_t * extAddr, uint8_t count){
+static void putDeviceDescriptor(otInstance *aInstance, uint16_t shortAddr, uint8_t * extAddr, uint8_t count){
 	struct M_DeviceDescriptor tDeviceDescriptor;
 
-	PUTLE16(otLinkGetPanId(OT_INSTANCE) ,tDeviceDescriptor.PANId);
+	PUTLE16(otLinkGetPanId(aInstance) ,tDeviceDescriptor.PANId);
 	PUTLE16(shortAddr, tDeviceDescriptor.ShortAddress);
 	for(int j = 0; j < 8; j++) tDeviceDescriptor.ExtAddress[j] = extAddr[7-j];	//Flip endian
 
@@ -674,7 +675,7 @@ static void putDeviceDescriptor(uint16_t shortAddr, uint8_t * extAddr, uint8_t c
 			);
 }
 
-static void putFinalKey(){
+static void putFinalKey(otInstance *aInstance){
 	struct M_KeyDescriptor_thread {
 		struct M_KeyTableEntryFixed    Fixed;
 		struct M_KeyIdLookupDesc       KeyIdLookupList[1];
@@ -683,9 +684,9 @@ static void putFinalKey(){
 		//struct M_KeyUsageDesc          KeyUsageList[2];
 	}tKeyDescriptor;
 
-	if(sKekInUse && !otPlatRadioIsJoining(OT_INSTANCE)){//Joiner router - replace mode2 key for a few milliseconds to send
+	if(sKekInUse && !otPlatRadioIsJoining(aInstance)){//Joiner router - replace mode2 key for a few milliseconds to send
 		//TODO: Finish filling in the keyDescriptor
-		otThreadGetKek(OT_INSTANCE, tKeyDescriptor.Fixed.Key);
+		otThreadGetKek(aInstance, tKeyDescriptor.Fixed.Key);
 		tKeyDescriptor.Fixed.KeyIdLookupListEntries = 1;
 		tKeyDescriptor.Fixed.KeyUsageListEntries = 1;
 
@@ -727,7 +728,7 @@ void otPlatRadioSetKekCounterpart(otInstance *aInstance, uint8_t * otherAddress)
 	otPlatLog(kLogLevelInfo, kLogRegionHardMac, "KEK counterpart set");
 }
 
-static void putJoinerKek(){
+static void putJoinerKek(otInstance *aInstance){
 	struct M_KeyDescriptor_thread {
 		struct M_KeyTableEntryFixed    Fixed;
 		struct M_KeyIdLookupDesc       KeyIdLookupList[1];
@@ -736,7 +737,7 @@ static void putJoinerKek(){
 		//struct M_KeyUsageDesc          KeyUsageList[2];
 	}tKeyDescriptor;
 
-	otThreadGetKek(OT_INSTANCE, tKeyDescriptor.Fixed.Key);
+	otThreadGetKek(aInstance, tKeyDescriptor.Fixed.Key);
 	tKeyDescriptor.Fixed.KeyIdLookupListEntries = 1;
 	tKeyDescriptor.Fixed.KeyUsageListEntries = 1;
 
@@ -787,15 +788,15 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance){
 	//Cache devices so the frame counters are correct
 	deviceCache_cacheDevices();
 	otPlatLog(kLogLevelInfo, kLogRegionHardMac, "Updating keys for flags: %x", aFlags);
-	uint32_t tKeySeq = otThreadGetKeySequenceCounter(OT_INSTANCE) - 1;
+	uint32_t tKeySeq = otThreadGetKeySequenceCounter(aInstance) - 1;
 
 	uint8_t count = 0;	//Update device list
 
-	if(otThreadGetDeviceRole(OT_INSTANCE) != kDeviceRoleChild && otThreadGetDeviceRole(OT_INSTANCE) != kDeviceRoleDetached){
+	if(otThreadGetDeviceRole(aInstance) != kDeviceRoleChild && otThreadGetDeviceRole(aInstance) != kDeviceRoleDetached){
 		for(uint8_t i = 0; i < MAX_DYNAMIC_DEVICES && i < OPENTHREAD_CONFIG_MAX_CHILDREN; i++){
 			otChildInfo tChildInfo;
 
-			if(otThreadGetChildInfoByIndex(OT_INSTANCE, i, &tChildInfo) != kThreadError_None){
+			if(otThreadGetChildInfoByIndex(aInstance, i, &tChildInfo) != kThreadError_None){
 				continue;
 			}
 
@@ -816,7 +817,7 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance){
 		uint8_t maxRouters = MAX_DYNAMIC_DEVICES - count;
 		otRouterInfo routers[maxRouters];
 		uint8_t numRouters;
-		otThreadGetNeighborRouterInfo(OT_INSTANCE, routers, &numRouters, maxRouters);
+		otThreadGetNeighborRouterInfo(aInstance, routers, &numRouters, maxRouters);
 
 		for(int i = 0; i < numRouters; i++){
 			putDeviceDescriptor(routers[i].mRloc16, routers[i].mExtAddress.m8, count++);
@@ -825,7 +826,7 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance){
 	}
 	else{
 		otRouterInfo tParentInfo;
-		if(otThreadGetParentInfo(OT_INSTANCE, &tParentInfo) == kThreadError_None){
+		if(otThreadGetParentInfo(aInstance, &tParentInfo) == kThreadError_None){
 			putDeviceDescriptor(tParentInfo.mRloc16, tParentInfo.mExtAddress.m8, count++);
 		}
 		else{
@@ -835,7 +836,7 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance){
 
 	uint8_t activeDevices = count;
 
-	if(sKekInUse && otPlatRadioIsJoining(OT_INSTANCE)){
+	if(sKekInUse && otPlatRadioIsJoining(aInstance)){
 		sKekDeviceIndex = count;
 		putDeviceDescriptor(0xFFFF, sKekCounterpart, count++);
 	}
@@ -887,8 +888,8 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance){
 	uint8_t storeCount = 0;
 
 	for(uint8_t i = 0; i < 3; i++){
-		if(i == 0 && sKekInUse && otPlatRadioIsJoining(OT_INSTANCE)) continue; //If joining, replace the first key (useless anyway) with the KEK
-		memcpy(tKeyDescriptor.Fixed.Key, otThreadGetMacKeyFromSequenceCounter(OT_INSTANCE, tKeySeq + i), 16);
+		if(i == 0 && sKekInUse && otPlatRadioIsJoining(aInstance)) continue; //If joining, replace the first key (useless anyway) with the KEK
+		memcpy(tKeyDescriptor.Fixed.Key, otThreadGetMacKeyFromSequenceCounter(aInstance, tKeySeq + i), 16);
 		tKeyDescriptor.KeyIdLookupList[0].LookupData[0] = ((tKeySeq + i) & 0x7F) + 1;
 
 		MLME_SET_request_sync(
@@ -901,8 +902,8 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance){
 	}
 
 	//Kek
-	if(sKekInUse && otPlatRadioIsJoining(OT_INSTANCE)){
-		putJoinerKek();
+	if(sKekInUse && otPlatRadioIsJoining(aInstance)){
+		putJoinerKek(aInstance);
 	}
 
 	//Mode2/KEK
@@ -922,23 +923,17 @@ ThreadError otPlatRadioEnable(otInstance *aInstance)    //TODO:(lowpriority) por
 {
 	ThreadError error = kThreadError_Busy;
 
+	if(OT_INSTANCE == NULL){
+		OT_INSTANCE = aInstance;
+	}
+	else{
+		return error;
+	}
+
 	if (sState == kStateSleep || sState == kStateDisabled)
 	{
 		error = kThreadError_None;
 		sState = kStateSleep;
-
-		#ifdef USE_LOWPOWER_MODES
-			uint8_t HWMEAttVal[5] = {00, 00, 00, 00, 00};
-			if (HWME_SET_request_sync (
-				HWME_POWERCON,
-				5,
-				HWMEAttVal,
-				pDeviceRef
-				) == HWME_SUCCESS)
-				return kThreadError_None;
-			else return kThreadError_Failed;
-
-		#endif
 	}
 
     return error;
@@ -1073,6 +1068,7 @@ ThreadError otPlatRadioTransmit(otInstance *aInstance, RadioPacket *aPacket, voi
 
     if((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_DATA){
 		aPacket->mTransmitContext = transmitContext;
+		aPacket->mTransmitInstance = aInstance;
 		intransit_putFrame(handle, aPacket);
 	}
 
@@ -1094,7 +1090,7 @@ ThreadError otPlatRadioTransmit(otInstance *aInstance, RadioPacket *aPacket, voi
     	else if(curSecSpec.KeyIdMode == 0x00){//Table 96
     		//This should be using the KeK
     		sKekMessageHandle = handle;
-			otPlatRadioSetKekCounterpart(OT_INSTANCE, curPacket.Dst.Address);
+			otPlatRadioSetKekCounterpart(aInstance, curPacket.Dst.Address);
 			putFinalKey();
 		}
 
@@ -1147,13 +1143,13 @@ ThreadError otPlatRadioTransmit(otInstance *aInstance, RadioPacket *aPacket, voi
     		} while(ret == 0xFF && (count++ < 10));
 
     		if(ret == MAC_SUCCESS){
-    			otPlatRadioTransmitDone(OT_INSTANCE, aPacket, true, error, transmitContext);
+    			otPlatRadioTransmitDone(aInstance, aPacket, true, error, transmitContext);
     		}
     		else if(ret == MAC_NO_DATA){
-    			otPlatRadioTransmitDone(OT_INSTANCE, aPacket, false, error, transmitContext);
+    			otPlatRadioTransmitDone(aInstance, aPacket, false, error, transmitContext);
     		}
     		else{
-    			otPlatRadioTransmitDone(OT_INSTANCE, aPacket, false, kThreadError_NoAck, transmitContext);
+    			otPlatRadioTransmitDone(aInstance, aPacket, false, kThreadError_NoAck, transmitContext);
     		}
     	}
     	else{
@@ -1339,23 +1335,23 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
 	 * This Function processes the MCPS_DATA_CONFIRM and passes the success or error
 	 * to openthread as appropriate.
 	 */
-
-	if(!otIp6IsEnabled(OT_INSTANCE)) return 1;
+	RadioPacket * sentFrame = intransit_getFrame(params->MsduHandle);
+	otInstance *aInstance = sentFrame->mTransmitInstance;
+	if(aInstance == NULL || !otIp6IsEnabled(aInstance)) return 1;
 	otPlatLog(kLogLevelDebg, kLogRegionHardMac, "Data confirm received!");
 
 	barrier_worker_waitForMain();
 
-	RadioPacket * sentFrame = intransit_getFrame(params->MsduHandle);
 	assert(sentFrame != NULL);
 
 	if(sKekInUse && params->MsduHandle == sKekMessageHandle){
 		sKekMessageHandle = 0;
-		otPlatRadioDisableKek(OT_INSTANCE);
+		otPlatRadioDisableKek(aInstance);
 		putFinalKey();
 	}
 
     if(params->Status == MAC_SUCCESS){
-    	otPlatRadioTransmitDone(OT_INSTANCE, sentFrame, false, sTransmitError, sentFrame->mTransmitContext);
+    	otPlatRadioTransmitDone(aInstance, sentFrame, false, sTransmitError, sentFrame->mTransmitContext);
     	sState = kStateReceive;
     	sTransmitError = kThreadError_None;
     }
@@ -1366,7 +1362,7 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
     	else if(params->Status == MAC_TRANSACTION_EXPIRED) sTransmitError = kThreadError_NoAck;
     	else sTransmitError = kThreadError_Abort;
     	otPlatLog(kLogLevelWarn, kLogRegionHardMac, "MCPS_DATA_confirm error: %#x \r\n", params->Status);
-    	otPlatRadioTransmitDone(OT_INSTANCE, sentFrame, false, sTransmitError, sentFrame->mTransmitContext);
+    	otPlatRadioTransmitDone(aInstance, sentFrame, false, sTransmitError, sentFrame->mTransmitContext);
     	sState = kStateReceive;
     	sTransmitError = kThreadError_None;
     }
