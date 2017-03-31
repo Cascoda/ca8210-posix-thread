@@ -72,8 +72,6 @@ enum
     IEEE802154_DSN_OFFSET = 2,
 };
 
-int PlatformRadioSignal(void);
-
 otInstance * OT_INSTANCE;
 
 //CASCODA API CALLBACKS
@@ -169,16 +167,10 @@ static pthread_mutex_t intransit_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 //FRAME DATA
 static RadioPacket sTransmitFrame;
-static RadioPacket sReceiveFrame;
 static ThreadError sTransmitError;
-static ThreadError sReceiveError = kThreadError_None;
-
 static uint8_t sTransmitPsdu[IEEE802154_MAX_LENGTH];
-static uint8_t sReceivePsdu[IEEE802154_MAX_LENGTH];
-
-pthread_mutex_t receiveFrame_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t receiveFrame_cond = PTHREAD_COND_INITIALIZER;
 //END FRAME DATA
+
 
 //SCAN DATA
 static otHandleActiveScanResult sActiveScanCallback;
@@ -503,12 +495,6 @@ void PlatformRadioInit(void)
     sTransmitFrame.mPsdu = sTransmitPsdu;
     
     atexit(&PlatformRadioStop);
-
-    pthread_mutex_lock(&receiveFrame_mutex);
-		sReceiveFrame.mLength = 0;
-		sReceiveFrame.mPsdu = sReceivePsdu;
-		pthread_cond_broadcast(&receiveFrame_cond);
-	pthread_mutex_unlock(&receiveFrame_mutex);
     
 	selfpipe_init();
 
@@ -1204,6 +1190,9 @@ void otPlatRadioSetPromiscuous(otInstance *aInstance, bool aEnable)
 
 static int handleDataIndication(struct MCPS_DATA_indication_pset *params)   //Async
 {
+	static RadioPacket sReceiveFrame;
+	static uint8_t sReceivePsdu[IEEE802154_MAX_LENGTH];
+	static ThreadError sReceiveError = kThreadError_None;
 
 	/*
 	 * This Function converts the MAC primitive provided by the ca8210 into a PHY frame
@@ -1214,9 +1203,8 @@ static int handleDataIndication(struct MCPS_DATA_indication_pset *params)   //As
 
 	if(!otIp6IsEnabled(OT_INSTANCE)) return 1;
 
-    pthread_mutex_lock(&receiveFrame_mutex);
-	//wait until the main thread is free to process the frame
-	while(sReceiveFrame.mLength != 0) {pthread_cond_wait(&receiveFrame_cond, &receiveFrame_mutex);}
+	sReceiveFrame.mLength = 0;
+	sReceiveFrame.mPsdu = sReceivePsdu;
 
 	uint8_t headerLength = 0;
 	uint8_t footerLength = 0;
@@ -1316,14 +1304,12 @@ static int handleDataIndication(struct MCPS_DATA_indication_pset *params)   //As
 	sReceiveFrame.mPower = (params->MpduLinkQuality - 256)/2;	//Formula from CA-821X API
 	noiseFloor = sReceiveFrame.mPower;
 
-    pthread_mutex_unlock(&receiveFrame_mutex);
-
     barrier_worker_waitForMain();
 	sState = kStateReceive;
 	otPlatRadioReceiveDone(OT_INSTANCE, &sReceiveFrame, sReceiveError);
 	barrier_worker_endWork();
 
-    PlatformRadioSignal();
+	sReceiveFrame.mLength = 0;
 
     return 0;
 }
@@ -1370,8 +1356,6 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
     barrier_worker_endWork();
 
     intransit_rmFrame(params->MsduHandle);
-
-    PlatformRadioSignal();
 
     return 0;
 }
@@ -1484,16 +1468,6 @@ static int handleGenericDispatchFrame(const uint8_t *buf, size_t len) { //Async
 	}
 	fprintf(stderr, "\n\r");
 	return 0;
-}
-
-int PlatformRadioSignal(void)
-{
-	pthread_mutex_lock(&receiveFrame_mutex);
-    sReceiveFrame.mLength = 0;
-    pthread_cond_broadcast(&receiveFrame_cond);
-    pthread_mutex_unlock(&receiveFrame_mutex);
-
-    return 0;
 }
 
 int PlatformRadioProcess(void){
