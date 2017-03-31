@@ -810,7 +810,7 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance){
 			}
 			if(!isValid) continue;
 
-			putDeviceDescriptor(tChildInfo.mRloc16, tChildInfo.mExtAddress.m8, count++);
+			putDeviceDescriptor(aInstance, tChildInfo.mRloc16, tChildInfo.mExtAddress.m8, count++);
 
 		}
 
@@ -908,7 +908,7 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance){
 
 	//Mode2/KEK
 	storeCount++;
-	putFinalKey();
+	putFinalKey(aInstance);
 
 	MLME_SET_request_sync(
 		macKeyTableEntries,
@@ -1091,7 +1091,7 @@ ThreadError otPlatRadioTransmit(otInstance *aInstance, RadioPacket *aPacket, voi
     		//This should be using the KeK
     		sKekMessageHandle = handle;
 			otPlatRadioSetKekCounterpart(aInstance, curPacket.Dst.Address);
-			putFinalKey();
+			putFinalKey(aInstance);
 		}
 
     	if(curSecSpec.KeyIdMode != 0x00)curSecSpec.KeyIndex = aPacket->mPsdu[ASHloc++];
@@ -1347,7 +1347,7 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
 	if(sKekInUse && params->MsduHandle == sKekMessageHandle){
 		sKekMessageHandle = 0;
 		otPlatRadioDisableKek(aInstance);
-		putFinalKey();
+		putFinalKey(aInstance);
 	}
 
     if(params->Status == MAC_SUCCESS){
