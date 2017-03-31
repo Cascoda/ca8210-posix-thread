@@ -670,7 +670,7 @@ static void putFinalKey(otInstance *aInstance){
 
 	if(sKekInUse && !otPlatRadioIsJoining(aInstance)){//Joiner router - replace mode2 key for a few milliseconds to send
 		//TODO: Finish filling in the keyDescriptor
-		otThreadGetKek(aInstance, tKeyDescriptor.Fixed.Key);
+		otPlatRadioGetKek(aInstance, tKeyDescriptor.Fixed.Key);
 		tKeyDescriptor.Fixed.KeyIdLookupListEntries = 1;
 		tKeyDescriptor.Fixed.KeyUsageListEntries = 1;
 
@@ -721,7 +721,7 @@ static void putJoinerKek(otInstance *aInstance){
 		//struct M_KeyUsageDesc          KeyUsageList[2];
 	}tKeyDescriptor;
 
-	otThreadGetKek(aInstance, tKeyDescriptor.Fixed.Key);
+	otPlatRadioGetKek(aInstance, tKeyDescriptor.Fixed.Key);
 	tKeyDescriptor.Fixed.KeyIdLookupListEntries = 1;
 	tKeyDescriptor.Fixed.KeyUsageListEntries = 1;
 
@@ -772,7 +772,7 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance){
 	//Cache devices so the frame counters are correct
 	deviceCache_cacheDevices();
 	otPlatLog(kLogLevelInfo, kLogRegionHardMac, "Updating keys for flags: %x", aFlags);
-	uint32_t tKeySeq = otThreadGetKeySequenceCounter(aInstance) - 1;
+	uint32_t tKeySeq = otPlatRadioGetKeySequenceCounter(aInstance) - 1;
 
 	uint8_t count = 0;	//Update device list
 
@@ -873,7 +873,7 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance){
 
 	for(uint8_t i = 0; i < 3; i++){
 		if(i == 0 && sKekInUse && otPlatRadioIsJoining(aInstance)) continue; //If joining, replace the first key (useless anyway) with the KEK
-		memcpy(tKeyDescriptor.Fixed.Key, otThreadGetMacKeyFromSequenceCounter(aInstance, tKeySeq + i), 16);
+		memcpy(tKeyDescriptor.Fixed.Key, otPlatRadioGetMacKeyFromSequenceCounter(aInstance, tKeySeq + i), 16);
 		tKeyDescriptor.KeyIdLookupList[0].LookupData[0] = ((tKeySeq + i) & 0x7F) + 1;
 
 		MLME_SET_request_sync(
