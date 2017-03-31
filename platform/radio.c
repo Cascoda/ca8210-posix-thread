@@ -170,7 +170,6 @@ static ThreadError sTransmitError;
 static uint8_t sTransmitPsdu[IEEE802154_MAX_LENGTH];
 //END FRAME DATA
 
-
 //SCAN DATA
 static otHandleActiveScanResult sActiveScanCallback;
 static void * sActiveScanContext;
