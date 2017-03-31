@@ -820,14 +820,14 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance){
 		otThreadGetNeighborRouterInfo(aInstance, routers, &numRouters, maxRouters);
 
 		for(int i = 0; i < numRouters; i++){
-			putDeviceDescriptor(routers[i].mRloc16, routers[i].mExtAddress.m8, count++);
+			putDeviceDescriptor(aInstance, routers[i].mRloc16, routers[i].mExtAddress.m8, count++);
 		}
 
 	}
 	else{
 		otRouterInfo tParentInfo;
 		if(otThreadGetParentInfo(aInstance, &tParentInfo) == kThreadError_None){
-			putDeviceDescriptor(tParentInfo.mRloc16, tParentInfo.mExtAddress.m8, count++);
+			putDeviceDescriptor(aInstance, tParentInfo.mRloc16, tParentInfo.mExtAddress.m8, count++);
 		}
 		else{
 			otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Error retrieving parent!\n\r");
@@ -838,7 +838,7 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance){
 
 	if(sKekInUse && otPlatRadioIsJoining(aInstance)){
 		sKekDeviceIndex = count;
-		putDeviceDescriptor(0xFFFF, sKekCounterpart, count++);
+		putDeviceDescriptor(aInstance, 0xFFFF, sKekCounterpart, count++);
 	}
 
 	sMode2DeviceIndex = count++;
