@@ -152,7 +152,7 @@ static inline void barrier_worker_endWork(void);		//Used by worker thread to end
  * The following functions exist to create a queue for in-transit data packets. The complete frames are not
  * stored, only the header information required to process the completion of the transmission. This is because
  * it is not guaranteed for these frames to transmit in order, and the destination address is required for
- *  post-transmission processing.
+ *  post-transmission processing. Access to this system must be protected by the barrier.
  */
 static RadioPacket * intransit_getFrame(uint8_t handle);	//Return pointer to the relevant packet, or NULL
 static int intransit_rmFrame(uint8_t handle);	//Release dynamically allocated memory -- returns 0 for success, or an error code
@@ -162,7 +162,6 @@ static int intransit_isHandleInUse(uint8_t handle); //returns 0 if the handle is
 #define MAX_INTRANSITS 7 /*TODO:  5 indirect frames +2 (perhaps need more?)*/
 uint8_t IntransitHandles[MAX_INTRANSITS] = {0};
 RadioPacket IntransitPackets[MAX_INTRANSITS];
-static pthread_mutex_t intransit_mutex = PTHREAD_MUTEX_INITIALIZER;
 //END INTRANSIT
 
 //FRAME DATA
@@ -1321,12 +1320,17 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
 	 * This Function processes the MCPS_DATA_CONFIRM and passes the success or error
 	 * to openthread as appropriate.
 	 */
+	barrier_worker_waitForMain();
+
 	RadioPacket * sentFrame = intransit_getFrame(params->MsduHandle);
 	otInstance *aInstance = sentFrame->mTransmitInstance;
-	if(aInstance == NULL || !otIp6IsEnabled(aInstance)) return 1;
-	otPlatLog(kLogLevelDebg, kLogRegionHardMac, "Data confirm received!");
 
-	barrier_worker_waitForMain();
+	if(aInstance == NULL || !otIp6IsEnabled(aInstance)){
+		barrier_worker_endWork();
+		return 1;
+	}
+
+	otPlatLog(kLogLevelDebg, kLogRegionHardMac, "Data confirm received!");
 
 	assert(sentFrame != NULL);
 
@@ -1338,8 +1342,6 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
 
     if(params->Status == MAC_SUCCESS){
     	otPlatRadioTransmitDone(aInstance, sentFrame, false, sTransmitError, sentFrame->mTransmitContext);
-    	sState = kStateReceive;
-    	sTransmitError = kThreadError_None;
     }
     else{
     	//TODO: handling MAC_TRANSACTION_OVERFLOW in this way isn't strictly correct, but does cause a retry at a higher level
@@ -1349,14 +1351,14 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
     	else sTransmitError = kThreadError_Abort;
     	otPlatLog(kLogLevelWarn, kLogRegionHardMac, "MCPS_DATA_confirm error: %#x \r\n", params->Status);
     	otPlatRadioTransmitDone(aInstance, sentFrame, false, sTransmitError, sentFrame->mTransmitContext);
-    	sState = kStateReceive;
-    	sTransmitError = kThreadError_None;
     }
 
-    barrier_worker_endWork();
+    sState = kStateReceive;
+	sTransmitError = kThreadError_None;
 
     intransit_rmFrame(params->MsduHandle);
 
+    barrier_worker_endWork();
     return 0;
 }
 
@@ -1559,14 +1561,11 @@ uint8_t otPlatRadioIsDeviceActive(otInstance *aInstance, otExtAddress addr){
 }
 
 static int intransit_isHandleInUse(uint8_t handle){
-	pthread_mutex_lock(&intransit_mutex);
 	for(int i = 0; i < MAX_INTRANSITS; i++){
 		if(IntransitHandles[i] == handle){
-			pthread_mutex_unlock(&intransit_mutex);
 			return 1;	//Handle is in use
 		}
 	}
-	pthread_mutex_unlock(&intransit_mutex);
 	return 0;
 }
 
@@ -1574,7 +1573,6 @@ static int intransit_putFrame(uint8_t handle, const RadioPacket * in){
 	int i = 0;
 	uint8_t found = 0;
 
-	pthread_mutex_lock(&intransit_mutex);
 	while(!found){
 		if(i >= MAX_INTRANSITS) return -1;	//No space for intransit frame storage! This should be impossible -> probably increase array size!
 
@@ -1587,15 +1585,11 @@ static int intransit_putFrame(uint8_t handle, const RadioPacket * in){
 	//TODO: Only store what is needed
 	memcpy(&IntransitPackets[i], in, sizeof(RadioPacket));
 
-	pthread_mutex_unlock(&intransit_mutex);
-
 	return 0;
 }
 
 static int intransit_rmFrame(uint8_t handle){
 	uint8_t found = 0;
-
-	pthread_mutex_lock(&intransit_mutex);
 
 	for(int i = 0; i < MAX_INTRANSITS; i++){
 		if(IntransitHandles[i] == handle){
@@ -1605,22 +1599,18 @@ static int intransit_rmFrame(uint8_t handle){
 		}
 	}
 
-	pthread_mutex_unlock(&intransit_mutex);
-
 	return !found;	//0 if successfully removed
 }
 
 static RadioPacket * intransit_getFrame(uint8_t handle){
-	pthread_mutex_lock(&intransit_mutex);
-
+	RadioPacket * rval = NULL;
 	for(int i = 0; i < MAX_INTRANSITS; i++){
 		if(IntransitHandles[i] == handle){
-			pthread_mutex_unlock(&intransit_mutex);
-			return &IntransitPackets[i];
+			rval = &IntransitPackets[i];
+			break;
 		}
 	}
-	pthread_mutex_unlock(&intransit_mutex);
-	return NULL;
+	return rval;
 }
 
 //Lets the worker thread work synchronously if there is synchronous work to do
