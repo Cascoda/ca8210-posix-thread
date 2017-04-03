@@ -2,7 +2,6 @@ TARGET = cliapp
 LIBDIRS = ../openthread/src/cli/ ../ ../openthread/third_party/mbedtls/
 LIBSEARCH := $(addprefix -L,$(LIBDIRS))
 LIBS = -lm -lopenthread-cli -lotposixca8210-ftd -lstdc++ -lpthread
-CC = gcc
 INCLUDEDIRS := ./\
 	../openthread/include/\
 	../openthread/include/openthread/\
