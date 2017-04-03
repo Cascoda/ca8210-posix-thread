@@ -61,17 +61,19 @@ uint32_t otPlatAlarmGetNow(void)
         tv.tv_usec += 1000000;
     }
 
-    return (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
+    return (uint32_t)((tv.tv_sec * 1000) + (tv.tv_usec / 1000));
 }
 
 void otPlatAlarmStartAt(otInstance *aInstance, uint32_t t0, uint32_t dt)
 {
+	(void)aInstance;
     s_alarm = t0 + dt;
     s_is_running = true;
 }
 
 void otPlatAlarmStop(otInstance *aInstance)
 {
+	(void)aInstance;
     s_is_running = false;
 }
 
@@ -86,7 +88,7 @@ void posixPlatformAlarmUpdateTimeout(struct timeval *aTimeout)
 
     if (s_is_running)
     {
-        remaining = s_alarm - otPlatAlarmGetNow();
+    	remaining = (int32_t)(s_alarm - otPlatAlarmGetNow());
 
         if (remaining > 0)
         {
@@ -106,18 +108,18 @@ void posixPlatformAlarmUpdateTimeout(struct timeval *aTimeout)
     }
 }
 
-void posixPlatformAlarmProcess(void)
+void posixPlatformAlarmProcess(otInstance *aInstance)
 {
     int32_t remaining;
 
     if (s_is_running)
     {
-        remaining = s_alarm - otPlatAlarmGetNow();
+    	remaining = (int32_t)(s_alarm - otPlatAlarmGetNow());
 
         if (remaining <= 0)
         {
             s_is_running = false;
-            otPlatAlarmFired(OT_INSTANCE);
+            otPlatAlarmFired(aInstance);
         }
     }
 }

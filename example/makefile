@@ -1,10 +1,10 @@
 TARGET = cliapp
 LIBDIRS = ../openthread/src/cli/ ../ ../openthread/third_party/mbedtls/
 LIBSEARCH := $(addprefix -L,$(LIBDIRS))
-LIBS = -lm -lotposixca8210 -lopenthread-cli -lstdc++ -lpthread
+LIBS = -lm -lopenthread-cli -lotposixca8210-ftd -lstdc++ -lpthread
 INCLUDEDIRS := ./\
-	../openthread/include/cli/\
 	../openthread/include/\
+	../openthread/include/openthread/\
 	../openthread/src/core/\
 	./include/\
 	../platform/\

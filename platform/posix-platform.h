@@ -38,7 +38,7 @@
 #include <stdint.h>
 #include <sys/select.h>
 #include <sys/time.h>
-#include <openthread-types.h>
+#include <types.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -57,12 +57,6 @@ extern uint32_t NODE_ID;
 extern uint32_t WELLKNOWN_NODE_ID;
 
 /**
- * Instance reference for the openthread API
- *
- */
-extern otInstance * OT_INSTANCE;
-
-/**
  * This method performs all platform-specific initialization.
  *
  */
@@ -72,7 +66,7 @@ void posixPlatformInit(void);
  * This method performs all platform-specific processing.
  *
  */
-void posixPlatformProcessDrivers(void);
+void posixPlatformProcessDrivers(otInstance *aInstance);
 
 /**
  * This method initializes the alarm service used by OpenThread.
@@ -92,7 +86,7 @@ void posixPlatformAlarmUpdateTimeout(struct timeval *tv);
  * This method performs alarm driver processing.
  *
  */
-void posixPlatformAlarmProcess(void);
+void posixPlatformAlarmProcess(otInstance *aInstance);
 
 /**
  * This method initializes the radio service used by OpenThread.
@@ -120,13 +114,13 @@ void posixPlatformRandomInit(void);
  * @param[inout]  aMaxFd       A pointer to the max file descriptor.
  *
  */
-void posixPlatformUartUpdateFdSet(fd_set *aReadFdSet, fd_set *aWriteFdSet, int *aMaxFd);
+void platformUartUpdateFdSet(fd_set *aReadFdSet, fd_set *aWriteFdSet, int *aMaxFd);
 
 /**
  * This method performs radio driver processing.
  *
  */
-void posixPlatformUartProcess(void);
+void platformUartProcess(void);
 
 #ifdef __cplusplus
 }  // extern "C"

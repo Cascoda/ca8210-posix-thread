@@ -60,3 +60,19 @@ And finally, build everything
 ```bash
 ./build_nuc970.sh
 ```
+
+##Using wpantund to enable as linux network interface
+
+On a posix system, a thread node can act as a linux network interface using the wpantund tool available from https://github.com/openthread/wpantund/
+
+In order to install, follow the guide here (use the latest master commit, not full/latest-release): https://github.com/openthread/wpantund/blob/master/INSTALL.md#wpantund-installation-guide
+
+then start wpantund using a command of the form:
+```bash
+sudo /usr/local/sbin/wpantund -o Config:NCP:SocketPath "system:/home/pi/ca8210-posix-thread/example/ncpapp" -o SyslogMask " -info" -o Config:TUN:InterfaceName utun6
+```
+
+where /home/pi/ca8210-posix-thread/example/ncpapp is a path to a thread application using the ncp library (call otNcpInit and include the NCP library in the application - example in the ncp branch of this repo)
+
+Then follow a similar process as used in this tutorial to start the control panel and connect: https://github.com/openthread/wpantund/wiki/OpenThread-Simulator-Tutorial
+
