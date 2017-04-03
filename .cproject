@@ -22,7 +22,7 @@
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.targetPlatform.gnu.cross.12438593" isAbstract="false" osList="all" superClass="cdt.managedbuild.targetPlatform.gnu.cross"/>
 							<builder id="cdt.managedbuild.builder.gnu.cross.1221602121" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.builder.gnu.cross"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.compiler.1883314443" name="Cross GCC Compiler" superClass="cdt.managedbuild.tool.gnu.cross.c.compiler">
-								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1560620727" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
+								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1560620727" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_JOINER=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_COMMISSIONER=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_DHCP6_SERVER=1"/>
@@ -32,7 +32,7 @@
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.207805673" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.compiler.373553390" name="Cross G++ Compiler" superClass="cdt.managedbuild.tool.gnu.cross.cpp.compiler">
-								<option id="gnu.cpp.compiler.option.preprocessor.def.1069507331" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
+								<option id="gnu.cpp.compiler.option.preprocessor.def.1069507331" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_JOINER=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_COMMISSIONER=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_DTLS=1"/>
@@ -54,6 +54,27 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
+					<folderInfo id="cdt.managedbuild.toolchain.gnu.cross.base.1778921236.370790971" name="/" resourcePath="openthread">
+						<toolChain id="cdt.managedbuild.toolchain.gnu.cross.base.1430814515" name="Cross GCC" superClass="cdt.managedbuild.toolchain.gnu.cross.base" unusedChildren="">
+							<option id="cdt.managedbuild.option.gnu.cross.prefix.2112352211.1821118338" name="Prefix" superClass="cdt.managedbuild.option.gnu.cross.prefix.2112352211"/>
+							<option id="cdt.managedbuild.option.gnu.cross.path.1103464589.1669390968" name="Path" superClass="cdt.managedbuild.option.gnu.cross.path.1103464589"/>
+							<tool id="cdt.managedbuild.tool.gnu.cross.c.compiler.1710485035" name="Cross GCC Compiler" superClass="cdt.managedbuild.tool.gnu.cross.c.compiler.1883314443">
+								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.796274562" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.compiler.143067271" name="Cross G++ Compiler" superClass="cdt.managedbuild.tool.gnu.cross.cpp.compiler.373553390">
+								<option id="gnu.cpp.compiler.option.include.paths.938857284" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cascoda-thread/openthread/include/openthread}&quot;"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.910928413" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.378291210" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker.971108878"/>
+							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.498511398" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker.1215703440"/>
+							<tool id="cdt.managedbuild.tool.gnu.cross.archiver.2029732900" name="Cross GCC Archiver" superClass="cdt.managedbuild.tool.gnu.cross.archiver.1742970248"/>
+							<tool id="cdt.managedbuild.tool.gnu.cross.assembler.421483266" name="Cross GCC Assembler" superClass="cdt.managedbuild.tool.gnu.cross.assembler.1741410554">
+								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1204454928" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+							</tool>
+						</toolChain>
+					</folderInfo>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
@@ -63,7 +84,11 @@
 		<project id="cascoda-thread.null.95623627" name="cascoda-thread"/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
-	<storageModule moduleId="refreshScope"/>
+	<storageModule moduleId="refreshScope" versionNumber="2">
+		<configuration configurationName="Default">
+			<resource resourceType="PROJECT" workspacePath="/cascoda-thread"/>
+		</configuration>
+	</storageModule>
 	<storageModule moduleId="scannerConfiguration">
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.cross.base.1778921236;cdt.managedbuild.toolchain.gnu.cross.base.1778921236.1182208912;cdt.managedbuild.tool.gnu.cross.cpp.compiler.373553390;cdt.managedbuild.tool.gnu.cpp.compiler.input.1448218497">
