@@ -152,13 +152,13 @@ ThreadError otPlatUartEnable(void)
         VerifyOrExit(tcsetattr(s_out_fd, TCSANOW, &termios) == 0, perror("tcsetattr"); error = kThreadError_Error);
     }
 
-    if(error = kThreadError_None) s_enabled = true;
+    if(error == kThreadError_None) s_enabled = true;
     return error;
 
 exit:
     close(s_in_fd);
     close(s_out_fd);
-    if(error = kThreadError_None) s_enabled = true;
+    if(error == kThreadError_None) s_enabled = true;
     return error;
 }
 
