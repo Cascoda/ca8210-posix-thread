@@ -55,6 +55,8 @@ static uint16_t s_write_length;
 static int s_in_fd;
 static int s_out_fd;
 
+static uint8_t s_enabled = false;
+
 static struct termios original_stdin_termios;
 static struct termios original_stdout_termios;
 
@@ -72,6 +74,10 @@ ThreadError otPlatUartEnable(void)
 {
     ThreadError error = kThreadError_None;
     struct termios termios;
+
+    if(s_enabled){
+    	return kThreadError_Already;
+    }
 
 #ifdef OPENTHREAD_TARGET_LINUX
     // Ensure we terminate this process if the
@@ -146,11 +152,13 @@ ThreadError otPlatUartEnable(void)
         VerifyOrExit(tcsetattr(s_out_fd, TCSANOW, &termios) == 0, perror("tcsetattr"); error = kThreadError_Error);
     }
 
+    if(error = kThreadError_None) s_enabled = true;
     return error;
 
 exit:
     close(s_in_fd);
     close(s_out_fd);
+    if(error = kThreadError_None) s_enabled = true;
     return error;
 }
 
@@ -161,6 +169,7 @@ ThreadError otPlatUartDisable(void)
     close(s_in_fd);
     close(s_out_fd);
 
+    s_enabled = false;
     return error;
 }
 
