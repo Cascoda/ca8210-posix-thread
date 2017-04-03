@@ -36,9 +36,10 @@
 
 #include <platform/random.h>
 #include <posix-platform.h>
-#include <cascoda_api.h>
+#include <ca821x_api.h>
 #include <hwme_tdme.h>
 #include <assert.h>
+#include <common/code_utils.hpp>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -92,4 +93,26 @@ uint32_t otPlatRandomGet(void)
 
     return randomBytes.rand32i;
 
+}
+
+ThreadError otPlatRandomSecureGet(uint16_t aInputLength, uint8_t *aOutput, uint16_t *aOutputLength)
+{
+    ThreadError error = kThreadError_None;
+
+    VerifyOrExit(aOutput && aOutputLength, error = kThreadError_InvalidArgs);
+
+    int fd = open("/dev/urandom", O_RDONLY);
+	if (fd != -1)
+	{
+		(void) read(fd, (void *)aOutput, aInputLength);
+		(void) close(fd);
+	}
+	else{
+		assert(0); //All attempts at randomness have failed
+	}
+
+    *aOutputLength = aInputLength;
+
+exit:
+    return error;
 }

@@ -136,6 +136,11 @@ void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat
 
     case kLogRegionHardMac:
     	LOG_PRINTF("HMAC ");
+    	break;
+
+    case kLogRegionPlatform:
+		LOG_PRINTF("PLAT ");
+		break;
 
     }
 

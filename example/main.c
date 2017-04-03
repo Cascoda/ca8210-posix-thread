@@ -31,10 +31,12 @@
 #include <stdio.h>
 
 #include <openthread.h>
-#include <cli/cli-uart.h>
+#include <cli.h>
 #include <posix-platform.h>
 
-#include <openthread-tasklet.h>
+#include <tasklet.h>
+
+static otInstance * OT_INSTANCE;
 
 void otSignalTaskletPending(otInstance *aInstance)
 {
@@ -50,10 +52,21 @@ int main(int argc, char *argv[])
     OT_INSTANCE = otInstanceInit();
     otCliUartInit(OT_INSTANCE);
 
+    /* Test harness specific config */
+#ifdef TESTHARNESS
+    otSetNetworkName(OT_INSTANCE, "GRL");
+    otLinkSetPanId(OT_INSTANCE, 0xface);
+    uint8_t extPanId[] = {0x00, 0x0d, 0xb8, 0x00, 0x00, 0x00, 0x00, 0x00};
+    otSetExtendedPanId(OT_INSTANCE, extPanId);
+    otSetChannel(OT_INSTANCE, 20);
+#else
+    otLinkSetPanId(OT_INSTANCE, 0x1234); //Convenience
+#endif
+
     while (1)
     {
-    	otProcessQueuedTasklets(OT_INSTANCE);
-        posixPlatformProcessDrivers();
+    	otTaskletsProcess(OT_INSTANCE);
+        posixPlatformProcessDrivers(OT_INSTANCE);
     }
 
     return 0;
