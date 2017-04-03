@@ -772,7 +772,7 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance){
 	//Cache devices so the frame counters are correct
 	deviceCache_cacheDevices();
 	otPlatLog(kLogLevelInfo, kLogRegionHardMac, "Updating keys for flags: %x", aFlags);
-	uint32_t tKeySeq = otPlatRadioGetKeySequenceCounter(aInstance) - 1;
+	uint32_t tKeySeq = otThreadGetKeySequenceCounter(aInstance) - 1;
 
 	uint8_t count = 0;	//Update device list
 
