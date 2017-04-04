@@ -72,7 +72,7 @@ enum
     IEEE802154_DSN_OFFSET = 2,
 };
 
-otInstance * OT_INSTANCE;
+static otInstance * OT_INSTANCE;
 
 //CASCODA API CALLBACKS
 static int handleDataIndication(struct MCPS_DATA_indication_pset *params);
@@ -669,7 +669,6 @@ static void putFinalKey(otInstance *aInstance){
 	}tKeyDescriptor;
 
 	if(sKekInUse && !otPlatRadioIsJoining(aInstance)){//Joiner router - replace mode2 key for a few milliseconds to send
-		//TODO: Finish filling in the keyDescriptor
 		otPlatRadioGetKek(aInstance, tKeyDescriptor.Fixed.Key);
 		tKeyDescriptor.Fixed.KeyIdLookupListEntries = 1;
 		tKeyDescriptor.Fixed.KeyUsageListEntries = 1;
