@@ -783,16 +783,6 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance){
 				continue;
 			}
 
-			//Do not register invalid devices
-			uint8_t isValid = 0;
-			for(int j = 0; j < 8; j++){
-				if(tChildInfo.mExtAddress.m8[j] != 0){
-					isValid = 1;
-					break;
-				}
-			}
-			if(!isValid) continue;
-
 			putDeviceDescriptor(aInstance, tChildInfo.mRloc16, tChildInfo.mExtAddress.m8, count++);
 
 		}
