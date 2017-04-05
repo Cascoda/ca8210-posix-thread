@@ -69,6 +69,12 @@ void posixPlatformInit(void);
 void posixPlatformProcessDrivers(otInstance *aInstance);
 
 /**
+ * This method sleeps until there is further work to do (allowing the application to access the openthread API)
+ *
+ */
+void posixPlatformSleep(otInstance *aInstance);
+
+/**
  * This method initializes the alarm service used by OpenThread.
  *
  */

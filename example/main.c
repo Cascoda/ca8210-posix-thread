@@ -38,11 +38,6 @@
 
 static otInstance * OT_INSTANCE;
 
-void otSignalTaskletPending(otInstance *aInstance)
-{
-	(void)aInstance;
-}
-
 int main(int argc, char *argv[])
 {
 
@@ -67,6 +62,7 @@ int main(int argc, char *argv[])
     {
     	otTaskletsProcess(OT_INSTANCE);
         posixPlatformProcessDrivers(OT_INSTANCE);
+        posixPlatformSleep(OT_INSTANCE);
     }
 
     return 0;
