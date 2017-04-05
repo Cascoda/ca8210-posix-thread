@@ -76,7 +76,7 @@ void posixPlatformSleep(otInstance *aInstance){
     }
 }
 
-void posixPlatformProcessDrivers(otInstance *aInstance)
+void posixPlatformProcessDriversQuick(otInstance *aInstance)
 {
     platformUartProcess();
     PlatformRadioProcess();
@@ -88,5 +88,10 @@ void posixPlatformProcessDrivers(otInstance *aInstance)
 	platformUartUpdateFdSet(&read_fds, &write_fds, &max_fd);
 	selfpipe_UpdateFdSet(&read_fds, &write_fds, &max_fd);
 	posixPlatformAlarmUpdateTimeout(&timeout);
+}
+
+void posixPlatformProcessDrivers(otInstance *aInstance){
+	posixPlatformProcessDriversQuick(aInstance);
+	posixPlatformSleep(aInstance);
 }
 

@@ -69,7 +69,14 @@ void posixPlatformInit(void);
 void posixPlatformProcessDrivers(otInstance *aInstance);
 
 /**
+ * This method performs all platform-specific processing without sleeping at the end.
+ * Should be used in conjunction with posixPlatformSleep.
+ */
+void posixPlatformProcessDriversQuick(otInstance *aInstance);
+
+/**
  * This method sleeps until there is further work to do (allowing the application to access the openthread API)
+ * -Must run immediately after posixPlatformProcessDriversQuick!
  *
  */
 void posixPlatformSleep(otInstance *aInstance);

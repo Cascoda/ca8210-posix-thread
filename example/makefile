@@ -18,7 +18,10 @@ CFLAGS := $(INCLUDEDIRCMD) -g -Wall -pthread
 default: $(TARGET)
 all: default
 
-OBJECTS = $(patsubst %.c, %.o, $(wildcard *.c))
+mt:mainMultithreaded.c
+	$(CC) $(OBJECTS) -Wall $(LIBSEARCH) $(LIBS) -o $@
+	
+OBJECTS = main.c
 HEADERS := $(foreach DIR,$(INCLUDEDIRS),$(notdir $(wildcard $(DIR)*.h)))
 
 %.o: %.c $(HEADERS)

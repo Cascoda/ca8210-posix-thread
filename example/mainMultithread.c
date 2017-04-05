@@ -35,6 +35,24 @@
 #include <posix-platform.h>
 
 #include <tasklet.h>
+#include <pthread.h>
+
+static pthread_t work_thread;
+
+//ot_mutex must be held when calling any openthread API functions
+//Callbacks from openthread (eg Activescan/Udp handler) do not need to do this
+//as the ot_mutex is already held for them
+static pthread_mutex_t ot_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static void otWorker(otInstance * aInstance){
+	while(1){
+		pthread_mutex_lock(&ot_mutex);
+		otTaskletsProcess(aInstance);
+		posixPlatformProcessDriversQuick(aInstance);
+		pthread_mutex_unlock(&ot_mutex);
+		posixPlatformSleep(aInstance); //Must run immediately after posixPlatformProcessDriversQuick
+	}
+}
 
 int main(int argc, char *argv[])
 {
@@ -55,10 +73,29 @@ int main(int argc, char *argv[])
     otLinkSetPanId(OT_INSTANCE, 0x1234); //Convenience
 #endif
 
+	pthread_create(&work_thread, NULL, otWorker, OT_INSTANCE);
+	//Be sure to aquire the ot_mutex before using openthread API functions from now on
+
+	//Example that swaps between being a router and a rx-on-when-idle child every 30 seconds
+	//Purely for example purposes!
+
+	pthread_mutex_lock(&ot_mutex);
+	otThreadSetRouterRoleEnabled(OT_INSTANCE, false);
+	pthread_mutex_unlock(&ot_mutex);
+
 	while(1){
-		otTaskletsProcess(OT_INSTANCE);
-		posixPlatformProcessDrivers(OT_INSTANCE);
+		sleep(30); //30 seconds
+		pthread_mutex_lock(&ot_mutex);
+		otThreadSetRouterRoleEnabled(OT_INSTANCE, false);
+		pthread_mutex_unlock(&ot_mutex);
+
+		sleep(30); //30 seconds
+		pthread_mutex_lock(&ot_mutex);
+		otThreadSetRouterRoleEnabled(OT_INSTANCE, true);
+		otThreadBecomeRouter(OT_INSTANCE);
+		pthread_mutex_unlock(&ot_mutex);
 	}
+
 
     return 0;
 }
