@@ -44,13 +44,21 @@ static pthread_t work_thread;
 //as the ot_mutex is already held for them
 static pthread_mutex_t ot_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+/*
+ * otWorker runs the openthread stack, which is protected by the
+ * ot_mutex. The sleep function is used while the stack is idle,
+ * which allows application code to access the stack.
+ */
 static void otWorker(otInstance * aInstance){
+	struct timeval timeout;
 	while(1){
 		pthread_mutex_lock(&ot_mutex);
-		otTaskletsProcess(aInstance);
-		posixPlatformProcessDriversQuick(aInstance);
+			otTaskletsProcess(aInstance);
+			posixPlatformProcessDriversQuick(aInstance);
+			posixPlatformGetTimeout(aInstance, &timeout);
 		pthread_mutex_unlock(&ot_mutex);
-		posixPlatformSleep(aInstance); //Must run immediately after posixPlatformProcessDriversQuick
+
+		posixPlatformSleep(aInstance, &timeout); //Must run immediately after posixPlatformProcessGetTimeout
 	}
 }
 
@@ -80,19 +88,19 @@ int main(int argc, char *argv[])
 	//Purely for example purposes!
 
 	pthread_mutex_lock(&ot_mutex);
-	otThreadSetRouterRoleEnabled(OT_INSTANCE, false);
+		otThreadSetRouterRoleEnabled(OT_INSTANCE, false);
 	pthread_mutex_unlock(&ot_mutex);
 
 	while(1){
 		sleep(30); //30 seconds
 		pthread_mutex_lock(&ot_mutex);
-		otThreadSetRouterRoleEnabled(OT_INSTANCE, false);
+			otThreadSetRouterRoleEnabled(OT_INSTANCE, false);
 		pthread_mutex_unlock(&ot_mutex);
 
 		sleep(30); //30 seconds
 		pthread_mutex_lock(&ot_mutex);
-		otThreadSetRouterRoleEnabled(OT_INSTANCE, true);
-		otThreadBecomeRouter(OT_INSTANCE);
+			otThreadSetRouterRoleEnabled(OT_INSTANCE, true);
+			otThreadBecomeRouter(OT_INSTANCE);
 		pthread_mutex_unlock(&ot_mutex);
 	}
 

@@ -58,7 +58,28 @@ int main(int argc, char *argv[])
 	while(1){
 		otTaskletsProcess(OT_INSTANCE);
 		posixPlatformProcessDrivers(OT_INSTANCE);
+		/* Simple application code */
 	}
+
+	/*
+	 * The above program loop is simplistic, and doesn't allow for much control over
+	 * the timing of the application code. Using the below model allows for more control.
+	 * (The timeout value can be decreased by application code after GetTimeout is called,
+	 *  but not increased)
+	 *
+	 *  There is a further example for multithreaded code in mainMultithreaded.c
+	 *
+	 * struct timeval timeout;
+	 * while(1){
+	 *     otTaskletsProcess(aInstance);
+	 *     posixPlatformProcessDriversQuick(aInstance);
+	 *
+	 *     //Application code here!
+	 *
+	 *     posixPlatformGetTimeout(aInstance, &timeout);
+	 *     posixPlatformSleep(aInstance, &timeout); //Must run very soon after posixPlatformProcessGetTimeout
+	 * }
+	 */
 
     return 0;
 }

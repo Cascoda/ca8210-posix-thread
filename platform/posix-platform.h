@@ -75,11 +75,15 @@ void posixPlatformProcessDrivers(otInstance *aInstance);
 void posixPlatformProcessDriversQuick(otInstance *aInstance);
 
 /**
- * This method sleeps until there is further work to do (allowing the application to access the openthread API)
- * -Must run immediately after posixPlatformProcessDriversQuick!
- *
+ * This method gets the timeout for the sleep function, and places it in the timeout struct.
  */
-void posixPlatformSleep(otInstance *aInstance);
+void posixPlatformGetTimeout(otInstance *aInstance, struct timeval *timeout);
+
+/**
+ * This method sleeps until there is further work to do (allowing the application to access the openthread API)
+ * -Must run immediately after posixPlatformGetTimeout!
+ */
+void posixPlatformSleep(otInstance *aInstance, struct timeval *timeout);
 
 /**
  * This method initializes the alarm service used by OpenThread.

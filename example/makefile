@@ -1,4 +1,5 @@
-TARGET = cliapp
+TARGET_MAIN = cliapp
+TARGET_MT = mtExample
 LIBDIRS = ../openthread/src/cli/ ../ ../openthread/third_party/mbedtls/
 LIBSEARCH := $(addprefix -L,$(LIBDIRS))
 LIBS = -lm -lopenthread-cli -lotposixca8210-ftd -lstdc++ -lpthread
@@ -15,20 +16,25 @@ CFLAGS := $(INCLUDEDIRCMD) -g -Wall -pthread
 
 .PHONY: default all clean
 
-default: $(TARGET)
+default: $(TARGET_MAIN) $(TARGET_MT)
 all: default
 
-OBJECTS = $(patsubst %.c, %.o, $(wildcard *.c))
+OBJECTS_MAIN = main.o
+OBJECTS_MT = mainMultithread.o
 HEADERS := $(foreach DIR,$(INCLUDEDIRS),$(notdir $(wildcard $(DIR)*.h)))
 
 %.o: %.c $(HEADERS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-.PRECIOUS: $(TARGET) $(OBJECTS)
+.PRECIOUS: $(TARGET_MAIN) $(TARGET_MT) $(OBJECTS_MAIN) $(OBJECTS_MT)
 
-$(TARGET): $(OBJECTS)
-	$(CC) $(OBJECTS) -Wall $(LIBSEARCH) $(LIBS) -o $@
+$(TARGET_MAIN): $(OBJECTS_MAIN)
+	$(CC) $(OBJECTS_MAIN) -Wall $(LIBSEARCH) $(LIBS) -o $@
+	
+$(TARGET_MT): $(OBJECTS_MT)
+	$(CC) $(OBJECTS_MT) -Wall $(LIBSEARCH) $(LIBS) -o $@
 
 clean:
 	-rm -f *.o
-	-rm -f $(TARGET)
+	-rm -f $(TARGET_MT)
+	-rm -f $(TARGET_MAIN)

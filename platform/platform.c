@@ -50,7 +50,6 @@ uint32_t WELLKNOWN_NODE_ID = 34;
 
 static fd_set read_fds;
 static fd_set write_fds;
-static struct timeval timeout;
 static int max_fd = -1;
 
 void posixPlatformInit(void)
@@ -65,7 +64,16 @@ void otTaskletsSignalPending(otInstance *aInstance){
 	selfpipe_push();
 }
 
-void posixPlatformSleep(otInstance *aInstance){
+void posixPlatformGetTimeout(otInstance *aInstance, struct timeval *timeout){
+	FD_ZERO(&read_fds);
+	FD_ZERO(&write_fds);
+
+	platformUartUpdateFdSet(&read_fds, &write_fds, &max_fd);
+	selfpipe_UpdateFdSet(&read_fds, &write_fds, &max_fd);
+	posixPlatformAlarmUpdateTimeout(&timeout);
+}
+
+void posixPlatformSleep(otInstance *aInstance, struct timeval *timeout){
     int rval;
 
     if (!otTaskletsArePending(aInstance))
@@ -81,17 +89,12 @@ void posixPlatformProcessDriversQuick(otInstance *aInstance)
     platformUartProcess();
     PlatformRadioProcess();
     posixPlatformAlarmProcess(aInstance);
-
-    FD_ZERO(&read_fds);
-	FD_ZERO(&write_fds);
-
-	platformUartUpdateFdSet(&read_fds, &write_fds, &max_fd);
-	selfpipe_UpdateFdSet(&read_fds, &write_fds, &max_fd);
-	posixPlatformAlarmUpdateTimeout(&timeout);
 }
 
 void posixPlatformProcessDrivers(otInstance *aInstance){
+	struct timeval timeout;
 	posixPlatformProcessDriversQuick(aInstance);
-	posixPlatformSleep(aInstance);
+	posixPlatformGetTimeout(aInstance, &timeout);
+	posixPlatformSleep(aInstance, &timeout);
 }
 
