@@ -29,6 +29,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #include <openthread.h>
 #include <cli.h>

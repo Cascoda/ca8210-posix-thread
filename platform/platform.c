@@ -70,7 +70,7 @@ void posixPlatformGetTimeout(otInstance *aInstance, struct timeval *timeout){
 
 	platformUartUpdateFdSet(&read_fds, &write_fds, &max_fd);
 	selfpipe_UpdateFdSet(&read_fds, &write_fds, &max_fd);
-	posixPlatformAlarmUpdateTimeout(&timeout);
+	posixPlatformAlarmUpdateTimeout(timeout);
 }
 
 void posixPlatformSleep(otInstance *aInstance, struct timeval *timeout){
@@ -78,7 +78,7 @@ void posixPlatformSleep(otInstance *aInstance, struct timeval *timeout){
 
     if (!otTaskletsArePending(aInstance))
     {
-        rval = select(max_fd + 1, &read_fds, &write_fds, NULL, &timeout);
+        rval = select(max_fd + 1, &read_fds, &write_fds, NULL, timeout);
         selfpipe_pop();
         assert(rval >= 0 && errno != ETIME);
     }
