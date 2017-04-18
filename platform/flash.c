@@ -102,8 +102,14 @@ uint32_t utilsFlashGetSize(void)
 ThreadError utilsFlashErasePage(uint32_t aAddress)
 {
     ThreadError error = kThreadError_None;
-    uint8_t buf = 0xff;
+    //TODO: Improve this quick fix for slow startup due to looping single character file writes
+    static uint8_t buf[FLASH_PAGE_SIZE] = {0};
     uint32_t address;
+
+    //TODO: improve Quick-fix
+    if(buf[0] == 0){
+    	memset(buf, 0xFF, FLASH_PAGE_SIZE);
+    }
 
     VerifyOrExit(sFlashFd >= 0, error = kThreadError_Failed);
     VerifyOrExit(aAddress < FLASH_SIZE, error = kThreadError_InvalidArgs);
@@ -111,10 +117,13 @@ ThreadError utilsFlashErasePage(uint32_t aAddress)
     // Get start address of the flash page that includes aAddress
     address = aAddress & (~(uint32_t)(FLASH_PAGE_SIZE - 1));
 
+    /*
     for (uint16_t offset = 0; offset < FLASH_PAGE_SIZE; offset++)
     {
         VerifyOrExit(pwrite(sFlashFd, &buf, 1, address + offset) == 1, error = kThreadError_Failed);
     }
+    */
+    VerifyOrExit(pwrite(sFlashFd, buf, FLASH_PAGE_SIZE, address) == 1, error = kThreadError_Failed);
 
 exit:
     return error;
