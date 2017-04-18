@@ -69,6 +69,23 @@ void posixPlatformInit(void);
 void posixPlatformProcessDrivers(otInstance *aInstance);
 
 /**
+ * This method performs all platform-specific processing without sleeping at the end.
+ * Should be used in conjunction with posixPlatformSleep.
+ */
+void posixPlatformProcessDriversQuick(otInstance *aInstance);
+
+/**
+ * This method gets the timeout for the sleep function, and places it in the timeout struct.
+ */
+void posixPlatformGetTimeout(otInstance *aInstance, struct timeval *timeout);
+
+/**
+ * This method sleeps until there is further work to do (allowing the application to access the openthread API)
+ * -Must run immediately after posixPlatformGetTimeout!
+ */
+void posixPlatformSleep(otInstance *aInstance, struct timeval *timeout);
+
+/**
  * This method initializes the alarm service used by OpenThread.
  *
  */

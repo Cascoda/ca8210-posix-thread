@@ -29,12 +29,39 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #include <openthread.h>
 #include <cli.h>
 #include <posix-platform.h>
 
 #include <tasklet.h>
+#include <pthread.h>
+
+static pthread_t work_thread;
+
+//ot_mutex must be held when calling any openthread API functions
+//Callbacks from openthread (eg Activescan/Udp handler) do not need to do this
+//as the ot_mutex is already held for them
+static pthread_mutex_t ot_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/*
+ * otWorker runs the openthread stack, which is protected by the
+ * ot_mutex. The sleep function is used while the stack is idle,
+ * which allows application code to access the stack.
+ */
+static void otWorker(otInstance * aInstance){
+	struct timeval timeout;
+	while(1){
+		pthread_mutex_lock(&ot_mutex);
+			otTaskletsProcess(aInstance);
+			posixPlatformProcessDriversQuick(aInstance);
+			posixPlatformGetTimeout(aInstance, &timeout);
+		pthread_mutex_unlock(&ot_mutex);
+
+		posixPlatformSleep(aInstance, &timeout); //Must run immediately after posixPlatformProcessGetTimeout
+	}
+}
 
 int main(int argc, char *argv[])
 {
@@ -55,31 +82,29 @@ int main(int argc, char *argv[])
     otLinkSetPanId(OT_INSTANCE, 0x1234); //Convenience
 #endif
 
+	pthread_create(&work_thread, NULL, otWorker, OT_INSTANCE);
+	//Be sure to aquire the ot_mutex before using openthread API functions from now on
+
+	//Example that swaps between being a router and a rx-on-when-idle child every 30 seconds
+	//Purely for example purposes!
+
+	pthread_mutex_lock(&ot_mutex);
+		otThreadSetRouterRoleEnabled(OT_INSTANCE, false);
+	pthread_mutex_unlock(&ot_mutex);
+
 	while(1){
-		otTaskletsProcess(OT_INSTANCE);
-		posixPlatformProcessDrivers(OT_INSTANCE);
-		/* Simple application code can go here*/
+		sleep(30); //30 seconds
+		pthread_mutex_lock(&ot_mutex);
+			otThreadSetRouterRoleEnabled(OT_INSTANCE, false);
+		pthread_mutex_unlock(&ot_mutex);
+
+		sleep(30); //30 seconds
+		pthread_mutex_lock(&ot_mutex);
+			otThreadSetRouterRoleEnabled(OT_INSTANCE, true);
+			otThreadBecomeRouter(OT_INSTANCE);
+		pthread_mutex_unlock(&ot_mutex);
 	}
 
-	/*
-	 * The above program loop is simplistic, and doesn't allow for much control over
-	 * the timing of the application code. Using the below model allows for more control.
-	 * (The timeout value can be decreased by application code after GetTimeout is called
-	 *  if necessary, but not increased)
-	 *
-	 *  There is a further example for multithreaded code in mainMultithreaded.c
-	 *
-	 * struct timeval timeout;
-	 * while(1){
-	 *     otTaskletsProcess(aInstance);
-	 *     posixPlatformProcessDriversQuick(aInstance);
-	 *
-	 *     //Application code here!
-	 *
-	 *     posixPlatformGetTimeout(aInstance, &timeout);
-	 *     posixPlatformSleep(aInstance, &timeout); //Must run very soon after posixPlatformProcessGetTimeout
-	 * }
-	 */
 
     return 0;
 }
