@@ -195,6 +195,9 @@ static enum tristateCache sPromiscuousCache = tristate_uninit;
 //Cached current coordinator status
 static uint8_t sIsCoordinator = 0;
 
+//IEEE EUI64
+static uint8_t sIeeeEui64[8];
+
 //BEACON DATA
 #define BEACON_PAYLOAD_LENGTH 26
 #define BEACON_JOIN_BIT (1 << 3)
@@ -435,12 +438,9 @@ void otPlatRadioSetPanId(otInstance *aInstance, uint16_t panid)
 }
 
 void otPlatRadioGetIeeeEui64(otInstance *aInstance, uint8_t *aIeeeEui64){
-	//TODO: Implement properly with long lasting state
 	(void) aInstance;
-	for(int i = 0; i < 4; i += 1){
-		uint16_t random = otPlatRandomGet();
-		aIeeeEui64[2*i] = random & 0xFF;
-		aIeeeEui64[2*i + 1] = (random >> 4) & 0xFF;
+	for(int i = 0; i < 8; i++){
+		aIeeeEui64[i] = sIeeeEui64[i];
 	}
 }
 
@@ -567,6 +567,15 @@ void PlatformRadioInit(void)
 		2,
 		persistanceTime,
 		pDeviceRef);
+
+	//TODO: Check state file before generating new Eui64
+	for(int i = 0; i < 4; i += 1){
+		uint16_t random = otPlatRandomGet();
+		sIeeeEui64[2*i] = random & 0xFF;
+		sIeeeEui64[2*i + 1] = (random >> 4) & 0xFF;
+	}
+	sIeeeEui64[0] |= 2; //Set local bit
+	otPlatRadioSetExtendedAddress(NULL, sIeeeEui64);
 }
 
 void otHardMacStateChangeCallback(otInstance *aInstance, uint32_t aFlags, void *aContext){
