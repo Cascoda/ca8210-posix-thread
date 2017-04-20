@@ -676,36 +676,39 @@ static void coordChangeCallback(uint32_t aFlags, otInstance *aInstance)
 	 * act as a thread router, in order that is can respond to active scan
 	 * beacon requests with beacons.
 	 */
+	struct SecSpec securityLevel = {0};
+	otDeviceRole role;
 
-	if (aFlags & OT_NET_ROLE)
+	VerifyOrExit(aFlags & OT_NET_ROLE, );
+
+	role = otThreadGetDeviceRole(aInstance);
+
+	if (role == kDeviceRoleRouter || role == kDeviceRoleLeader)
 	{
-		struct SecSpec securityLevel = {0};
-		otDeviceRole role = otThreadGetDeviceRole(aInstance);
-
-		if (role == kDeviceRoleRouter || role == kDeviceRoleLeader)
+		if (!sIsCoordinator)
 		{
-			if (!sIsCoordinator)
-			{
-				MLME_START_request_sync(
-				    otLinkGetPanId(aInstance),
-				    sChannel,
-				    15,
-				    15,
-				    1,
-				    0,
-				    0,
-				    &securityLevel,
-				    &securityLevel,
-				    pDeviceRef);
-				sIsCoordinator = 1;
-			}
-		}
-		else if (sIsCoordinator)
-		{
-			MLME_RESET_request_sync(0, pDeviceRef);
-			sIsCoordinator = 0;
+			MLME_START_request_sync(
+				otLinkGetPanId(aInstance),
+				sChannel,
+				15,
+				15,
+				1,
+				0,
+				0,
+				&securityLevel,
+				&securityLevel,
+				pDeviceRef);
+			sIsCoordinator = 1;
 		}
 	}
+	else if (sIsCoordinator)
+	{
+		MLME_RESET_request_sync(0, pDeviceRef);
+		sIsCoordinator = 0;
+	}
+
+exit:
+	return;
 }
 
 
