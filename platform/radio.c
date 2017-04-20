@@ -1169,8 +1169,8 @@ ThreadError otPlatRadioTransmit(otInstance *aInstance, RadioPacket *aPacket, voi
 
 	uint16_t frameControl = GETLE16(aPacket->mPsdu);
 	VerifyOrExit(((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_DATA) || \
-	             ((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_COMMAND),         \
-	             error = kThreadError_Abort;                                     \
+	             ((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_COMMAND),\
+	             error = kThreadError_Abort;                            \
 	             otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Unexpected frame type %#x\n\r", (frameControl & MAC_FC_FT_MASK)););
 
 	sState = kStateTransmit;
@@ -1566,34 +1566,25 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
 		putFinalKey(aInstance);
 	}
 
-	if (params->Status == MAC_SUCCESS)
+	switch (params->Status)
 	{
-		otPlatRadioTransmitDone(aInstance, sentFrame, false, sTransmitError, sentFrame->mTransmitContext);
-	}
-	else
-	{
-		//TODO: handling MAC_TRANSACTION_OVERFLOW in this way isn't strictly
-		//correct, but does cause a retry at a higher level
-		if (params->Status == MAC_CHANNEL_ACCESS_FAILURE ||
-				params->Status == MAC_TRANSACTION_OVERFLOW)
-		{
-			sTransmitError = kThreadError_ChannelAccessFailure;
-		}
-		else if (params->Status == MAC_NO_ACK)
-		{
-			sTransmitError = kThreadError_NoAck;
-		}
-		else if (params->Status == MAC_TRANSACTION_EXPIRED)
-		{
-			sTransmitError = kThreadError_NoAck;
-		}
-		else
-		{
-			sTransmitError = kThreadError_Abort;
-		}
+	case MAC_SUCCESS:
+		break;
 
+	case MAC_CHANNEL_ACCESS_FAILURE:
+	case MAC_TRANSACTION_OVERFLOW:
+		sTransmitError = kThreadError_ChannelAccessFailure;
+		break;
+
+	default:
+		sTransmitError = kThreadError_NoAck;
+		break;
+	}
+	otPlatRadioTransmitDone(aInstance, sentFrame, false, sTransmitError, sentFrame->mTransmitContext);
+
+	if(sTransmitError != kThreadError_None)
+	{
 		otPlatLog(kLogLevelWarn, kLogRegionHardMac, "MCPS_DATA_confirm error: %#x \r\n", params->Status);
-		otPlatRadioTransmitDone(aInstance, sentFrame, false, sTransmitError, sentFrame->mTransmitContext);
 	}
 
 	sState = kStateReceive;
