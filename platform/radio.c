@@ -51,6 +51,8 @@
 #include "posix-platform.h"
 #include <ieee_802_15_4.h>
 #include <pthread.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 
 #include "selfpipe.h"
 
@@ -210,6 +212,7 @@ static enum tristateCache sPromiscuousCache = tristate_uninit;
 //Cached current coordinator status
 static uint8_t sIsCoordinator = 0;
 
+#define IEEEEUI_FILE "/usr/local/etc/.otEui"
 static uint8_t sIeeeEui64[8];
 
 //BEACON DATA
@@ -561,6 +564,42 @@ void PlatformRadioStop(void)
 	MLME_RESET_request_sync(1, pDeviceRef);
 }
 
+void initIeeeEui64(){
+	int file;
+	uint8_t create = false;
+	uint8_t ret = 0;
+
+	if (!access(IEEEEUI_FILE, R_OK))
+	{
+		file = open(IEEEEUI_FILE, O_RDONLY);
+		ret = read(file, sIeeeEui64, 8);
+		if(ret != 8)
+		{
+			create = true;
+		}
+	}
+	else
+	{
+		create = true;
+	}
+
+	if(create)
+	{
+		file = open(IEEEEUI_FILE, O_RDWR | O_CREAT, 0666);
+		for (int i = 0; i < 4; i += 1)
+		{
+			uint16_t random = otPlatRandomGet();
+			sIeeeEui64[2 * i] = random & 0xFF;
+			sIeeeEui64[2 * i + 1] = (random >> 4) & 0xFF;
+		}
+		sIeeeEui64[0] |= 2; //Set local bit
+		write(file, sIeeeEui64, 8);
+	}
+
+	close(file);
+	otPlatRadioSetExtendedAddress(NULL, sIeeeEui64);
+}
+
 void PlatformRadioInit(void)
 {
 	sTransmitFrame.mLength = 0;
@@ -645,16 +684,7 @@ void PlatformRadioInit(void)
 	    persistanceTime,
 	    pDeviceRef);
 
-	//TODO: Check state file before generating new Eui64
-	for (int i = 0; i < 4; i += 1)
-	{
-		uint16_t random = otPlatRandomGet();
-		sIeeeEui64[2 * i] = random & 0xFF;
-		sIeeeEui64[2 * i + 1] = (random >> 4) & 0xFF;
-	}
-
-	sIeeeEui64[0] |= 2; //Set local bit
-	otPlatRadioSetExtendedAddress(NULL, sIeeeEui64);
+	initIeeeEui64();
 }
 
 void otHardMacStateChangeCallback(otInstance *aInstance, uint32_t aFlags, void *aContext)
