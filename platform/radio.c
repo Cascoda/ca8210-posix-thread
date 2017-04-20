@@ -1605,6 +1605,9 @@ static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params)
 	 */
 
 	otActiveScanResult resultStruct;
+	uint8_t *sduLength;
+	uint8_t *Sdu;
+	uint8_t version;
 
 	uint8_t shortaddrs  = *((uint8_t *)params + 23) & 7;
 	uint8_t extaddrs = (*((uint8_t *)params + 23) & 112) >> 4;
@@ -1626,28 +1629,28 @@ static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params)
 	resultStruct.mLqi = params->PanDescriptor.LinkQuality;
 	VerifyOrExit(params->PanDescriptor.Security.SecurityLevel == 0,;);
 	//Asset security = 0
-	uint8_t *sduLength = (uint8_t *)params + (24 + (2 * shortaddrs) + (8 * extaddrs));
+	sduLength = (uint8_t *)params + (24 + (2 * shortaddrs) + (8 * extaddrs));
 
-	if (*sduLength >= 26)
+	VerifyOrExit(*sduLength >= 26, );
+
+	Sdu = (uint8_t *)params + (25 + 2 * shortaddrs + 8 * extaddrs);
+	version = (*((uint8_t *)Sdu + 1) & 0x0F);
+
+	if (version != (mBeaconPayload[1] & 0x0F))
 	{
-		uint8_t *Sdu = (uint8_t *)params + (25 + 2 * shortaddrs + 8 * extaddrs);
-		uint8_t version = (*((uint8_t *)Sdu + 1) & 0x0F);
-
-		if (version != (mBeaconPayload[1] & 0x0F))
-		{
-			otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Beacon received is from different Thread version");
-			return 0;
-		}
-
-		if (*Sdu == 3)
-		{
-			memcpy(&resultStruct.mNetworkName, ((char *)Sdu) + 2, sizeof(resultStruct.mNetworkName));
-			memcpy(&resultStruct.mExtendedPanId, Sdu + 18, sizeof(resultStruct.mExtendedPanId));
-			barrier_worker_waitForMain();
-			sActiveScanCallback(&resultStruct, sActiveScanContext);
-			barrier_worker_endWork();
-		}
+		otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Beacon received is from different Thread version");
+		return 0;
 	}
+
+	if (*Sdu == 3)
+	{
+		memcpy(&resultStruct.mNetworkName, ((char *)Sdu) + 2, sizeof(resultStruct.mNetworkName));
+		memcpy(&resultStruct.mExtendedPanId, Sdu + 18, sizeof(resultStruct.mExtendedPanId));
+		barrier_worker_waitForMain();
+		sActiveScanCallback(&resultStruct, sActiveScanContext);
+		barrier_worker_endWork();
+	}
+
 
 exit:
 	return 0;
@@ -1656,56 +1659,57 @@ exit:
 static int handleScanConfirm(struct MLME_SCAN_confirm_pset *params)   //Async
 {
 
-	if (params->Status != MAC_SCAN_IN_PROGRESS)
+	VerifyOrExit(params->Status != MAC_SCAN_IN_PROGRESS, );
+
+	if (sActiveScanInProgress)
 	{
-		if (sActiveScanInProgress)
-		{
-			barrier_worker_waitForMain();
-			sActiveScanCallback(NULL, sActiveScanContext);
-			sActiveScanInProgress = 0;
-			barrier_worker_endWork();
-			MLME_SET_request_sync(
-			    phyCurrentChannel,
-			    0,
-			    sizeof(sChannel),
-			    &sChannel,
-			    pDeviceRef);
-		}
-		else if (sEnergyScanInProgress)
-		{
-			barrier_worker_waitForMain();
-			uint8_t curMinChannel = 11;
+		barrier_worker_waitForMain();
+		sActiveScanCallback(NULL, sActiveScanContext);
+		sActiveScanInProgress = 0;
+		barrier_worker_endWork();
+		MLME_SET_request_sync(
+			phyCurrentChannel,
+			0,
+			sizeof(sChannel),
+			&sChannel,
+			pDeviceRef);
+	}
+	else if (sEnergyScanInProgress)
+	{
+		barrier_worker_waitForMain();
+		uint8_t curMinChannel = 11;
 
-			//Call the resultCallback for each result
-			for (int i = 0; i < params->ResultListSize; i++)
+		//Call the resultCallback for each result
+		for (int i = 0; i < params->ResultListSize; i++)
+		{
+			otEnergyScanResult result;
+			result.mMaxRssi = params->ResultList[i];
+			result.mChannel = curMinChannel;
+			sEnergyScanCallback(&result, sActiveScanContext);
+
+			while (!(sEnergyScanMask & 1 << curMinChannel))
 			{
-				otEnergyScanResult result;
-				result.mMaxRssi = params->ResultList[i];
-				result.mChannel = curMinChannel;
-				sEnergyScanCallback(&result, sActiveScanContext);
+				result.mChannel = curMinChannel++;
 
-				while (!(sEnergyScanMask & 1 << curMinChannel))
-				{
-					result.mChannel = curMinChannel++;
-
-					// clear the bit for the channel just handled
-					sEnergyScanMask &= sEnergyScanMask - 1;
-				}
+				// clear the bit for the channel just handled
+				sEnergyScanMask &= sEnergyScanMask - 1;
 			}
-
-			//Send completion callback
-			sEnergyScanCallback(NULL, sActiveScanContext);
-			sEnergyScanInProgress = 0;
-			barrier_worker_endWork();
-			MLME_SET_request_sync(
-			    phyCurrentChannel,
-			    0,
-			    sizeof(sChannel),
-			    &sChannel,
-			    pDeviceRef);
 		}
+
+		//Send completion callback
+		sEnergyScanCallback(NULL, sActiveScanContext);
+		sEnergyScanInProgress = 0;
+		barrier_worker_endWork();
+		MLME_SET_request_sync(
+			phyCurrentChannel,
+			0,
+			sizeof(sChannel),
+			&sChannel,
+			pDeviceRef);
 	}
 
+
+exit:
 	return 0;
 }
 
