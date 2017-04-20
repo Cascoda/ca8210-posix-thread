@@ -904,7 +904,7 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance)
 	if (otThreadGetDeviceRole(aInstance) != kDeviceRoleChild &&
 		otThreadGetDeviceRole(aInstance) != kDeviceRoleDetached)
 	{
-		for (uint8_t i = 0; i < MAX_DYNAMIC_DEVICES && i < OPENTHREAD_CONFIG_MAX_CHILDREN; i++)
+		for (uint8_t i = 0; i < OPENTHREAD_CONFIG_MAX_CHILDREN; i++)
 		{
 			otChildInfo tChildInfo;
 
@@ -915,6 +915,9 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance)
 
 			putDeviceDescriptor(aInstance, tChildInfo.mRloc16, tChildInfo.mExtAddress.m8, count++);
 
+			if(count >= MAX_DYNAMIC_DEVICES){
+				break;
+			}
 		}
 
 		uint8_t maxRouters = MAX_DYNAMIC_DEVICES - count;
