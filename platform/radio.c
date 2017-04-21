@@ -576,6 +576,7 @@ void initIeeeEui64(){
 		ret = read(file, sIeeeEui64, 8);
 		if(ret != 8)
 		{
+			close(file);
 			create = true;
 		}
 	}
