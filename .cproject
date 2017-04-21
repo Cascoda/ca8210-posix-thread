@@ -14,7 +14,7 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration buildProperties="" description="" id="cdt.managedbuild.toolchain.gnu.cross.base.1778921236" name="Default" parent="org.eclipse.cdt.build.core.emptycfg">
+				<configuration artifactName="${ProjName}" buildProperties="" description="" id="cdt.managedbuild.toolchain.gnu.cross.base.1778921236" name="Default" parent="org.eclipse.cdt.build.core.emptycfg">
 					<folderInfo id="cdt.managedbuild.toolchain.gnu.cross.base.1778921236.1182208912" name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.cross.base.1249344870" name="Cross GCC" superClass="cdt.managedbuild.toolchain.gnu.cross.base">
 							<option id="cdt.managedbuild.option.gnu.cross.prefix.2112352211" name="Prefix" superClass="cdt.managedbuild.option.gnu.cross.prefix"/>
@@ -28,6 +28,7 @@
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_DHCP6_SERVER=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_DHCP6_CLIENT=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_DTLS=1"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_APPLICATION_COAP=1"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.207805673" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
@@ -38,6 +39,7 @@
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_DTLS=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_DHCP6_SERVER=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_DHCP6_CLIENT=1"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_APPLICATION_COAP=1"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1448218497" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
@@ -58,11 +60,12 @@
 						<toolChain id="cdt.managedbuild.toolchain.gnu.cross.base.1430814515" name="Cross GCC" superClass="cdt.managedbuild.toolchain.gnu.cross.base" unusedChildren="">
 							<option id="cdt.managedbuild.option.gnu.cross.prefix.2112352211.1821118338" name="Prefix" superClass="cdt.managedbuild.option.gnu.cross.prefix.2112352211"/>
 							<option id="cdt.managedbuild.option.gnu.cross.path.1103464589.1669390968" name="Path" superClass="cdt.managedbuild.option.gnu.cross.path.1103464589"/>
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.targetPlatform.gnu.cross" isAbstract="false" osList="all" superClass="cdt.managedbuild.targetPlatform.gnu.cross"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.compiler.1710485035" name="Cross GCC Compiler" superClass="cdt.managedbuild.tool.gnu.cross.c.compiler.1883314443">
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.796274562" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.compiler.143067271" name="Cross G++ Compiler" superClass="cdt.managedbuild.tool.gnu.cross.cpp.compiler.373553390">
-								<option id="gnu.cpp.compiler.option.include.paths.938857284" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
+								<option id="gnu.cpp.compiler.option.include.paths.938857284" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cascoda-thread/openthread/include/openthread}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.910928413" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
@@ -104,4 +107,5 @@
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 </cproject>
