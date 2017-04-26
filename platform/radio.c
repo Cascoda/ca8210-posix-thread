@@ -565,6 +565,33 @@ void PlatformRadioStop(void)
 	MLME_RESET_request_sync(1, pDeviceRef);
 }
 
+void otPlatRadioDumpPib(void){
+	uint8_t valD9;
+	uint8_t valDA;
+	uint8_t valD8;
+	uint8_t valDB;
+	uint8_t valPromiscuous;
+	uint8_t valShortAddr[2];
+	uint8_t len = 1;
+
+	TDME_GETSFR_request_sync(0, 0xD9, &valD9, pDeviceRef);
+	TDME_GETSFR_request_sync(0, 0xDA, &valDA, pDeviceRef);
+	TDME_GETSFR_request_sync(0, 0xD8, &valD8, pDeviceRef);
+	TDME_GETSFR_request_sync(0, 0xDB, &valDB, pDeviceRef);
+
+	MLME_GET_request_sync(macPromiscuousMode, 0, &len, &valPromiscuous, pDeviceRef);
+	MLME_GET_request_sync(macShortAddress, 0, &len, valShortAddr, pDeviceRef);
+
+	otPlatLog(kLogLevelInfo, kLogRegionHardMac, "Dumping register values...\n\r");
+
+	otPlatLog(kLogLevelInfo, kLogRegionHardMac, "D9: %d", valD9);
+	otPlatLog(kLogLevelInfo, kLogRegionHardMac, "DA: %d", valDA);
+	otPlatLog(kLogLevelInfo, kLogRegionHardMac, "D8: %d", valD8);
+	otPlatLog(kLogLevelInfo, kLogRegionHardMac, "DB: %d", valDB);
+	otPlatLog(kLogLevelInfo, kLogRegionHardMac, "Prom: %d", valPromiscuous);
+	otPlatLog(kLogLevelInfo, kLogRegionHardMac, "ShortAddr: %d %d", valShortAddr[0], valShortAddr[1]);
+}
+
 void initIeeeEui64(){
 	int file;
 	uint8_t create = false;
