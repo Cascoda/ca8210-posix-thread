@@ -252,6 +252,7 @@ ThreadError otPlatRadioAddSrcMatchShortEntry(otInstance *aInstance, const uint16
 {
 	(void) aInstance;
 	(void) aShortAddress;
+	false;
 	return kThreadError_None;
 }
 
