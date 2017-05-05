@@ -95,24 +95,22 @@ uint32_t otPlatRandomGet(void)
 
 }
 
-ThreadError otPlatRandomSecureGet(uint16_t aInputLength, uint8_t *aOutput, uint16_t *aOutputLength)
-{
-    ThreadError error = kThreadError_None;
+ThreadError otPlatRandomGetTrue(uint8_t *aOutput, uint16_t aOutputLength){
+	ThreadError error = kThreadError_None;
 
-    VerifyOrExit(aOutput && aOutputLength, error = kThreadError_InvalidArgs);
+	VerifyOrExit(aOutput != NULL, error = kThreadError_InvalidArgs);
 
-    int fd = open("/dev/urandom", O_RDONLY);
+	int fd = open("/dev/random", O_RDONLY);
 	if (fd != -1)
 	{
-		(void) read(fd, (void *)aOutput, aInputLength);
+		(void) read(fd, (void *)aOutput, aOutputLength);
 		(void) close(fd);
 	}
 	else{
-		assert(0); //All attempts at randomness have failed
+		error = kThreadError_Failed;
 	}
 
-    *aOutputLength = aInputLength;
-
 exit:
-    return error;
+	return error;
 }
+

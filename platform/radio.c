@@ -252,6 +252,7 @@ ThreadError otPlatRadioAddSrcMatchShortEntry(otInstance *aInstance, const uint16
 {
 	(void) aInstance;
 	(void) aShortAddress;
+	false;
 	return kThreadError_None;
 }
 
@@ -530,6 +531,10 @@ void otPlatRadioSetExtendedAddress(otInstance *aInstance, uint8_t *address)
 	    pDeviceRef);
 }
 
+int8_t otPlatRadioGetReceiveSensitivity(otInstance *aInstance){
+	return -105;
+}
+
 void otPlatRadioSetShortAddress(otInstance *aInstance, uint16_t address)
 {
 	uint8_t LEarray[2];
@@ -563,6 +568,11 @@ void PlatformRadioStop(void)
 	//Reset the MAC to a default state
 	otPlatLog(kLogLevelInfo, kLogRegionHardMac, "Resetting & Stopping Radio...\n\r");
 	MLME_RESET_request_sync(1, pDeviceRef);
+}
+
+void otPlatRadioDumpPib(void){
+	//can be used as a debug hook
+	return;
 }
 
 void initIeeeEui64(){

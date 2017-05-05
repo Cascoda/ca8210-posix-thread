@@ -32,6 +32,7 @@
 #include <unistd.h>
 
 #include <openthread.h>
+#include <thread_ftd.h>
 #include <cli.h>
 #include <posix-platform.h>
 
@@ -50,8 +51,10 @@ static pthread_mutex_t ot_mutex = PTHREAD_MUTEX_INITIALIZER;
  * ot_mutex. The sleep function is used while the stack is idle,
  * which allows application code to access the stack.
  */
-static void otWorker(otInstance * aInstance){
+static void otWorker(void * aContext){
 	struct timeval timeout;
+	otInstance * aInstance = (otInstance *) aContext;
+
 	while(1){
 		pthread_mutex_lock(&ot_mutex);
 			otTaskletsProcess(aInstance);
@@ -82,7 +85,7 @@ int main(int argc, char *argv[])
     otLinkSetPanId(OT_INSTANCE, 0x1234); //Convenience
 #endif
 
-	pthread_create(&work_thread, NULL, otWorker, OT_INSTANCE);
+	pthread_create(&work_thread, NULL, otWorker, (void *) OT_INSTANCE);
 	//Be sure to aquire the ot_mutex before using openthread API functions from now on
 
 	//Example that swaps between being a router and a rx-on-when-idle child every 30 seconds
