@@ -531,6 +531,10 @@ void otPlatRadioSetExtendedAddress(otInstance *aInstance, uint8_t *address)
 	    pDeviceRef);
 }
 
+int8_t otPlatRadioGetReceiveSensitivity(otInstance *aInstance){
+	return -105;
+}
+
 void otPlatRadioSetShortAddress(otInstance *aInstance, uint16_t address)
 {
 	uint8_t LEarray[2];
