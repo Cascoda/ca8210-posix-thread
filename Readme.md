@@ -60,7 +60,10 @@ And finally, build everything
 ```bash
 make
 ```
-
+Or for the nuc970:
+```bash
+./build_nuc970.sh
+```
 ##Using wpantund to enable as linux network interface
 
 On a posix system, a thread node can act as a linux network interface using the wpantund tool available from https://github.com/openthread/wpantund/
