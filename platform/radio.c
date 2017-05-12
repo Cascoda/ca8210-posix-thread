@@ -35,6 +35,7 @@
 
 #include <types.h>
 #include <openthread.h>
+#include <thread_ftd.h>
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -1926,7 +1927,8 @@ static int intransit_purge(void * aSender){
 	for (int i = 0; i < MAX_INTRANSITS; i++)
 	{
 		if (!memcmp(&IntransitPackets[i].mTransmitContext, &aSender, sizeof(aSender))){
-			MCPS_PURGE_request_sync(IntransitHandles[i], pDeviceRef);
+			uint8_t handle = IntransitHandles[i];
+			MCPS_PURGE_request_sync(&handle, pDeviceRef);
 			intransit_rmFrame(IntransitHandles[i]);
 			return 0;
 		}
