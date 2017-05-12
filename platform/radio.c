@@ -172,6 +172,7 @@ static inline void barrier_worker_endWork(void);
  */
 static RadioPacket *intransit_getFrame(uint8_t handle);
 static int intransit_rmFrame(uint8_t handle);
+static int intransit_purge(void * aSender);
 static int intransit_putFrame(uint8_t handle, const RadioPacket *in);
 static int intransit_isHandleInUse(uint8_t handle);
 
@@ -1431,6 +1432,10 @@ void otPlatRadioSetPromiscuous(otInstance *aInstance, bool aEnable)
 	sPromiscuousCache = aEnable;
 }
 
+void otPlatRadioPurge(otInstance *aInstance, void * aSender){
+	intransit_purge(aSender);
+}
+
 static int handleDataIndication(struct MCPS_DATA_indication_pset *params)   //Async
 {
 	static RadioPacket sReceiveFrame;
@@ -1594,7 +1599,7 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
 	RadioPacket *sentFrame = intransit_getFrame(params->MsduHandle);
 	otInstance *aInstance = sentFrame->mTransmitInstance;
 
-	if (aInstance == NULL || !otIp6IsEnabled(aInstance))
+	if (aInstance == NULL || sentFrame == NULL || !otIp6IsEnabled(aInstance))
 	{
 		barrier_worker_endWork();
 		return 1;
@@ -1915,6 +1920,18 @@ static int intransit_putFrame(uint8_t handle, const RadioPacket *in)
 	memcpy(&IntransitPackets[i], in, sizeof(RadioPacket));
 
 	return 0;
+}
+
+static int intransit_purge(void * aSender){
+	for (int i = 0; i < MAX_INTRANSITS; i++)
+	{
+		if (!memcmp(&IntransitPackets[i].mTransmitContext, &aSender, sizeof(aSender))){
+			MCPS_PURGE_request_sync(IntransitHandles[i], pDeviceRef);
+			intransit_rmFrame(IntransitHandles[i]);
+			return 0;
+		}
+	}
+	return 1;
 }
 
 static int intransit_rmFrame(uint8_t handle)
