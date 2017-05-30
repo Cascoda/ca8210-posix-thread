@@ -34,7 +34,7 @@ void otPlatReset(otInstance *aInstance)
     // This function does nothing on the Posix platform.
 }
 
-otPlatResetReason otPlatGetResetReason(otInstance *aInstance)
+enum otPlatResetReason otPlatGetResetReason(otInstance *aInstance)
 {
-    return kPlatResetReason_PowerOn;
+    return OT_PLAT_RESET_REASON_POWER_ON;
 }

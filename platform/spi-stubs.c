@@ -35,7 +35,7 @@
 
 // Spi-slave stubs
 
-ThreadError otPlatSpiSlaveEnable(
+otError otPlatSpiSlaveEnable(
     otPlatSpiSlaveTransactionCompleteCallback aCallback,
     void *aContext
 )
@@ -46,14 +46,14 @@ ThreadError otPlatSpiSlaveEnable(
     fprintf(stderr, "\nNo SPI support for posix platform.");
     exit(0);
 
-    return kThreadError_NotImplemented;
+    return OT_ERROR_NOT_IMPLEMENTED;
 }
 
 void otPlatSpiSlaveDisable(void)
 {
 }
 
-ThreadError otPlatSpiSlavePrepareTransaction(
+otError otPlatSpiSlavePrepareTransaction(
     uint8_t *anOutputBuf,
     uint16_t anOutputBufLen,
     uint8_t *anInputBuf,
@@ -67,6 +67,6 @@ ThreadError otPlatSpiSlavePrepareTransaction(
     (void)anInputBufLen;
     (void)aRequestTransactionFlag;
 
-    return kThreadError_NotImplemented;
+    return OT_ERROR_NOT_IMPLEMENTED;
 }
 

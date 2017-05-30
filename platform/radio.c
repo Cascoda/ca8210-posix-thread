@@ -171,20 +171,20 @@ static inline void barrier_worker_endWork(void);
  * is required for post-transmission processing. Access to this system must be
  * protected by the barrier.
  */
-static RadioPacket *intransit_getFrame(uint8_t handle);
+static otRadioFrame *intransit_getFrame(uint8_t handle);
 static int intransit_rmFrame(uint8_t handle);
 static int intransit_purge(void * aSender);
-static int intransit_putFrame(uint8_t handle, const RadioPacket *in);
+static int intransit_putFrame(uint8_t handle, const otRadioFrame *in);
 static int intransit_isHandleInUse(uint8_t handle);
 
 #define MAX_INTRANSITS 7 /*TODO:  5 indirect frames +2 (perhaps need more?)*/
 uint8_t IntransitHandles[MAX_INTRANSITS] = {0};
-RadioPacket IntransitPackets[MAX_INTRANSITS];
+otRadioFrame IntransitPackets[MAX_INTRANSITS];
 //END INTRANSIT
 
 //FRAME DATA
-static RadioPacket sTransmitFrame;
-static ThreadError sTransmitError;
+static otRadioFrame sTransmitFrame;
+static otError sTransmitError;
 static uint8_t sTransmitPsdu[IEEE802154_MAX_LENGTH];
 //END FRAME DATA
 
@@ -227,7 +227,7 @@ static uint8_t mBeaconPayload[BEACON_PAYLOAD_LENGTH] = {3, 0x20};
 
 static int8_t noiseFloor = 127;
 
-static PhyState sState;
+static otRadioState sState;
 
 static void setChannel(uint8_t channel)
 {
@@ -250,33 +250,33 @@ void otPlatRadioEnableSrcMatch(otInstance *aInstance, bool aEnable)
 	(void) aEnable;
 }
 
-ThreadError otPlatRadioAddSrcMatchShortEntry(otInstance *aInstance, const uint16_t aShortAddress)
+otError otPlatRadioAddSrcMatchShortEntry(otInstance *aInstance, const uint16_t aShortAddress)
 {
 	(void) aInstance;
 	(void) aShortAddress;
 	false;
-	return kThreadError_None;
+	return OT_ERROR_NONE;
 }
 
-ThreadError otPlatRadioAddSrcMatchExtEntry(otInstance *aInstance, const uint8_t *aExtAddress)
+otError otPlatRadioAddSrcMatchExtEntry(otInstance *aInstance, const uint8_t *aExtAddress)
 {
 	(void) aInstance;
 	(void) aExtAddress;
-	return kThreadError_None;
+	return OT_ERROR_NONE;
 }
 
-ThreadError otPlatRadioClearSrcMatchShortEntry(otInstance *aInstance, const uint16_t aShortAddress)
+otError otPlatRadioClearSrcMatchShortEntry(otInstance *aInstance, const uint16_t aShortAddress)
 {
 	(void) aInstance;
 	(void) aShortAddress;
-	return kThreadError_None;
+	return OT_ERROR_NONE;
 }
 
-ThreadError otPlatRadioClearSrcMatchExtEntry(otInstance *aInstance, const uint8_t *aExtAddress)
+otError otPlatRadioClearSrcMatchExtEntry(otInstance *aInstance, const uint8_t *aExtAddress)
 {
 	(void) aInstance;
 	(void) aExtAddress;
-	return kThreadError_None;
+	return OT_ERROR_NONE;
 }
 
 void otPlatRadioClearSrcMatchShortEntries(otInstance *aInstance)
@@ -309,7 +309,7 @@ uint8_t log2_32(uint32_t value)
 	return tab32[(uint32_t)(value * 0x07C4ACDD) >> 27];
 }
 
-ThreadError otPlatRadioActiveScan(otInstance *aInstance, uint32_t aScanChannels,
+otError otPlatRadioActiveScan(otInstance *aInstance, uint32_t aScanChannels,
 		                          uint16_t aScanDuration, otHandleActiveScanResult aCallback,
 		                          void *aCallbackContext)
 {
@@ -318,7 +318,7 @@ ThreadError otPlatRadioActiveScan(otInstance *aInstance, uint32_t aScanChannels,
 	 */
 	if (sActiveScanInProgress || sEnergyScanInProgress)
 	{
-		return kThreadError_Busy;
+		return OT_ERROR_BUSY;
 	}
 
 	uint8_t ScanDuration;
@@ -339,7 +339,7 @@ ThreadError otPlatRadioActiveScan(otInstance *aInstance, uint32_t aScanChannels,
 		ScanDuration = 4;
 	}
 
-	otPlatLog(kLogLevelDebg, kLogRegionHardMac, "aScanDuration: %d, ScanDuration: %d\n\r", aScanDuration, ScanDuration);
+	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_HARDMAC, "aScanDuration: %d, ScanDuration: %d\n\r", aScanDuration, ScanDuration);
 
 	struct SecSpec pSecurity = {0};
 
@@ -360,21 +360,21 @@ ThreadError otPlatRadioActiveScan(otInstance *aInstance, uint32_t aScanChannels,
 	if (scanRequest == MAC_SUCCESS)
 	{
 		sActiveScanInProgress = 1;
-		return kThreadError_None;
+		return OT_ERROR_NONE;
 	}
 	else
 	{
-		return kThreadError_Busy;
+		return OT_ERROR_BUSY;
 	}
 }
 
-ThreadError otPlatRadioEnergyScan(otInstance *aInstance, uint8_t aScanChannel,
+otError otPlatRadioEnergyScan(otInstance *aInstance, uint8_t aScanChannel,
 		                          uint16_t aScanDuration)
 {
-	return kThreadError_NotImplemented;	//We have a hardmac: Use the full one
+	return OT_ERROR_NOT_IMPLEMENTED;	//We have a hardmac: Use the full one
 }
 
-ThreadError otPlatRadioEnergyScanFull(otInstance *aInstance, uint32_t aScanChannels,
+otError otPlatRadioEnergyScanFull(otInstance *aInstance, uint32_t aScanChannels,
 		                              uint16_t aScanDuration, otHandleEnergyScanResult aCallback,
 		                              void *aCallbackContext)
 {
@@ -384,7 +384,7 @@ ThreadError otPlatRadioEnergyScanFull(otInstance *aInstance, uint32_t aScanChann
 	 */
 	if (sActiveScanInProgress || sEnergyScanInProgress)
 	{
-		return kThreadError_Busy;
+		return OT_ERROR_BUSY;
 	}
 
 	uint8_t ScanDuration;
@@ -407,7 +407,7 @@ ThreadError otPlatRadioEnergyScanFull(otInstance *aInstance, uint32_t aScanChann
 		ScanDuration = 6;
 	}
 
-	otPlatLog(kLogLevelDebg, kLogRegionHardMac, "aScanDuration: %d, ScanDuration: %d\n\r", aScanDuration, ScanDuration);
+	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_HARDMAC, "aScanDuration: %d, ScanDuration: %d\n\r", aScanDuration, ScanDuration);
 
 	struct SecSpec pSecurity = {0};
 
@@ -428,11 +428,11 @@ ThreadError otPlatRadioEnergyScanFull(otInstance *aInstance, uint32_t aScanChann
 	if (scanRequest == MAC_SUCCESS)
 	{
 		sEnergyScanInProgress = 1;
-		return kThreadError_None;
+		return OT_ERROR_NONE;
 	}
 	else
 	{
-		return kThreadError_Busy;
+		return OT_ERROR_BUSY;
 	}
 }
 
@@ -446,7 +446,7 @@ bool otPlatRadioIsActiveScanInProgress(otInstance *aInstance)
 	return sActiveScanInProgress;
 }
 
-ThreadError updateBeacon(){
+otError updateBeacon(){
 	if ((MLME_SET_request_sync(
 			 macBeaconPayload,
 			 0,
@@ -460,15 +460,15 @@ ThreadError updateBeacon(){
 			 &kBeaconPayloadLength,
 			 pDeviceRef) == MAC_SUCCESS))
 	{
-		return kThreadError_None;
+		return OT_ERROR_NONE;
 	}
 	else
 	{
-		return kThreadError_Failed;
+		return OT_ERROR_FAILED;
 	}
 }
 
-ThreadError otPlatRadioSetNetworkName(otInstance *aInstance, const char *aNetworkName)
+otError otPlatRadioSetNetworkName(otInstance *aInstance, const char *aNetworkName)
 {
 
 	memcpy(mBeaconPayload + 2, aNetworkName, 16);
@@ -476,7 +476,7 @@ ThreadError otPlatRadioSetNetworkName(otInstance *aInstance, const char *aNetwor
 	return updateBeacon();
 }
 
-ThreadError otPlatRadioSetJoiningEnabled(otInstance *aInstance, uint8_t isEnabled)
+otError otPlatRadioSetJoiningEnabled(otInstance *aInstance, uint8_t isEnabled)
 {
 
 	if (isEnabled)
@@ -492,7 +492,7 @@ ThreadError otPlatRadioSetJoiningEnabled(otInstance *aInstance, uint8_t isEnable
 
 }
 
-ThreadError otPlatRadioSetExtendedPanId(otInstance *aInstance, const uint8_t *aExtPanId)
+otError otPlatRadioSetExtendedPanId(otInstance *aInstance, const uint8_t *aExtPanId)
 {
 
 	memcpy(mBeaconPayload + 18, aExtPanId, 8);
@@ -559,7 +559,7 @@ void otPlatRadioSetDefaultTxPower(otInstance *aInstance, int8_t aPower)
 
 static int driverErrorCallback(int error_number)
 {
-	otPlatLog(kLogLevelCrit, kLogRegionHardMac, "DRIVER FAILED WITH ERROR %d\n\r", error_number);
+	otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_HARDMAC, "DRIVER FAILED WITH ERROR %d\n\r", error_number);
 	//TODO: Fail gracefully
 	abort();
 	return 0;
@@ -568,7 +568,7 @@ static int driverErrorCallback(int error_number)
 void PlatformRadioStop(void)
 {
 	//Reset the MAC to a default state
-	otPlatLog(kLogLevelInfo, kLogRegionHardMac, "Resetting & Stopping Radio...\n\r");
+	otPlatLog(OT_LOG_LEVEL_INFO, OT_LOG_REGION_HARDMAC, "Resetting & Stopping Radio...\n\r");
 	MLME_RESET_request_sync(1, pDeviceRef);
 }
 
@@ -727,7 +727,7 @@ static void coordChangeCallback(uint32_t aFlags, otInstance *aInstance)
 
 	role = otThreadGetDeviceRole(aInstance);
 
-	if (role == kDeviceRoleRouter || role == kDeviceRoleLeader)
+	if (role == OT_DEVICE_ROLE_ROUTER || role == OT_DEVICE_ROLE_LEADER)
 	{
 		if (!sIsCoordinator)
 		{
@@ -840,7 +840,7 @@ static void putFinalKey(otInstance *aInstance)
 		}
 
 		tKeyDescriptor.flags[0] = (MAC_FC_FT_DATA & KUD_FrameTypeMask);	//data usage
-		otPlatLog(kLogLevelInfo, kLogRegionHardMac, "JoinerRouter KEK added to table");
+		otPlatLog(OT_LOG_LEVEL_INFO, OT_LOG_REGION_HARDMAC, "JoinerRouter KEK added to table");
 	}
 	else
 	{
@@ -853,7 +853,7 @@ static void putFinalKey(otInstance *aInstance)
 		tKeyDescriptor.KeyIdLookupList[0].LookupDataSizeCode = 0; //0 indicates 5 octets length
 		tKeyDescriptor.flags[0] = sMode2DeviceIndex;	//Device number for the mode2 device
 		tKeyDescriptor.flags[1] = (MAC_FC_FT_DATA & KUD_FrameTypeMask);	//data usage
-		otPlatLog(kLogLevelInfo, kLogRegionHardMac, "Mode2 Key added to table");
+		otPlatLog(OT_LOG_LEVEL_INFO, OT_LOG_REGION_HARDMAC, "Mode2 Key added to table");
 	}
 
 	uint8_t unusedBytes = 1 - tKeyDescriptor.Fixed.KeyDeviceListEntries;
@@ -871,7 +871,7 @@ void otPlatRadioSetKekCounterpart(otInstance *aInstance, uint8_t *otherAddress)
 {
 	memcpy(sKekCounterpart, otherAddress, 8);
 	sKekInUse = true;
-	otPlatLog(kLogLevelInfo, kLogRegionHardMac, "KEK counterpart set");
+	otPlatLog(OT_LOG_LEVEL_INFO, OT_LOG_REGION_HARDMAC, "KEK counterpart set");
 }
 
 static void putJoinerKek(otInstance *aInstance)
@@ -909,7 +909,7 @@ static void putJoinerKek(otInstance *aInstance)
 	    pDeviceRef
 	);
 
-	otPlatLog(kLogLevelInfo, kLogRegionHardMac, "Joiner KEK added to table");
+	otPlatLog(OT_LOG_LEVEL_INFO, OT_LOG_REGION_HARDMAC, "Joiner KEK added to table");
 }
 
 void otPlatRadioDisableKek(otInstance *aInstance)
@@ -917,7 +917,7 @@ void otPlatRadioDisableKek(otInstance *aInstance)
 	memset(sKekCounterpart, 0, 8);
 	sKekInUse = false;
 	sKekMessageHandle = 0;
-	otPlatLog(kLogLevelInfo, kLogRegionHardMac, "KEK disabled");
+	otPlatLog(OT_LOG_LEVEL_INFO, OT_LOG_REGION_HARDMAC, "KEK disabled");
 }
 
 static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance)
@@ -943,19 +943,19 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance)
 	//TODO: (low priority) Utilise the device cache to reduce number of writes
 	//Cache devices so the frame counters are correct
 	deviceCache_cacheDevices();
-	otPlatLog(kLogLevelInfo, kLogRegionHardMac, "Updating keys for flags: %x", aFlags);
+	otPlatLog(OT_LOG_LEVEL_INFO, OT_LOG_REGION_HARDMAC, "Updating keys for flags: %x", aFlags);
 	uint32_t tKeySeq = otThreadGetKeySequenceCounter(aInstance) - 1;
 
 	uint8_t count = 0;	//Update device list
 
-	if (otThreadGetDeviceRole(aInstance) != kDeviceRoleChild &&
-		otThreadGetDeviceRole(aInstance) != kDeviceRoleDetached)
+	if (otThreadGetDeviceRole(aInstance) != OT_DEVICE_ROLE_CHILD &&
+		otThreadGetDeviceRole(aInstance) != OT_DEVICE_ROLE_DETACHED)
 	{
 		for (uint8_t i = 0; i < OPENTHREAD_CONFIG_MAX_CHILDREN; i++)
 		{
 			otChildInfo tChildInfo;
 
-			if (otThreadGetChildInfoByIndex(aInstance, i, &tChildInfo) != kThreadError_None)
+			if (otThreadGetChildInfoByIndex(aInstance, i, &tChildInfo) != OT_ERROR_NONE)
 			{
 				continue;
 			}
@@ -982,13 +982,13 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance)
 	{
 		otRouterInfo tParentInfo;
 
-		if (otThreadGetParentInfo(aInstance, &tParentInfo) == kThreadError_None)
+		if (otThreadGetParentInfo(aInstance, &tParentInfo) == OT_ERROR_NONE)
 		{
 			putDeviceDescriptor(aInstance, tParentInfo.mRloc16, tParentInfo.mExtAddress.m8, count++);
 		}
 		else
 		{
-			otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Error retrieving parent!\n\r");
+			otPlatLog(OT_LOG_LEVEL_WARN, OT_LOG_REGION_HARDMAC, "Error retrieving parent!\n\r");
 		}
 	}
 
@@ -1096,9 +1096,9 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance)
 	);
 }
 
-ThreadError otPlatRadioEnable(otInstance *aInstance)    //TODO:(lowpriority) port
+otError otPlatRadioEnable(otInstance *aInstance)    //TODO:(lowpriority) port
 {
-	ThreadError error = kThreadError_Busy;
+	otError error = OT_ERROR_BUSY;
 
 	if (OT_INSTANCE == NULL)
 	{
@@ -1109,23 +1109,23 @@ ThreadError otPlatRadioEnable(otInstance *aInstance)    //TODO:(lowpriority) por
 		return error;
 	}
 
-	if (sState == kStateSleep || sState == kStateDisabled)
+	if (sState == OT_RADIO_STATE_SLEEP || sState == OT_RADIO_STATE_DISABLED)
 	{
-		error = kThreadError_None;
-		sState = kStateSleep;
+		error = OT_ERROR_NONE;
+		sState = OT_RADIO_STATE_SLEEP;
 	}
 
 	return error;
 }
 
-ThreadError otPlatRadioDisable(otInstance *aInstance)    //TODO:(lowpriority) port
+otError otPlatRadioDisable(otInstance *aInstance)    //TODO:(lowpriority) port
 {
-	ThreadError error = kThreadError_Busy;
+	otError error = OT_ERROR_BUSY;
 
-	if (sState == kStateDisabled || sState == kStateSleep)
+	if (sState == OT_RADIO_STATE_DISABLED || sState == OT_RADIO_STATE_SLEEP)
 	{
-		error = kThreadError_None;
-		sState = kStateDisabled;
+		error = OT_ERROR_NONE;
+		sState = OT_RADIO_STATE_DISABLED;
 
 		//should sleep until restarted
 #ifdef USE_LOWPOWER_MODES
@@ -1138,11 +1138,11 @@ ThreadError otPlatRadioDisable(otInstance *aInstance)    //TODO:(lowpriority) po
 		        pDeviceRef
 		    ) == HWME_SUCCESS)
 		{
-			return kThreadError_None;
+			return OT_ERROR_NONE;
 		}
 		else
 		{
-			return kThreadError_Failed;
+			return OT_ERROR_FAILED;
 		}
 
 #endif
@@ -1151,15 +1151,15 @@ ThreadError otPlatRadioDisable(otInstance *aInstance)    //TODO:(lowpriority) po
 	return error;
 }
 
-ThreadError otPlatRadioSleep(otInstance *aInstance)
+otError otPlatRadioSleep(otInstance *aInstance)
 {
-	return kThreadError_None;
+	return OT_ERROR_NONE;
 	//This is handled by the hardmac and the state of rxOnWhenIdle
 }
 
-ThreadError otPlatRadioSetRxOnWhenIdle(otInstance *aInstance, uint8_t rxOnWhenIdle)
+otError otPlatRadioSetRxOnWhenIdle(otInstance *aInstance, uint8_t rxOnWhenIdle)
 {
-	ThreadError error = kThreadError_None;
+	otError error = OT_ERROR_NONE;
 	uint8_t ret = 0;
 	rxOnWhenIdle = rxOnWhenIdle ? 1 : 0;
 
@@ -1170,17 +1170,17 @@ ThreadError otPlatRadioSetRxOnWhenIdle(otInstance *aInstance, uint8_t rxOnWhenId
 	          &rxOnWhenIdle,
 	          pDeviceRef);
 
-	error = ret ? kThreadError_Busy : kThreadError_None;
+	error = ret ? OT_ERROR_BUSY : OT_ERROR_NONE;
 
 	return error;
 }
 
-ThreadError otPlatRadioReceive(otInstance *aInstance, uint8_t aChannel)
+otError otPlatRadioReceive(otInstance *aInstance, uint8_t aChannel)
 {
-	ThreadError error = kThreadError_None;
+	otError error = OT_ERROR_NONE;
 
-	VerifyOrExit(sState != kStateDisabled, error = kThreadError_Busy);
-	sState = kStateReceive;
+	VerifyOrExit(sState != OT_RADIO_STATE_DISABLED, error = OT_ERROR_BUSY);
+	sState = OT_RADIO_STATE_RECEIVE;
 
 	setChannel(aChannel);
 
@@ -1188,12 +1188,12 @@ exit:
 	return error;
 }
 
-RadioPacket *otPlatRadioGetTransmitBuffer(otInstance *aInstance)
+otRadioFrame *otPlatRadioGetTransmitBuffer(otInstance *aInstance)
 {
 	return &sTransmitFrame;
 }
 
-ThreadError otPlatRadioTransmit(otInstance *aInstance, RadioPacket *aPacket, void *transmitContext)
+otError otPlatRadioTransmit(otInstance *aInstance, otRadioFrame *aPacket, void *transmitContext)
 {
 	/*
 	 * This Function converts the openthread-provided PHY frame into a MAC
@@ -1201,27 +1201,27 @@ ThreadError otPlatRadioTransmit(otInstance *aInstance, RadioPacket *aPacket, voi
 	 * in the soft MAC layer prevent the frame from being encrypted until it
 	 * reaches the hardmac.
 	 */
-	ThreadError error = kThreadError_None;
+	otError error = OT_ERROR_NONE;
 	static uint8_t handle = 0;
 	handle++;
 
-	otPlatLog(kLogLevelDebg, kLogRegionHardMac, "otPlatRadioTransmit Called");
+	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_HARDMAC, "otPlatRadioTransmit Called");
 
 	while (intransit_isHandleInUse(handle))
 	{
 		handle++;    //make sure handle is available for use
 	}
 
-	VerifyOrExit(sState != kStateDisabled, error = kThreadError_Busy);
+	VerifyOrExit(sState != OT_RADIO_STATE_DISABLED, error = OT_ERROR_BUSY);
 
 	uint16_t frameControl = GETLE16(aPacket->mPsdu);
 	VerifyOrExit(((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_DATA) || \
 	             ((frameControl & MAC_FC_FT_MASK) == MAC_FC_FT_COMMAND),\
-	             error = kThreadError_Abort;                            \
-	             otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Unexpected frame type %#x\n\r", (frameControl & MAC_FC_FT_MASK)););
+	             error = OT_ERROR_ABORT;                            \
+	             otPlatLog(OT_LOG_LEVEL_WARN, OT_LOG_REGION_HARDMAC, "Unexpected frame type %#x\n\r", (frameControl & MAC_FC_FT_MASK)););
 
-	sState = kStateTransmit;
-	sTransmitError = kThreadError_None;
+	sState = OT_RADIO_STATE_TRANSMIT;
+	sTransmitError = OT_ERROR_NONE;
 
 	setChannel(aPacket->mChannel);
 
@@ -1330,7 +1330,7 @@ ThreadError otPlatRadioTransmit(otInstance *aInstance, RadioPacket *aPacket, voi
 			memset(&curSecSpec, 0, sizeof(curSecSpec));
 		}
 
-		otPlatLog(kLogLevelDebg, kLogRegionHardMac, "Data Packet Sent");
+		otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_HARDMAC, "Data Packet Sent");
 		MCPS_DATA_request(
 		    curPacket.SrcAddrMode,
 		    curPacket.Dst.AddressMode,
@@ -1361,7 +1361,7 @@ ThreadError otPlatRadioTransmit(otInstance *aInstance, RadioPacket *aPacket, voi
 
 				if (count > 0)
 				{
-					otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Poll Failed! Retry #%d\n\r", count);
+					otPlatLog(OT_LOG_LEVEL_WARN, OT_LOG_REGION_HARDMAC, "Poll Failed! Retry #%d\n\r", count);
 				}
 			}
 			while (ret == 0xFF && (count++ < 10));
@@ -1376,7 +1376,7 @@ ThreadError otPlatRadioTransmit(otInstance *aInstance, RadioPacket *aPacket, voi
 			}
 			else
 			{
-				otPlatRadioTransmitDone(aInstance, aPacket, false, kThreadError_NoAck, transmitContext);
+				otPlatRadioTransmitDone(aInstance, aPacket, false, OT_ERROR_NO_ACK, transmitContext);
 			}
 		}
 		else
@@ -1396,7 +1396,7 @@ int8_t otPlatRadioGetRssi(otInstance *aInstance)
 
 otRadioCaps otPlatRadioGetCaps(otInstance *aInstance)
 {
-	return kRadioCapsAckTimeout;
+	return OT_RADIO_CAPS_ACK_TIMEOUT;
 }
 
 bool otPlatRadioGetPromiscuous(otInstance *aInstance)
@@ -1439,9 +1439,9 @@ void otPlatRadioPurge(otInstance *aInstance, void * aSender){
 
 static int handleDataIndication(struct MCPS_DATA_indication_pset *params)   //Async
 {
-	static RadioPacket sReceiveFrame;
+	static otRadioFrame sReceiveFrame;
 	static uint8_t sReceivePsdu[IEEE802154_MAX_LENGTH];
-	static ThreadError sReceiveError = kThreadError_None;
+	static otError sReceiveError = OT_ERROR_NONE;
 
 	/*
 	 * This Function converts the MAC primitive provided by the ca8210 into a
@@ -1547,7 +1547,7 @@ static int handleDataIndication(struct MCPS_DATA_indication_pset *params)   //As
 		}
 		else if (curSecSpec->KeyIdMode == 0x00) //Table 96
 		{
-			otPlatLog(kLogLevelInfo, kLogRegionHardMac, "Key Mode 0 received");
+			otPlatLog(OT_LOG_LEVEL_INFO, OT_LOG_REGION_HARDMAC, "Key Mode 0 received");
 		}
 
 		if (curSecSpec->KeyIdMode != 0x00)
@@ -1568,7 +1568,7 @@ static int handleDataIndication(struct MCPS_DATA_indication_pset *params)   //As
 
 	if (sReceiveFrame.mLength > aMaxPHYPacketSize)
 	{
-		otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Invalid frame Length %d! Msdu: %d; Footer: %d; Header: %d;\n\r", sReceiveFrame.mLength, params->MsduLength, footerLength, headerLength);
+		otPlatLog(OT_LOG_LEVEL_WARN, OT_LOG_REGION_HARDMAC, "Invalid frame Length %d! Msdu: %d; Footer: %d; Header: %d;\n\r", sReceiveFrame.mLength, params->MsduLength, footerLength, headerLength);
 		return 1;
 	}
 
@@ -1579,7 +1579,7 @@ static int handleDataIndication(struct MCPS_DATA_indication_pset *params)   //As
 	noiseFloor = sReceiveFrame.mPower;
 
 	barrier_worker_waitForMain();
-	sState = kStateReceive;
+	sState = OT_RADIO_STATE_RECEIVE;
 	otPlatRadioReceiveDone(OT_INSTANCE, &sReceiveFrame, sReceiveError);
 	barrier_worker_endWork();
 
@@ -1597,7 +1597,7 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
 	 */
 	barrier_worker_waitForMain();
 
-	RadioPacket *sentFrame = intransit_getFrame(params->MsduHandle);
+	otRadioFrame *sentFrame = intransit_getFrame(params->MsduHandle);
 	otInstance *aInstance = sentFrame->mTransmitInstance;
 
 	if (aInstance == NULL || sentFrame == NULL || !otIp6IsEnabled(aInstance))
@@ -1606,7 +1606,7 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
 		return 1;
 	}
 
-	otPlatLog(kLogLevelDebg, kLogRegionHardMac, "Data confirm received!");
+	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_HARDMAC, "Data confirm received!");
 
 	assert(sentFrame != NULL);
 
@@ -1624,22 +1624,22 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
 
 	case MAC_CHANNEL_ACCESS_FAILURE:
 	case MAC_TRANSACTION_OVERFLOW:
-		sTransmitError = kThreadError_ChannelAccessFailure;
+		sTransmitError = OT_ERROR_CHANNEL_ACCESS_FAILURE;
 		break;
 
 	default:
-		sTransmitError = kThreadError_NoAck;
+		sTransmitError = OT_ERROR_NO_ACK;
 		break;
 	}
 	otPlatRadioTransmitDone(aInstance, sentFrame, false, sTransmitError, sentFrame->mTransmitContext);
 
-	if(sTransmitError != kThreadError_None)
+	if(sTransmitError != OT_ERROR_NONE)
 	{
-		otPlatLog(kLogLevelWarn, kLogRegionHardMac, "MCPS_DATA_confirm error: %#x \r\n", params->Status);
+		otPlatLog(OT_LOG_LEVEL_WARN, OT_LOG_REGION_HARDMAC, "MCPS_DATA_confirm error: %#x \r\n", params->Status);
 	}
 
-	sState = kStateReceive;
-	sTransmitError = kThreadError_None;
+	sState = OT_RADIO_STATE_RECEIVE;
+	sTransmitError = OT_ERROR_NONE;
 
 	intransit_rmFrame(params->MsduHandle);
 
@@ -1669,7 +1669,7 @@ static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params)
 	}
 	else
 	{
-		otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Invalid beacon received!");
+		otPlatLog(OT_LOG_LEVEL_WARN, OT_LOG_REGION_HARDMAC, "Invalid beacon received!");
 		return 1;
 	}
 
@@ -1689,7 +1689,7 @@ static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params)
 
 	if (version != (mBeaconPayload[1] & 0x0F))
 	{
-		otPlatLog(kLogLevelWarn, kLogRegionHardMac, "Beacon received is from different Thread version");
+		otPlatLog(OT_LOG_LEVEL_WARN, OT_LOG_REGION_HARDMAC, "Beacon received is from different Thread version");
 		return 0;
 	}
 
@@ -1895,7 +1895,7 @@ static int intransit_isHandleInUse(uint8_t handle)
 	return 0;
 }
 
-static int intransit_putFrame(uint8_t handle, const RadioPacket *in)
+static int intransit_putFrame(uint8_t handle, const otRadioFrame *in)
 {
 	int i = 0;
 	uint8_t found = 0;
@@ -1918,7 +1918,7 @@ static int intransit_putFrame(uint8_t handle, const RadioPacket *in)
 
 	IntransitHandles[i] = handle;
 	//TODO: Only store what is needed
-	memcpy(&IntransitPackets[i], in, sizeof(RadioPacket));
+	memcpy(&IntransitPackets[i], in, sizeof(otRadioFrame));
 
 	return 0;
 }
@@ -1953,9 +1953,9 @@ static int intransit_rmFrame(uint8_t handle)
 	return !found;	//0 if successfully removed
 }
 
-static RadioPacket *intransit_getFrame(uint8_t handle)
+static otRadioFrame *intransit_getFrame(uint8_t handle)
 {
-	RadioPacket *rval = NULL;
+	otRadioFrame *rval = NULL;
 
 	for (int i = 0; i < MAX_INTRANSITS; i++)
 	{
