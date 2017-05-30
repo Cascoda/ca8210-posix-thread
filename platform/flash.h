@@ -49,7 +49,7 @@ extern "C" {
  * @retval ::kThreadError_None    Initialize flash driver success.
  * @retval ::kThreadError_Failed  Initialize flash driver fail.
  */
-ThreadError utilsFlashInit(void);
+otError utilsFlashInit(void);
 
 /**
  * Get the size of flash that can be read/write by the caller.
@@ -73,7 +73,7 @@ uint32_t utilsFlashGetSize(void);
  * @retval kThreadError_Failed         Erase flash operation is not started.
  * @retval kThreadError_InvalidArgs    aAddress is out of range of flash or not aligend.
  */
-ThreadError utilsFlashErasePage(uint32_t aAddress);
+otError utilsFlashErasePage(uint32_t aAddress);
 
 /**
   * Check whether flash is ready or busy.
@@ -85,7 +85,7 @@ ThreadError utilsFlashErasePage(uint32_t aAddress);
   * @retval kThreadError_None           Flash is ready for any operation.
   * @retval kThreadError_Busy           Flash is busy.
   */
-ThreadError utilsFlashStatusWait(uint32_t aTimeout);
+otError utilsFlashStatusWait(uint32_t aTimeout);
 
 /**
  * Write flash. The write operation only clears bits, but never set bits.

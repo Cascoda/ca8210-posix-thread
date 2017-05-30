@@ -95,10 +95,10 @@ uint32_t otPlatRandomGet(void)
 
 }
 
-ThreadError otPlatRandomGetTrue(uint8_t *aOutput, uint16_t aOutputLength){
-	ThreadError error = kThreadError_None;
+otError otPlatRandomGetTrue(uint8_t *aOutput, uint16_t aOutputLength){
+	otError error = OT_ERROR_NONE;
 
-	VerifyOrExit(aOutput != NULL, error = kThreadError_InvalidArgs);
+	VerifyOrExit(aOutput != NULL, error = OT_ERROR_INVALID_ARGS);
 
 	int fd = open("/dev/random", O_RDONLY);
 	if (fd != -1)
@@ -107,7 +107,7 @@ ThreadError otPlatRandomGetTrue(uint8_t *aOutput, uint16_t aOutputLength){
 		(void) close(fd);
 	}
 	else{
-		error = kThreadError_Failed;
+		error = OT_ERROR_FAILED;
 	}
 
 exit:

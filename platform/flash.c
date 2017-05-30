@@ -53,9 +53,9 @@ enum
     FLASH_PAGE_NUM = 128,
 };
 
-ThreadError utilsFlashInit(void)
+otError utilsFlashInit(void)
 {
-    ThreadError error = kThreadError_None;
+    otError error = OT_ERROR_NONE;
     char fileName[20];
     struct stat st;
     bool create = false;
@@ -80,7 +80,7 @@ ThreadError utilsFlashInit(void)
     sFlashFd = open(fileName, O_RDWR | O_CREAT, 0666);
     lseek(sFlashFd, 0, SEEK_SET);
 
-    VerifyOrExit(sFlashFd >= 0, error = kThreadError_Failed);
+    VerifyOrExit(sFlashFd >= 0, error = OT_ERROR_FAILED);
 
     if (create)
     {
@@ -99,9 +99,9 @@ uint32_t utilsFlashGetSize(void)
     return FLASH_SIZE;
 }
 
-ThreadError utilsFlashErasePage(uint32_t aAddress)
+otError utilsFlashErasePage(uint32_t aAddress)
 {
-    ThreadError error = kThreadError_None;
+    otError error = OT_ERROR_NONE;
     //TODO: Improve this quick fix for slow startup due to looping single character file writes
     static uint8_t buf[FLASH_PAGE_SIZE] = {0};
     uint32_t address;
@@ -111,8 +111,8 @@ ThreadError utilsFlashErasePage(uint32_t aAddress)
     	memset(buf, 0xFF, FLASH_PAGE_SIZE);
     }
 
-    VerifyOrExit(sFlashFd >= 0, error = kThreadError_Failed);
-    VerifyOrExit(aAddress < FLASH_SIZE, error = kThreadError_InvalidArgs);
+    VerifyOrExit(sFlashFd >= 0, error = OT_ERROR_FAILED);
+    VerifyOrExit(aAddress < FLASH_SIZE, error = OT_ERROR_INVALID_ARGS);
 
     // Get start address of the flash page that includes aAddress
     address = aAddress & (~(uint32_t)(FLASH_PAGE_SIZE - 1));
@@ -123,16 +123,16 @@ ThreadError utilsFlashErasePage(uint32_t aAddress)
         VerifyOrExit(pwrite(sFlashFd, &buf, 1, address + offset) == 1, error = kThreadError_Failed);
     }
     */
-    VerifyOrExit(pwrite(sFlashFd, buf, FLASH_PAGE_SIZE, address) == 1, error = kThreadError_Failed);
+    VerifyOrExit(pwrite(sFlashFd, buf, FLASH_PAGE_SIZE, address) == 1, error = OT_ERROR_FAILED);
 
 exit:
     return error;
 }
 
-ThreadError utilsFlashStatusWait(uint32_t aTimeout)
+otError utilsFlashStatusWait(uint32_t aTimeout)
 {
     (void)aTimeout;
-    return kThreadError_None;
+    return OT_ERROR_NONE;
 }
 
 uint32_t utilsFlashWrite(uint32_t aAddress, uint8_t *aData, uint32_t aSize)

@@ -35,6 +35,7 @@
 #include <sys/time.h>
 #include <time.h>
 
+#include <openthread.h>
 #include <platform/logging.h>
 #include <common/code_utils.hpp>
 #include <openthread-core-config.h>
@@ -67,78 +68,82 @@ void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat
 
     switch (aLogLevel)
     {
-    case kLogLevelNone:
+    case OT_LOG_LEVEL_NONE:
         LOG_PRINTF("NONE ");
         break;
 
-    case kLogLevelCrit:
+    case OT_LOG_LEVEL_CRIT:
         LOG_PRINTF("CRIT ");
         break;
 
-    case kLogLevelWarn:
+    case OT_LOG_LEVEL_WARN:
         LOG_PRINTF("WARN ");
         break;
 
-    case kLogLevelInfo:
+    case OT_LOG_LEVEL_INFO:
         LOG_PRINTF("INFO ");
         break;
 
-    case kLogLevelDebg:
+    case OT_LOG_LEVEL_DEBG:
         LOG_PRINTF("DEBG ");
         break;
     }
 
     switch (aLogRegion)
     {
-    case kLogRegionApi:
+    case OT_LOG_REGION_API:
         LOG_PRINTF("API  ");
         break;
 
-    case kLogRegionMle:
+    case OT_LOG_REGION_MLE:
         LOG_PRINTF("MLE  ");
         break;
 
-    case kLogRegionArp:
+    case OT_LOG_REGION_ARP:
         LOG_PRINTF("ARP  ");
         break;
 
-    case kLogRegionNetData:
+    case OT_LOG_REGION_NET_DATA:
         LOG_PRINTF("NETD ");
         break;
 
-    case kLogRegionIp6:
+    case OT_LOG_REGION_IP6:
         LOG_PRINTF("IPV6 ");
         break;
 
-    case kLogRegionIcmp:
+    case OT_LOG_REGION_ICMP:
         LOG_PRINTF("ICMP ");
         break;
 
-    case kLogRegionMac:
+    case OT_LOG_REGION_MAC:
         LOG_PRINTF("MAC  ");
         break;
 
-    case kLogRegionMem:
+    case OT_LOG_REGION_MEM:
         LOG_PRINTF("MEM  ");
         break;
 
-    case kLogRegionNcp:
+    case OT_LOG_REGION_NCP:
         LOG_PRINTF("NCP  ");
         break;
 
-    case kLogRegionMeshCoP:
+    case OT_LOG_REGION_COAP:
+		LOG_PRINTF("COAP ");
+		break;
+
+    case OT_LOG_REGION_MESH_COP:
         LOG_PRINTF("MCOP ");
         break;
 
-    case kLogRegionNetDiag:
-        LOG_PRINTF("NDG ");
+    case OT_LOG_REGION_NET_DIAG:
+        LOG_PRINTF("NDG  ");
         break;
 
-    case kLogRegionHardMac:
+    case OT_LOG_REGION_HARDMAC:
     	LOG_PRINTF("HMAC ");
     	break;
 
-    case kLogRegionPlatform:
+    case OT_LOG_REGION_PLATFORM:
 		LOG_PRINTF("PLAT ");
 		break;
 
