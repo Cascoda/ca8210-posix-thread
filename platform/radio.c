@@ -1368,15 +1368,15 @@ otError otPlatRadioTransmit(otInstance *aInstance, otRadioFrame *aPacket, void *
 
 			if (ret == MAC_SUCCESS)
 			{
-				otPlatRadioTransmitDone(aInstance, aPacket, true, error, transmitContext);
+				otPlatRadioTransmitDone(aInstance, aPacket, true, transmitContext, error);
 			}
 			else if (ret == MAC_NO_DATA)
 			{
-				otPlatRadioTransmitDone(aInstance, aPacket, false, error, transmitContext);
+				otPlatRadioTransmitDone(aInstance, aPacket, false, transmitContext, error);
 			}
 			else
 			{
-				otPlatRadioTransmitDone(aInstance, aPacket, false, OT_ERROR_NO_ACK, transmitContext);
+				otPlatRadioTransmitDone(aInstance, aPacket, false, transmitContext, OT_ERROR_NO_ACK);
 			}
 		}
 		else
@@ -1631,7 +1631,7 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
 		sTransmitError = OT_ERROR_NO_ACK;
 		break;
 	}
-	otPlatRadioTransmitDone(aInstance, sentFrame, false, sTransmitError, sentFrame->mTransmitContext);
+	otPlatRadioTransmitDone(aInstance, sentFrame, false, sentFrame->mTransmitContext, sTransmitError);
 
 	if(sTransmitError != OT_ERROR_NONE)
 	{
