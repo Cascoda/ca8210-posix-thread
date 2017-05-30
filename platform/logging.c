@@ -127,12 +127,16 @@ void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat
         LOG_PRINTF("NCP  ");
         break;
 
+    case OT_LOG_REGION_COAP:
+		LOG_PRINTF("COAP ");
+		break;
+
     case OT_LOG_REGION_MESH_COP:
         LOG_PRINTF("MCOP ");
         break;
 
     case OT_LOG_REGION_NET_DIAG:
-        LOG_PRINTF("NDG ");
+        LOG_PRINTF("NDG  ");
         break;
 
     case OT_LOG_REGION_HARDMAC:
