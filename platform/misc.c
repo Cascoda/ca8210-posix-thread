@@ -38,3 +38,8 @@ otPlatResetReason otPlatGetResetReason(otInstance *aInstance)
 {
     return OT_PLAT_RESET_REASON_POWER_ON;
 }
+
+void otPlatWakeHost(void)
+{
+    //This is the host - not applicable to posix & hardmac systems
+}
