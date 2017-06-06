@@ -43,6 +43,9 @@
 
 #include <common/code_utils.hpp>
 
+#define FLASH_FOLDER "/usr/local/etc/"
+#define FLASH_FILE FLASH_FOLDER ".otConfig"
+
 static int sFlashFd;
 uint32_t sEraseAddress;
 
@@ -65,12 +68,11 @@ otError utilsFlashInit(void)
 
     memset(&st, 0, sizeof(st));
 
-    if (stat("tmp", &st) == -1)
+    if (stat(FLASH_FOLDER, &st) == -1)
     {
-        mkdir("tmp", 0777);
+        mkdir(FLASH_FOLDER, 0777);
     }
-
-    snprintf(fileName, sizeof(fileName), "tmp/%d_%d.flash", NODE_ID, (uint32_t)tv.tv_usec);
+    snprintf(fileName, sizeof(fileName), FLASH_FILE);
 
     if (access(fileName, 0))
     {
