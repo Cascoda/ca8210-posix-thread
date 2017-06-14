@@ -243,7 +243,6 @@ static void setChannel(uint8_t channel)
 	}
 }
 
-
 void otPlatRadioEnableSrcMatch(otInstance *aInstance, bool aEnable)
 {
 	(void) aInstance;
@@ -723,7 +722,7 @@ static void coordChangeCallback(uint32_t aFlags, otInstance *aInstance)
 	struct SecSpec securityLevel = {0};
 	otDeviceRole role;
 
-	VerifyOrExit(aFlags & OT_NET_ROLE, );
+	VerifyOrExit(aFlags & OT_CHANGED_THREAD_ROLE, );
 
 	role = otThreadGetDeviceRole(aInstance);
 
@@ -929,11 +928,11 @@ static void keyChangeCallback(uint32_t aFlags, otInstance *aInstance)
 	 */
 
 	if (!(aFlags & (
-	          OT_NET_KEY_SEQUENCE_COUNTER |
-	          OT_THREAD_CHILD_ADDED |
-	          OT_THREAD_CHILD_REMOVED |
-	          OT_NET_ROLE |
-	          OT_THREAD_LINK_STATUS)))
+			  OT_CHANGED_THREAD_KEY_SEQUENCE_COUNTER |
+			  OT_CHANGED_THREAD_CHILD_ADDED |
+			  OT_CHANGED_THREAD_CHILD_REMOVED |
+			  OT_CHANGED_THREAD_ROLE |
+	          OT_CHANGED_LINK_STATUS)))
 	{
 		//No relevant flag set
 		return;
