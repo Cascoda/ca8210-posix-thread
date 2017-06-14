@@ -243,7 +243,6 @@ static void setChannel(uint8_t channel)
 	}
 }
 
-
 void otPlatRadioEnableSrcMatch(otInstance *aInstance, bool aEnable)
 {
 	(void) aInstance;
