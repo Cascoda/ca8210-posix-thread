@@ -225,7 +225,7 @@ static const uint8_t kBeaconPayloadLength = BEACON_PAYLOAD_LENGTH;
 static uint8_t mBeaconPayload[BEACON_PAYLOAD_LENGTH] = {3, 0x20};
 //END BEACON DATA
 
-static int8_t noiseFloor = 127;
+static int8_t sNoiseFloor = 127;
 
 static otRadioState sState;
 
@@ -1390,7 +1390,7 @@ exit:
 
 int8_t otPlatRadioGetRssi(otInstance *aInstance)
 {
-	return noiseFloor;
+	return sNoiseFloor;
 }
 
 otRadioCaps otPlatRadioGetCaps(otInstance *aInstance)
@@ -1451,7 +1451,7 @@ static int handleDataIndication(struct MCPS_DATA_indication_pset *params)   //As
 
 	if (!otIp6IsEnabled(OT_INSTANCE))
 	{
-		return 1;
+		return 0;
 	}
 
 	sReceiveFrame.mLength = 0;
@@ -1568,14 +1568,14 @@ static int handleDataIndication(struct MCPS_DATA_indication_pset *params)   //As
 	if (sReceiveFrame.mLength > aMaxPHYPacketSize)
 	{
 		otPlatLog(OT_LOG_LEVEL_WARN, OT_LOG_REGION_HARDMAC, "Invalid frame Length %d! Msdu: %d; Footer: %d; Header: %d;\n\r", sReceiveFrame.mLength, params->MsduLength, footerLength, headerLength);
-		return 1;
+		return -1;
 	}
 
 	memcpy(sReceiveFrame.mPsdu + headerLength, params->Msdu, params->MsduLength);
 	sReceiveFrame.mLqi = params->MpduLinkQuality;
 	sReceiveFrame.mChannel = sChannel;
 	sReceiveFrame.mPower = (params->MpduLinkQuality - 256) / 2;	//Formula from CA-821X API
-	noiseFloor = sReceiveFrame.mPower;
+	sNoiseFloor = sReceiveFrame.mPower;
 
 	barrier_worker_waitForMain();
 	sState = OT_RADIO_STATE_RECEIVE;
@@ -1584,7 +1584,7 @@ static int handleDataIndication(struct MCPS_DATA_indication_pset *params)   //As
 
 	sReceiveFrame.mLength = 0;
 
-	return 0;
+	return 1;
 }
 
 static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
@@ -1602,7 +1602,7 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
 	if (aInstance == NULL || sentFrame == NULL || !otIp6IsEnabled(aInstance))
 	{
 		barrier_worker_endWork();
-		return 1;
+		return 0;
 	}
 
 	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_HARDMAC, "Data confirm received!");
@@ -1643,7 +1643,7 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
 	intransit_rmFrame(params->MsduHandle);
 
 	barrier_worker_endWork();
-	return 0;
+	return 1;
 }
 
 static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params) //Async
@@ -1654,6 +1654,7 @@ static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params)
 	 *  the payload and passing the relevant information to openthread in a struct.
 	 */
 
+	int8_t rval = 0;
 	otActiveScanResult resultStruct;
 	uint8_t *sduLength;
 	uint8_t *Sdu;
@@ -1662,23 +1663,15 @@ static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params)
 	uint8_t shortaddrs  = *((uint8_t *)params + 23) & 7;
 	uint8_t extaddrs = (*((uint8_t *)params + 23) & 112) >> 4;
 
-	if ((params->PanDescriptor.Coord.AddressMode) == 3)
-	{
-		memcpy(resultStruct.mExtAddress.m8, params->PanDescriptor.Coord.Address, 8);
-	}
-	else
-	{
-		otPlatLog(OT_LOG_LEVEL_WARN, OT_LOG_REGION_HARDMAC, "Invalid beacon received!");
-		return 1;
-	}
+	VerifyOrExit(params->PanDescriptor.Coord.AddressMode == 3,;);
+	VerifyOrExit(params->PanDescriptor.Security.SecurityLevel == 0,;);
+	memcpy(resultStruct.mExtAddress.m8, params->PanDescriptor.Coord.Address, 8);
 
 	resultStruct.mPanId = GETLE16(params->PanDescriptor.Coord.PANId);
 	resultStruct.mChannel = params->PanDescriptor.LogicalChannel;
 	resultStruct.mRssi = (params->PanDescriptor.LinkQuality - 256) / 2;
-	noiseFloor = resultStruct.mRssi;
+	sNoiseFloor = resultStruct.mRssi;
 	resultStruct.mLqi = params->PanDescriptor.LinkQuality;
-	VerifyOrExit(params->PanDescriptor.Security.SecurityLevel == 0,;);
-	//Asset security = 0
 	sduLength = (uint8_t *)params + (24 + (2 * shortaddrs) + (8 * extaddrs));
 
 	VerifyOrExit(*sduLength >= 26, );
@@ -1686,11 +1679,7 @@ static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params)
 	Sdu = (uint8_t *)params + (25 + 2 * shortaddrs + 8 * extaddrs);
 	version = (*((uint8_t *)Sdu + 1) & 0x0F);
 
-	if (version != (mBeaconPayload[1] & 0x0F))
-	{
-		otPlatLog(OT_LOG_LEVEL_WARN, OT_LOG_REGION_HARDMAC, "Beacon received is from different Thread version");
-		return 0;
-	}
+	VerifyOrExit(version == (mBeaconPayload[1] & 0x0F),;);
 
 	if (*Sdu == 3)
 	{
@@ -1698,16 +1687,18 @@ static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params)
 		memcpy(&resultStruct.mExtendedPanId, Sdu + 18, sizeof(resultStruct.mExtendedPanId));
 		barrier_worker_waitForMain();
 		sActiveScanCallback(&resultStruct, sActiveScanContext);
+		rval = 1;
 		barrier_worker_endWork();
 	}
 
 
 exit:
-	return 0;
+	return rval;
 }
 
 static int handleScanConfirm(struct MLME_SCAN_confirm_pset *params)   //Async
 {
+	int8_t rval = 0;
 
 	VerifyOrExit(params->Status != MAC_SCAN_IN_PROGRESS, );
 
@@ -1758,9 +1749,9 @@ static int handleScanConfirm(struct MLME_SCAN_confirm_pset *params)   //Async
 			pDeviceRef);
 	}
 
-
+	rval = 1;
 exit:
-	return 0;
+	return rval;
 }
 
 static int handleGenericDispatchFrame(const uint8_t *buf, size_t len)   //Async
