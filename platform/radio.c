@@ -1654,7 +1654,7 @@ static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params)
 	 *  the payload and passing the relevant information to openthread in a struct.
 	 */
 
-	uint8_t rval = 0;
+	int8_t rval = 0;
 	otActiveScanResult resultStruct;
 	uint8_t *sduLength;
 	uint8_t *Sdu;
@@ -1698,7 +1698,7 @@ exit:
 
 static int handleScanConfirm(struct MLME_SCAN_confirm_pset *params)   //Async
 {
-	uint8_t rval = 0;
+	int8_t rval = 0;
 
 	VerifyOrExit(params->Status != MAC_SCAN_IN_PROGRESS, );
 
