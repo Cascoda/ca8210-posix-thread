@@ -608,9 +608,7 @@ void initIeeeEui64(){
 		sIeeeEui64[0] |= 2; //Set local bit
 		write(file, sIeeeEui64, 8);
 	}
-
 	close(file);
-	otPlatRadioSetExtendedAddress(NULL, sIeeeEui64);
 }
 
 void PlatformRadioInit(void)
