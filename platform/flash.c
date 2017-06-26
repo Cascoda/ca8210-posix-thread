@@ -38,7 +38,7 @@
 #include <sys/stat.h>
 #include <string.h>
 
-#include <openthread-config.h>
+#include <openthread-core-config.h>
 #include "flash.h"
 
 #include <common/code_utils.hpp>
