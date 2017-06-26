@@ -65,6 +65,12 @@ extern uint32_t WELLKNOWN_NODE_ID;
 void posixPlatformInit(void);
 
 /**
+ * This method stores the original arguments given to the program
+ *
+ */
+void posixPlatformSetOrigArgs(int argc, char *argv[])
+
+/**
  * This method performs all platform-specific processing.
  *
  */
@@ -129,7 +135,7 @@ void PlatformRadioStop(void);
  * This method restores the terminal to it's pre-openthread state
  *
  */
-void posixPlatformRestoreTerminal(void)
+void posixPlatformRestoreTerminal(void);
 
 /**
  * This method initializes the random number service used by OpenThread.
