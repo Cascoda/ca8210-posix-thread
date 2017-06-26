@@ -45,8 +45,8 @@ void otPlatReset(otInstance *aInstance)
 
     argv[gArgumentsCount] = NULL;
 
-    platformRadioDeinit();
-    platformUartRestore();
+    PlatformRadioStop();
+    posixPlatformRestoreTerminal();
 
     execvp(argv[0], argv);
     perror("reset failed");

@@ -39,6 +39,8 @@
 #include <sys/select.h>
 #include <sys/time.h>
 #include <types.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -116,6 +118,18 @@ void PlatformRadioInit(void);
  *
  */
 int PlatformRadioProcess(void);
+
+/**
+ * This method cleanly stops the radio
+ *
+ */
+void PlatformRadioStop(void);
+
+/**
+ * This method restores the terminal to it's pre-openthread state
+ *
+ */
+void posixPlatformRestoreTerminal(void)
 
 /**
  * This method initializes the random number service used by OpenThread.
