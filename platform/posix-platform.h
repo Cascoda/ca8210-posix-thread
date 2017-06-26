@@ -68,7 +68,7 @@ void posixPlatformInit(void);
  * This method stores the original arguments given to the program
  *
  */
-void posixPlatformSetOrigArgs(int argc, char *argv[])
+void posixPlatformSetOrigArgs(int argc, char *argv[]);
 
 /**
  * This method performs all platform-specific processing.
