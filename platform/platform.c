@@ -52,6 +52,14 @@ static fd_set read_fds;
 static fd_set write_fds;
 static int max_fd = -1;
 
+int     gArgumentsCount = 0;
+char  **gArguments = NULL;
+
+void posixPlatformSetOrigArgs(int argc, char *argv[]){
+	gArgumentsCount = argc;
+	gArguments = argv;
+}
+
 void posixPlatformInit(void)
 {
     posixPlatformAlarmInit();

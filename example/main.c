@@ -40,6 +40,7 @@ int main(int argc, char *argv[])
 {
     otInstance * OT_INSTANCE;
 
+    posixPlatformSetOrigArgs(argc, argv);
     posixPlatformInit();
     OT_INSTANCE = otInstanceInit();
     otCliUartInit(OT_INSTANCE);

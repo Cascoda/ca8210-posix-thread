@@ -29,9 +29,29 @@
 #include <platform/misc.h>
 #include "posix-platform.h"
 
+#include <unistd.h>
+
+extern int      gArgumentsCount;
+extern char   **gArguments;
+
 void otPlatReset(otInstance *aInstance)
 {
-    // This function does nothing on the Posix platform.
+	char *argv[gArgumentsCount + 1];
+
+    for (int i = 0; i < gArgumentsCount; ++i)
+    {
+        argv[i] = gArguments[i];
+    }
+
+    argv[gArgumentsCount] = NULL;
+
+    PlatformRadioStop();
+    posixPlatformRestoreTerminal();
+
+    execvp(argv[0], argv);
+    perror("reset failed");
+    exit(EXIT_FAILURE);
+    (void)aInstance;
 }
 
 otPlatResetReason otPlatGetResetReason(otInstance *aInstance)
