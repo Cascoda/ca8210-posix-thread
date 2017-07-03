@@ -569,6 +569,8 @@ void PlatformRadioStop(void)
 	//Reset the MAC to a default state
 	otPlatLog(OT_LOG_LEVEL_INFO, OT_LOG_REGION_HARDMAC, "Resetting & Stopping Radio...\n\r");
 	MLME_RESET_request_sync(1, pDeviceRef);
+
+	kernel_exchange_deinit();
 }
 
 void otPlatRadioDumpPib(void){
