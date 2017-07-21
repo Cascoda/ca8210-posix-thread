@@ -34,7 +34,7 @@
 #include <string.h>
 #include <sys/time.h>
 
-#include <platform/alarm.h>
+#include <platform/alarm-milli.h>
 #include <posix-platform.h>
 
 static bool s_is_running = false;
@@ -46,7 +46,7 @@ void posixPlatformAlarmInit(void)
     gettimeofday(&s_start, NULL);
 }
 
-uint32_t otPlatAlarmGetNow(void)
+uint32_t otPlatAlarmMilliGetNow(void)
 {
     struct timeval tv;
 
@@ -64,14 +64,14 @@ uint32_t otPlatAlarmGetNow(void)
     return (uint32_t)((tv.tv_sec * 1000) + (tv.tv_usec / 1000));
 }
 
-void otPlatAlarmStartAt(otInstance *aInstance, uint32_t t0, uint32_t dt)
+void otPlatAlarmMilliStartAt(otInstance *aInstance, uint32_t t0, uint32_t dt)
 {
 	(void)aInstance;
     s_alarm = t0 + dt;
     s_is_running = true;
 }
 
-void otPlatAlarmStop(otInstance *aInstance)
+void otPlatAlarmMilliStop(otInstance *aInstance)
 {
 	(void)aInstance;
     s_is_running = false;
@@ -88,7 +88,7 @@ void posixPlatformAlarmUpdateTimeout(struct timeval *aTimeout)
 
     if (s_is_running)
     {
-    	remaining = (int32_t)(s_alarm - otPlatAlarmGetNow());
+    	remaining = (int32_t)(s_alarm - otPlatAlarmMilliGetNow());
 
         if (remaining > 0)
         {
@@ -114,12 +114,12 @@ void posixPlatformAlarmProcess(otInstance *aInstance)
 
     if (s_is_running)
     {
-    	remaining = (int32_t)(s_alarm - otPlatAlarmGetNow());
+    	remaining = (int32_t)(s_alarm - otPlatAlarmMilliGetNow());
 
         if (remaining <= 0)
         {
             s_is_running = false;
-            otPlatAlarmFired(aInstance);
+            otPlatAlarmMilliFired(aInstance);
         }
     }
 }
