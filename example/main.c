@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
 
     posixPlatformSetOrigArgs(argc, argv);
     posixPlatformInit();
-    OT_INSTANCE = otInstanceInit();
+    OT_INSTANCE = otInstanceInitSingle();
     otCliUartInit(OT_INSTANCE);
 
     /* Test harness specific config */

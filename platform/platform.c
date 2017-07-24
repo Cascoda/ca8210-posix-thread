@@ -40,7 +40,7 @@
 
 #include <openthread.h>
 #include <tasklet.h>
-#include <platform/alarm.h>
+#include <platform/alarm-milli.h>
 #include <platform/uart.h>
 #include <posix-platform.h>
 #include <selfpipe.h>
