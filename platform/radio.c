@@ -78,6 +78,7 @@ enum
 };
 
 static otInstance *OT_INSTANCE;
+static bool sRadioInitialised = false;
 
 //CASCODA API CALLBACKS
 static int handleDataIndication(struct MCPS_DATA_indication_pset *params);
@@ -559,7 +560,16 @@ void otPlatRadioSetDefaultTxPower(otInstance *aInstance, int8_t aPower)
 static int driverErrorCallback(int error_number)
 {
 	otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_HARDMAC, "DRIVER FAILED WITH ERROR %d\n\r", error_number);
-	//TODO: Fail gracefully
+
+	if(!sRadioInitialised)
+		exit();
+
+	otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_HARDMAC, "Attempting restart...\n\r", error_number);
+
+	ca8210_test_int_reset(5);
+	otThreadSetAutoStart(OT_INSTANCE, true);
+	otInstanceReset(OT_INSTANCE);
+
 	abort();
 	return 0;
 }
@@ -698,6 +708,8 @@ void PlatformRadioInit(void)
 	    pDeviceRef);
 
 	initIeeeEui64();
+
+	sRadioInitialised = true;
 }
 
 void otHardMacStateChangeCallback(otInstance *aInstance, uint32_t aFlags, void *aContext)
