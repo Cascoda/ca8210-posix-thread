@@ -562,7 +562,7 @@ static int driverErrorCallback(int error_number)
 	otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_HARDMAC, "DRIVER FAILED WITH ERROR %d\n\r", error_number);
 
 	if(!sRadioInitialised)
-		exit();
+		exit(EXIT_SUCCESS);
 
 	otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_HARDMAC, "Attempting restart...\n\r", error_number);
 
