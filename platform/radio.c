@@ -1382,15 +1382,15 @@ otError otPlatRadioTransmit(otInstance *aInstance, otRadioFrame *aPacket, void *
 
 			if (ret == MAC_SUCCESS)
 			{
-				otPlatRadioTransmitDone(aInstance, aPacket, true, transmitContext, error);
+				otPlatRadioTxDone(aInstance, aPacket, NULL, transmitContext, error);
 			}
 			else if (ret == MAC_NO_DATA)
 			{
-				otPlatRadioTransmitDone(aInstance, aPacket, false, transmitContext, error);
+				otPlatRadioTxDone(aInstance, aPacket, NULL, transmitContext, error);
 			}
 			else
 			{
-				otPlatRadioTransmitDone(aInstance, aPacket, false, transmitContext, OT_ERROR_NO_ACK);
+				otPlatRadioTxDone(aInstance, aPacket, NULL, transmitContext, OT_ERROR_NO_ACK);
 			}
 		}
 		else
@@ -1410,7 +1410,9 @@ int8_t otPlatRadioGetRssi(otInstance *aInstance)
 
 otRadioCaps otPlatRadioGetCaps(otInstance *aInstance)
 {
-	return OT_RADIO_CAPS_ACK_TIMEOUT;
+	return  OT_RADIO_CAPS_ACK_TIMEOUT |
+			OT_RADIO_CAPS_TRANSMIT_RETRIES |
+			OT_RADIO_CAPS_CSMA_BACKOFF;
 }
 
 bool otPlatRadioGetPromiscuous(otInstance *aInstance)
@@ -1645,7 +1647,8 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
 		sTransmitError = OT_ERROR_NO_ACK;
 		break;
 	}
-	otPlatRadioTransmitDone(aInstance, sentFrame, false, sentFrame->mTransmitContext, sTransmitError);
+
+	otPlatRadioTxDone(aInstance, sentFrame, NULL, sentFrame->mTransmitContext, sTransmitError);
 
 	if(sTransmitError != OT_ERROR_NONE)
 	{
