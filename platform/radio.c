@@ -562,7 +562,7 @@ static int driverErrorCallback(int error_number)
 	otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_HARDMAC, "DRIVER FAILED WITH ERROR %d\n\r", error_number);
 
 	if(!sRadioInitialised)
-		exit(EXIT_SUCCESS);
+		exit(EXIT_FAILURE);
 
 	otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_HARDMAC, "Attempting restart...\n\r", error_number);
 
@@ -625,6 +625,7 @@ void initIeeeEui64(){
 
 void PlatformRadioInit(void)
 {
+	int status;
 	sTransmitFrame.mLength = 0;
 	sTransmitFrame.mPsdu = sTransmitPsdu;
 
@@ -632,7 +633,9 @@ void PlatformRadioInit(void)
 
 	selfpipe_init();
 
-	kernel_exchange_init_withhandler(driverErrorCallback);
+	status = kernel_exchange_init_withhandler(driverErrorCallback);
+	if(status == -1)
+		exit(EXIT_FAILURE);
 
 	struct ca821x_api_callbacks callbacks = {0};
 	callbacks.MCPS_DATA_indication = &handleDataIndication;
