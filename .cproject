@@ -29,6 +29,8 @@
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_DHCP6_CLIENT=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_DTLS=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_APPLICATION_COAP=1"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_FTD=1"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_CONFIG_LOG_LEVEL=OT_LOG_LEVEL_DEBG"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.207805673" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
@@ -40,6 +42,8 @@
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_DHCP6_SERVER=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_DHCP6_CLIENT=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_APPLICATION_COAP=1"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_FTD=1"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_CONFIG_LOG_LEVEL=OT_LOG_LEVEL_DEBG"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1448218497" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
