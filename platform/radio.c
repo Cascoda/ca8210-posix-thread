@@ -258,7 +258,7 @@ otError otPlatRadioAddSrcMatchShortEntry(otInstance *aInstance, const uint16_t a
 	return OT_ERROR_NONE;
 }
 
-otError otPlatRadioAddSrcMatchExtEntry(otInstance *aInstance, const uint8_t *aExtAddress)
+otError otPlatRadioAddSrcMatchExtEntry(otInstance *aInstance, const otExtAddress *aExtAddress)
 {
 	(void) aInstance;
 	(void) aExtAddress;
@@ -272,7 +272,7 @@ otError otPlatRadioClearSrcMatchShortEntry(otInstance *aInstance, const uint16_t
 	return OT_ERROR_NONE;
 }
 
-otError otPlatRadioClearSrcMatchExtEntry(otInstance *aInstance, const uint8_t *aExtAddress)
+otError otPlatRadioClearSrcMatchExtEntry(otInstance *aInstance, const otExtAddress *aExtAddress)
 {
 	(void) aInstance;
 	(void) aExtAddress;
@@ -523,13 +523,13 @@ void otPlatRadioGetIeeeEui64(otInstance *aInstance, uint8_t *aIeeeEui64)
 	}
 }
 
-void otPlatRadioSetExtendedAddress(otInstance *aInstance, uint8_t *address)
+void otPlatRadioSetExtendedAddress(otInstance *aInstance,  const otExtAddress *aExtAddress)
 {
 	MLME_SET_request_sync(
 	    nsIEEEAddress,
 	    0,
 	    OT_EXT_ADDRESS_SIZE,
-	    address,
+	    aExtAddress,
 	    pDeviceRef);
 }
 
