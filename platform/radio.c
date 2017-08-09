@@ -258,7 +258,7 @@ otError otPlatRadioAddSrcMatchShortEntry(otInstance *aInstance, const uint16_t a
 	return OT_ERROR_NONE;
 }
 
-otError otPlatRadioAddSrcMatchExtEntry(otInstance *aInstance, const uint8_t *aExtAddress)
+otError otPlatRadioAddSrcMatchExtEntry(otInstance *aInstance, const otExtAddress *aExtAddress)
 {
 	(void) aInstance;
 	(void) aExtAddress;
@@ -272,7 +272,7 @@ otError otPlatRadioClearSrcMatchShortEntry(otInstance *aInstance, const uint16_t
 	return OT_ERROR_NONE;
 }
 
-otError otPlatRadioClearSrcMatchExtEntry(otInstance *aInstance, const uint8_t *aExtAddress)
+otError otPlatRadioClearSrcMatchExtEntry(otInstance *aInstance, const otExtAddress *aExtAddress)
 {
 	(void) aInstance;
 	(void) aExtAddress;
@@ -523,13 +523,13 @@ void otPlatRadioGetIeeeEui64(otInstance *aInstance, uint8_t *aIeeeEui64)
 	}
 }
 
-void otPlatRadioSetExtendedAddress(otInstance *aInstance, uint8_t *address)
+void otPlatRadioSetExtendedAddress(otInstance *aInstance,  const otExtAddress *aExtAddress)
 {
 	MLME_SET_request_sync(
 	    nsIEEEAddress,
 	    0,
 	    OT_EXT_ADDRESS_SIZE,
-	    address,
+	    aExtAddress,
 	    pDeviceRef);
 }
 
@@ -576,11 +576,13 @@ static int driverErrorCallback(int error_number)
 
 void PlatformRadioStop(void)
 {
-	//Reset the MAC to a default state
-	otPlatLog(OT_LOG_LEVEL_INFO, OT_LOG_REGION_HARDMAC, "Resetting & Stopping Radio...\n\r");
-	MLME_RESET_request_sync(1, pDeviceRef);
-
-	kernel_exchange_deinit();
+	if(sRadioInitialised){
+		//Reset the MAC to a default state
+		otPlatLog(OT_LOG_LEVEL_INFO, OT_LOG_REGION_HARDMAC, "Resetting & Stopping Radio...\n\r");
+		MLME_RESET_request_sync(1, pDeviceRef);
+		kernel_exchange_deinit();
+		sRadioInitialised = false;
+	}
 }
 
 void otPlatRadioDumpPib(void){
@@ -1382,15 +1384,15 @@ otError otPlatRadioTransmit(otInstance *aInstance, otRadioFrame *aPacket, void *
 
 			if (ret == MAC_SUCCESS)
 			{
-				otPlatRadioTransmitDone(aInstance, aPacket, true, transmitContext, error);
+				otPlatRadioTxDone(aInstance, aPacket, NULL, transmitContext, error);
 			}
 			else if (ret == MAC_NO_DATA)
 			{
-				otPlatRadioTransmitDone(aInstance, aPacket, false, transmitContext, error);
+				otPlatRadioTxDone(aInstance, aPacket, NULL, transmitContext, error);
 			}
 			else
 			{
-				otPlatRadioTransmitDone(aInstance, aPacket, false, transmitContext, OT_ERROR_NO_ACK);
+				otPlatRadioTxDone(aInstance, aPacket, NULL, transmitContext, OT_ERROR_NO_ACK);
 			}
 		}
 		else
@@ -1410,7 +1412,9 @@ int8_t otPlatRadioGetRssi(otInstance *aInstance)
 
 otRadioCaps otPlatRadioGetCaps(otInstance *aInstance)
 {
-	return OT_RADIO_CAPS_ACK_TIMEOUT;
+	return  OT_RADIO_CAPS_ACK_TIMEOUT |
+			OT_RADIO_CAPS_TRANSMIT_RETRIES |
+			OT_RADIO_CAPS_CSMA_BACKOFF;
 }
 
 bool otPlatRadioGetPromiscuous(otInstance *aInstance)
@@ -1645,7 +1649,8 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
 		sTransmitError = OT_ERROR_NO_ACK;
 		break;
 	}
-	otPlatRadioTransmitDone(aInstance, sentFrame, false, sentFrame->mTransmitContext, sTransmitError);
+
+	otPlatRadioTxDone(aInstance, sentFrame, NULL, sentFrame->mTransmitContext, sTransmitError);
 
 	if(sTransmitError != OT_ERROR_NONE)
 	{
