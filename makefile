@@ -1,5 +1,5 @@
 SUBDIRS = ca8210-kernel-exchange ca8210-usb-exchange openthread platform
-CLEANSUBDIRS := $(addsuffix .clean,$(SUBDIRS)) example
+CLEANSUBDIRS := $(addsuffix .clean,$(SUBDIRS)) example.clean
 CFLAGS = -g
 LDFLAGS = -pthread
 EXCHANGE = kernel
