@@ -56,9 +56,13 @@ and prepare openthread for compilation
 ./prepare_openthread.sh
 ```
 
-And finally, build everything
+And finally, build everything (specifying the exchange method desired - default is kernel)
 ```bash
 make
+#OR
+make EXCHANGE=kernel
+#OR
+make EXCHANGE=usb
 ```
 Or for the nuc970:
 ```bash

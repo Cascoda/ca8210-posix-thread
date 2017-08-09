@@ -3,14 +3,15 @@ TARGET_MT = mtExample
 LIBDIRS = ../openthread/src/cli/ ../ ../openthread/third_party/mbedtls/
 LIBSEARCH := $(addprefix -L,$(LIBDIRS))
 LIBS = -lm -lopenthread-cli-ftd -lotposixca8210-ftd -lstdc++ -lpthread
+EXCHANGE = kernel
 INCLUDEDIRS := ./\
 	../openthread/include/\
 	../openthread/include/openthread/\
 	../openthread/src/core/\
 	./include/\
 	../platform/\
-	../ca8210-kernel-exchange/cascoda-api/include/\
-	../ca8210-kernel-exchange/
+	../ca8210-$(EXCHANGE)-exchange/cascoda-api/include/\
+	../ca8210-$(EXCHANGE)-exchange/
 INCLUDEDIRCMD := $(addprefix -I,$(INCLUDEDIRS)) 
 CFLAGS := $(INCLUDEDIRCMD) -g -Wall -pthread
 

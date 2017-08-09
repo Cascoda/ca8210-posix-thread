@@ -1,4 +1,5 @@
 TARGET = libotplatposixca8210.a
+EXCHANGE = kernel
 LIBS = -lm
 INCLUDEDIRS := ./\
 	../openthread/include/openthread/platform/\
@@ -11,6 +12,10 @@ INCLUDEDIRS := ./\
 INCLUDEDIRCMD := $(addprefix -I,$(INCLUDEDIRS)) 
 SOURCEDIR = ./
 CFLAGS := $(INCLUDEDIRCMD) -g -Wall -std=c99
+
+ifeq ($(EXCHANGE), "usb")
+CFLAGS := -DUSE_USB_EXCHANGE 
+endif
 
 .PHONY: default all clean
 

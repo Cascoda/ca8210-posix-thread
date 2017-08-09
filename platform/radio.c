@@ -47,7 +47,11 @@
 #include <platform/random.h>
 #include <platform/logging.h>
 #include <ca821x_api.h>
+#ifdef USE_USB_EXCHANGE
+#include <usb_exchange.h>
+#else
 #include <kernel_exchange.h>
+#endif
 #include <string.h>
 #include <mac_messages.h>
 #include "posix-platform.h"
@@ -580,7 +584,11 @@ void PlatformRadioStop(void)
 		//Reset the MAC to a default state
 		otPlatLog(OT_LOG_LEVEL_INFO, OT_LOG_REGION_HARDMAC, "Resetting & Stopping Radio...\n\r");
 		MLME_RESET_request_sync(1, pDeviceRef);
+#ifdef USE_USB_EXCHANGE
+		usb_exchange_deinit();
+#else
 		kernel_exchange_deinit();
+#endif
 		sRadioInitialised = false;
 	}
 }
@@ -634,8 +642,11 @@ void PlatformRadioInit(void)
 	atexit(&PlatformRadioStop);
 
 	selfpipe_init();
-
+#ifdef USE_USB_EXCHANGE
+	status = usb_exchange_init_withhandler(driverErrorCallback);
+#else
 	status = kernel_exchange_init_withhandler(driverErrorCallback);
+#endif
 	if(status == -1)
 		exit(EXIT_FAILURE);
 
