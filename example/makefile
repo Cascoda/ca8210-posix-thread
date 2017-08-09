@@ -1,9 +1,9 @@
 TARGET_MAIN = cliapp
 TARGET_MT = mtExample
+EXCHANGE = kernel
 LIBDIRS = ../openthread/src/cli/ ../ ../openthread/third_party/mbedtls/
 LIBSEARCH := $(addprefix -L,$(LIBDIRS))
-LIBS = -lm -lopenthread-cli-ftd -lotposixca8210-ftd -lstdc++ -lpthread
-EXCHANGE = kernel
+LIBS = -lm -lopenthread-cli-ftd -lotposixca8210-$(EXCHANGE)-ftd -lstdc++ -lpthread
 INCLUDEDIRS := ./\
 	../openthread/include/\
 	../openthread/include/openthread/\
