@@ -1491,8 +1491,7 @@ static int handleDataIndication(struct MCPS_DATA_indication_pset *params)   //As
 	uint8_t footerLength = 0;
 	uint16_t frameControl = 0;
 	uint8_t msduLength = params->MsduLength;
-	struct SecSpec *curSecSpec = (struct SecSpec *)
-			((unsigned int)params + (unsigned int)msduLength + 29); //Location defined in cascoda API docs
+	struct SecSpec *curSecSpec = (struct SecSpec *) (&params->Msdu[msduLength]); //Location defined in cascoda API docs
 
 	frameControl |= (params->Src.AddressMode & 0x3) << 14;
 	frameControl |= (params->Dst.AddressMode & 0x3) << 10;
