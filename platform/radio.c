@@ -47,7 +47,11 @@
 #include <platform/random.h>
 #include <platform/logging.h>
 #include <ca821x_api.h>
+#ifdef USE_USB_EXCHANGE
+#include <usb_exchange.h>
+#else
 #include <kernel_exchange.h>
+#endif
 #include <string.h>
 #include <mac_messages.h>
 #include "posix-platform.h"
@@ -566,9 +570,10 @@ static int driverErrorCallback(int error_number)
 
 	otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_HARDMAC, "Attempting restart...\n\r", error_number);
 
-	ca8210_test_int_reset(5);
-	otThreadSetAutoStart(OT_INSTANCE, true);
-	otInstanceReset(OT_INSTANCE);
+	if(ca8210_test_int_reset(5) == 0){
+		otThreadSetAutoStart(OT_INSTANCE, true);
+		otInstanceReset(OT_INSTANCE);
+	}
 
 	abort();
 	return 0;
@@ -580,7 +585,11 @@ void PlatformRadioStop(void)
 		//Reset the MAC to a default state
 		otPlatLog(OT_LOG_LEVEL_INFO, OT_LOG_REGION_HARDMAC, "Resetting & Stopping Radio...\n\r");
 		MLME_RESET_request_sync(1, pDeviceRef);
+#ifdef USE_USB_EXCHANGE
+		usb_exchange_deinit();
+#else
 		kernel_exchange_deinit();
+#endif
 		sRadioInitialised = false;
 	}
 }
@@ -634,8 +643,11 @@ void PlatformRadioInit(void)
 	atexit(&PlatformRadioStop);
 
 	selfpipe_init();
-
+#ifdef USE_USB_EXCHANGE
+	status = usb_exchange_init_withhandler(driverErrorCallback);
+#else
 	status = kernel_exchange_init_withhandler(driverErrorCallback);
+#endif
 	if(status == -1)
 		exit(EXIT_FAILURE);
 
@@ -1480,8 +1492,7 @@ static int handleDataIndication(struct MCPS_DATA_indication_pset *params)   //As
 	uint8_t footerLength = 0;
 	uint16_t frameControl = 0;
 	uint8_t msduLength = params->MsduLength;
-	struct SecSpec *curSecSpec = (struct SecSpec *)
-			((unsigned int)params + (unsigned int)msduLength + 29); //Location defined in cascoda API docs
+	struct SecSpec *curSecSpec = (struct SecSpec *) (&params->Msdu[msduLength]); //Location defined in cascoda API docs
 
 	frameControl |= (params->Src.AddressMode & 0x3) << 14;
 	frameControl |= (params->Dst.AddressMode & 0x3) << 10;

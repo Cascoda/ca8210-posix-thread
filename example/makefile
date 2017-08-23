@@ -1,18 +1,23 @@
 TARGET_MAIN = cliapp
 TARGET_MT = mtExample
+EXCHANGE = kernel
 LIBDIRS = ../openthread/src/cli/ ../ ../openthread/third_party/mbedtls/
-LIBSEARCH := $(addprefix -L,$(LIBDIRS))
-LIBS = -lm -lopenthread-cli-ftd -lotposixca8210-ftd -lstdc++ -lpthread
+LIBSEARCH := $(addprefix -L,$(LIBDIRS)) -LLIBDIR
+LIBS = -lm -lopenthread-cli-ftd -lotposixca8210-$(EXCHANGE)-ftd -lstdc++ -lpthread
 INCLUDEDIRS := ./\
 	../openthread/include/\
 	../openthread/include/openthread/\
 	../openthread/src/core/\
 	./include/\
 	../platform/\
-	../ca8210-kernel-exchange/cascoda-api/include/\
-	../ca8210-kernel-exchange/
+	../ca8210-$(EXCHANGE)-exchange/cascoda-api/include/\
+	../ca8210-$(EXCHANGE)-exchange/
 INCLUDEDIRCMD := $(addprefix -I,$(INCLUDEDIRS)) 
 CFLAGS := $(INCLUDEDIRCMD) -g -Wall -pthread
+
+ifeq ($(EXCHANGE),usb)
+LIBS := $(LIBS) -lhidapi-libusb
+endif
 
 .PHONY: default all clean
 

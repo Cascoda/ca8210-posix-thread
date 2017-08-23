@@ -1,4 +1,4 @@
-#ca8210-posix-thread
+# ca8210-posix-thread
 
 A modified version of openthread to work on posix based systems using the cascoda ca8210 radio.
 
@@ -9,15 +9,17 @@ in the examples folder is an example program which presents a command line inter
 For usage with a custom program, see the example makefile provided. To summarise, the otposixca8210 library (which is built to the root repo folder) should be linked into the custom program. The directories for useful header files are:
 
 ```
-	../openthread/include/\
-	../openthread/src/core/\
-	./include/\
-	../platform/\
-	../ca8210-kernel-exchange/cascoda-api/include/\
+	../openthread/include/
+	../openthread/src/core/
+	./include/
+	../platform/
+	../ca8210-kernel-exchange/cascoda-api/include/
 	../ca8210-kernel-exchange/
+	../ca8210-usb-exchange/cascoda-api/include/
+	../ca8210-usb-exchange/
 ```
 
-##Build instructions for debian-like systems:
+## Build instructions for debian-like systems:
 
 Set the permissions for the cloned repo, you can use the included fix_permissions.sh script to do this, just change pi:pi in the first line to be your own username in the form:
 
@@ -56,15 +58,21 @@ and prepare openthread for compilation
 ./prepare_openthread.sh
 ```
 
-And finally, build everything
+And finally, build everything (specifying the exchange method if desired - default is kernel)
 ```bash
 make
+#OR
+make EXCHANGE=kernel
+#OR
+make EXCHANGE=usb
+#If using the usb exchange, then the hidusb shared library needs to be installed, as specified in ca8210-usb-exchange/hidapi/README.txt
 ```
+
 Or for the nuc970:
 ```bash
 ./build_nuc970.sh
 ```
-##Using wpantund to enable as linux network interface
+## Using wpantund to enable as linux network interface
 
 On a posix system, a thread node can act as a linux network interface using the wpantund tool available from https://github.com/openthread/wpantund/
 
