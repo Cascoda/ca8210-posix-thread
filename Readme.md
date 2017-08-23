@@ -9,12 +9,14 @@ in the examples folder is an example program which presents a command line inter
 For usage with a custom program, see the example makefile provided. To summarise, the otposixca8210 library (which is built to the root repo folder) should be linked into the custom program. The directories for useful header files are:
 
 ```
-	../openthread/include/\
-	../openthread/src/core/\
-	./include/\
-	../platform/\
-	../ca8210-kernel-exchange/cascoda-api/include/\
+	../openthread/include/
+	../openthread/src/core/
+	./include/
+	../platform/
+	../ca8210-kernel-exchange/cascoda-api/include/
 	../ca8210-kernel-exchange/
+	../ca8210-usb-exchange/cascoda-api/include/
+	../ca8210-usb-exchange/
 ```
 
 ##Build instructions for debian-like systems:
@@ -56,7 +58,7 @@ and prepare openthread for compilation
 ./prepare_openthread.sh
 ```
 
-And finally, build everything (specifying the exchange method desired - default is kernel)
+And finally, build everything (specifying the exchange method if desired - default is kernel)
 ```bash
 make
 #OR
@@ -64,6 +66,8 @@ make EXCHANGE=kernel
 #OR
 make EXCHANGE=usb
 ```
+If using the usb exchange, then the hidusb library needs to be installed, as specified in ca8210-usb-exchange/hidapi/README.txt
+
 Or for the nuc970:
 ```bash
 ./build_nuc970.sh
