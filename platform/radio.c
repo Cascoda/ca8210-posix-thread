@@ -570,9 +570,10 @@ static int driverErrorCallback(int error_number)
 
 	otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_HARDMAC, "Attempting restart...\n\r", error_number);
 
-	ca8210_test_int_reset(5);
-	otThreadSetAutoStart(OT_INSTANCE, true);
-	otInstanceReset(OT_INSTANCE);
+	if(ca8210_test_int_reset(5) == 0){
+		otThreadSetAutoStart(OT_INSTANCE, true);
+		otInstanceReset(OT_INSTANCE);
+	}
 
 	abort();
 	return 0;
