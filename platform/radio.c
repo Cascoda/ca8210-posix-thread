@@ -85,13 +85,16 @@ static otInstance *OT_INSTANCE;
 static bool sRadioInitialised = false;
 
 //CASCODA API CALLBACKS
-static int handleDataIndication(struct MCPS_DATA_indication_pset *params);
-static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params);
-
-static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params);
-static int handleScanConfirm(struct MLME_SCAN_confirm_pset *params);
-
-static int handleGenericDispatchFrame(const uint8_t *buf, size_t len);
+static int handleDataIndication(struct MCPS_DATA_indication_pset *params,
+                                void *pDeviceRef);
+static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params,
+                             void *pDeviceRef);
+static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params,
+                              void *pDeviceRef);
+static int handleScanConfirm(struct MLME_SCAN_confirm_pset *params,
+                             void *pDeviceRef);
+static int handleGenericDispatchFrame(const uint8_t *buf, size_t len,
+                                      void *pDeviceRef);
 //END CASCODA API CALLBACKS
 
 //OPENTHREAD API CALLBACKS
@@ -1467,7 +1470,7 @@ void otPlatRadioPurge(otInstance *aInstance, void * aSender){
 	intransit_purge(aSender);
 }
 
-static int handleDataIndication(struct MCPS_DATA_indication_pset *params)   //Async
+static int handleDataIndication(struct MCPS_DATA_indication_pset *params, void *pDeviceRef)   //Async
 {
 	static otRadioFrame sReceiveFrame;
 	static uint8_t sReceivePsdu[IEEE802154_MAX_LENGTH];
@@ -1598,7 +1601,7 @@ static int handleDataIndication(struct MCPS_DATA_indication_pset *params)   //As
 	if (sReceiveFrame.mLength > aMaxPHYPacketSize)
 	{
 		otPlatLog(OT_LOG_LEVEL_WARN, OT_LOG_REGION_HARDMAC, "Invalid frame Length %d! Msdu: %d; Footer: %d; Header: %d;\n\r", sReceiveFrame.mLength, params->MsduLength, footerLength, headerLength);
-		return -1;
+		return 0;
 	}
 
 	memcpy(sReceiveFrame.mPsdu + headerLength, params->Msdu, params->MsduLength);
@@ -1617,7 +1620,7 @@ static int handleDataIndication(struct MCPS_DATA_indication_pset *params)   //As
 	return 1;
 }
 
-static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
+static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params, void *pDeviceRef)   //Async
 {
 
 	/*
@@ -1677,7 +1680,7 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params)   //Async
 	return 1;
 }
 
-static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params) //Async
+static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params, void *pDeviceRef) //Async
 {
 
 	/*
@@ -1727,7 +1730,7 @@ exit:
 	return rval;
 }
 
-static int handleScanConfirm(struct MLME_SCAN_confirm_pset *params)   //Async
+static int handleScanConfirm(struct MLME_SCAN_confirm_pset *params, void *pDeviceRef)   //Async
 {
 	int8_t rval = 0;
 
@@ -1785,7 +1788,7 @@ exit:
 	return rval;
 }
 
-static int handleGenericDispatchFrame(const uint8_t *buf, size_t len)   //Async
+static int handleGenericDispatchFrame(const uint8_t *buf, size_t len, void *pDeviceRef)   //Async
 {
 
 	/*
