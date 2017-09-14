@@ -5,7 +5,7 @@
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.toolchain.gnu.cross.base.1778921236" moduleId="org.eclipse.cdt.core.settings" name="Default">
 				<externalSettings/>
 				<extensions>
-					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.GNU_ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
@@ -16,26 +16,12 @@
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
 				<configuration artifactName="${ProjName}" buildProperties="" description="" id="cdt.managedbuild.toolchain.gnu.cross.base.1778921236" name="Default" parent="org.eclipse.cdt.build.core.emptycfg">
 					<folderInfo id="cdt.managedbuild.toolchain.gnu.cross.base.1778921236.1182208912" name="/" resourcePath="">
-						<toolChain id="cdt.managedbuild.toolchain.gnu.cross.base.1249344870" name="Cross GCC" superClass="cdt.managedbuild.toolchain.gnu.cross.base">
-							<option id="cdt.managedbuild.option.gnu.cross.prefix.2112352211" name="Prefix" superClass="cdt.managedbuild.option.gnu.cross.prefix"/>
-							<option id="cdt.managedbuild.option.gnu.cross.path.1103464589" name="Path" superClass="cdt.managedbuild.option.gnu.cross.path"/>
-							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.targetPlatform.gnu.cross.12438593" isAbstract="false" osList="all" superClass="cdt.managedbuild.targetPlatform.gnu.cross"/>
-							<builder id="cdt.managedbuild.builder.gnu.cross.1221602121" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.builder.gnu.cross"/>
-							<tool id="cdt.managedbuild.tool.gnu.cross.c.compiler.1883314443" name="Cross GCC Compiler" superClass="cdt.managedbuild.tool.gnu.cross.c.compiler">
-								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1560620727" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" useByScannerDiscovery="false" valueType="definedSymbols">
-									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_JOINER=1"/>
-									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_COMMISSIONER=1"/>
-									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_DHCP6_SERVER=1"/>
-									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_DHCP6_CLIENT=1"/>
-									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_DTLS=1"/>
-									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_APPLICATION_COAP=1"/>
-									<listOptionValue builtIn="false" value="OPENTHREAD_FTD=1"/>
-									<listOptionValue builtIn="false" value="OPENTHREAD_CONFIG_LOG_LEVEL=OT_LOG_LEVEL_DEBG"/>
-								</option>
-								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.207805673" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
-							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.compiler.373553390" name="Cross G++ Compiler" superClass="cdt.managedbuild.tool.gnu.cross.cpp.compiler">
-								<option id="gnu.cpp.compiler.option.preprocessor.def.1069507331" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
+						<toolChain id="cdt.managedbuild.toolchain.gnu.base.2030823904" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.base">
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.GNU_ELF" id="cdt.managedbuild.target.gnu.platform.base.1465632238" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
+							<builder id="cdt.managedbuild.target.gnu.builder.base.1643822601" managedBuildOn="false" name="Gnu Make Builder.Default" superClass="cdt.managedbuild.target.gnu.builder.base"/>
+							<tool id="cdt.managedbuild.tool.gnu.archiver.base.2127889414" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.1119769758" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base">
+								<option id="gnu.cpp.compiler.option.preprocessor.def.53056944" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_JOINER=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_COMMISSIONER=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_DTLS=1"/>
@@ -45,40 +31,69 @@
 									<listOptionValue builtIn="false" value="OPENTHREAD_FTD=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_CONFIG_LOG_LEVEL=OT_LOG_LEVEL_DEBG"/>
 								</option>
-								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1448218497" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
+								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1062504756" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.971108878" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
-							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.1215703440" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
-								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.673421809" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
+							<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.1284950591" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base">
+								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1437035592" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_JOINER=1"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_COMMISSIONER=1"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_DHCP6_SERVER=1"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_DHCP6_CLIENT=1"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_DTLS=1"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_APPLICATION_COAP=1"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_FTD=1"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_CONFIG_LOG_LEVEL=OT_LOG_LEVEL_DEBG"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.525590296" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.494526463" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.base.1224002429" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.base">
+								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.596394666" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
 								</inputType>
 							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.cross.archiver.1742970248" name="Cross GCC Archiver" superClass="cdt.managedbuild.tool.gnu.cross.archiver"/>
-							<tool id="cdt.managedbuild.tool.gnu.cross.assembler.1741410554" name="Cross GCC Assembler" superClass="cdt.managedbuild.tool.gnu.cross.assembler">
-								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.693697300" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+							<tool id="cdt.managedbuild.tool.gnu.assembler.base.1000269460" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.base">
+								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1532015295" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
 					</folderInfo>
 					<folderInfo id="cdt.managedbuild.toolchain.gnu.cross.base.1778921236.370790971" name="/" resourcePath="openthread">
-						<toolChain id="cdt.managedbuild.toolchain.gnu.cross.base.1430814515" name="Cross GCC" superClass="cdt.managedbuild.toolchain.gnu.cross.base" unusedChildren="">
-							<option id="cdt.managedbuild.option.gnu.cross.prefix.2112352211.1821118338" name="Prefix" superClass="cdt.managedbuild.option.gnu.cross.prefix.2112352211"/>
-							<option id="cdt.managedbuild.option.gnu.cross.path.1103464589.1669390968" name="Path" superClass="cdt.managedbuild.option.gnu.cross.path.1103464589"/>
-							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.targetPlatform.gnu.cross" isAbstract="false" osList="all" superClass="cdt.managedbuild.targetPlatform.gnu.cross"/>
-							<tool id="cdt.managedbuild.tool.gnu.cross.c.compiler.1710485035" name="Cross GCC Compiler" superClass="cdt.managedbuild.tool.gnu.cross.c.compiler.1883314443">
-								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.796274562" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
-							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.compiler.143067271" name="Cross G++ Compiler" superClass="cdt.managedbuild.tool.gnu.cross.cpp.compiler.373553390">
-								<option id="gnu.cpp.compiler.option.include.paths.938857284" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
+						<toolChain id="cdt.managedbuild.toolchain.gnu.base.329058100" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.base">
+							<tool id="cdt.managedbuild.tool.gnu.archiver.base.1085525779" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.1104388389" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base">
+								<option id="gnu.cpp.compiler.option.include.paths.1567482551" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cascoda-thread/openthread/include/openthread}&quot;"/>
 								</option>
-								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.910928413" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
+								<option id="gnu.cpp.compiler.option.preprocessor.def.923073849" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_JOINER=1"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_COMMISSIONER=1"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_DTLS=1"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_DHCP6_SERVER=1"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_DHCP6_CLIENT=1"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_APPLICATION_COAP=1"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_FTD=1"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_CONFIG_LOG_LEVEL=OT_LOG_LEVEL_DEBG"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.805776065" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.378291210" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker.971108878"/>
-							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.498511398" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker.1215703440"/>
-							<tool id="cdt.managedbuild.tool.gnu.cross.archiver.2029732900" name="Cross GCC Archiver" superClass="cdt.managedbuild.tool.gnu.cross.archiver.1742970248"/>
-							<tool id="cdt.managedbuild.tool.gnu.cross.assembler.421483266" name="Cross GCC Assembler" superClass="cdt.managedbuild.tool.gnu.cross.assembler.1741410554">
-								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1204454928" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+							<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.1510048110" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base">
+								<option id="gnu.c.compiler.option.preprocessor.def.symbols.352994284" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_JOINER=1"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_COMMISSIONER=1"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_DHCP6_SERVER=1"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_DHCP6_CLIENT=1"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_DTLS=1"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_APPLICATION_COAP=1"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_FTD=1"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_CONFIG_LOG_LEVEL=OT_LOG_LEVEL_DEBG"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.429303667" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.2113049356" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.base.790918837" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.base"/>
+							<tool id="cdt.managedbuild.tool.gnu.assembler.base.1479977769" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.base">
+								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1688318799" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
 					</folderInfo>
