@@ -1,21 +1,16 @@
 TARGET = libotplatposixca8210.a
-EXCHANGE = kernel
 LIBS = -lm
 INCLUDEDIRS := ./\
 	../openthread/include/openthread/platform/\
 	../openthread/include/openthread/\
 	../openthread/include/\
-	../ca8210-$(EXCHANGE)-exchange/ca821x-api/include/\
-	../ca8210-$(EXCHANGE)-exchange/\
+	../ca821x-posix/ca821x-api/include/\
+	../ca821x-posix/\
 	../openthread/src/core/\
 	../openthread/src/core/common/
 INCLUDEDIRCMD := $(addprefix -I,$(INCLUDEDIRS)) 
 SOURCEDIR = ./
 CFLAGS := $(INCLUDEDIRCMD) -g -Wall -std=c99
-
-ifeq ($(EXCHANGE),usb)
-CFLAGS := $(CFLAGS) -DUSE_USB_EXCHANGE
-endif
 
 .PHONY: default all clean
 
