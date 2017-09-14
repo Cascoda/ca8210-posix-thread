@@ -139,6 +139,10 @@ void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat
         LOG_PRINTF("NDG  ");
         break;
 
+    case OT_LOG_REGION_CLI:
+        LOG_PRINTF("CLI  ");
+        break;
+
     case OT_LOG_REGION_HARDMAC:
     	LOG_PRINTF("HMAC ");
     	break;
