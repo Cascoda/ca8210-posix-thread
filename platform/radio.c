@@ -570,7 +570,7 @@ static int driverErrorCallback(int error_number)
 
 	otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_HARDMAC, "Attempting restart...\n\r", error_number);
 
-	if(ca8210_test_int_reset(5) == 0){
+	if(ca821x_util_reset(pDeviceRef) == 0){
 		otThreadSetAutoStart(OT_INSTANCE, true);
 		otInstanceReset(OT_INSTANCE);
 	}
@@ -649,7 +649,7 @@ void PlatformRadioInit(void)
 	callbacks.MLME_BEACON_NOTIFY_indication = &handleBeaconNotify;
 	callbacks.MLME_SCAN_confirm = &handleScanConfirm;
 	callbacks.generic_dispatch = &handleGenericDispatchFrame;
-	ca821x_register_callbacks(&callbacks);
+	ca821x_register_callbacks(&callbacks, pDeviceRef);
 
 	//Reset the MAC to a default state
 	MLME_RESET_request_sync(1, pDeviceRef);
