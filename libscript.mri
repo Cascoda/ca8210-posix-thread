@@ -1,27 +1,13 @@
-create libotposixca8210-kernel-ftd.a
+create libotposixca8210-ftd.a
 addlib openthread/src/core/libopenthread-ftd.a
-addlib ca8210-kernel-exchange/libca8210.a
+addlib ca821x-posix/libca821x.a
 addlib platform/libotplatposixca8210.a
 addlib openthread/third_party/mbedtls/libmbedcrypto.a
 save
 
-create libotposixca8210-kernel-mtd.a
+create libotposixca8210-mtd.a
 addlib openthread/src/core/libopenthread-mtd.a
-addlib ca8210-kernel-exchange/libca8210.a
-addlib platform/libotplatposixca8210.a
-addlib openthread/third_party/mbedtls/libmbedcrypto.a
-save
-
-create libotposixca8210-usb-ftd.a
-addlib openthread/src/core/libopenthread-ftd.a
-addlib ca8210-usb-exchange/libca8210.a
-addlib platform/libotplatposixca8210.a
-addlib openthread/third_party/mbedtls/libmbedcrypto.a
-save
-
-create libotposixca8210-usb-mtd.a
-addlib openthread/src/core/libopenthread-mtd.a
-addlib ca8210-usb-exchange/libca8210.a
+addlib ca821x-posix/libca821x.a
 addlib platform/libotplatposixca8210.a
 addlib openthread/third_party/mbedtls/libmbedcrypto.a
 save

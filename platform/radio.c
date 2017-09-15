@@ -47,11 +47,7 @@
 #include <platform/random.h>
 #include <platform/logging.h>
 #include <ca821x_api.h>
-#ifdef USE_USB_EXCHANGE
-#include <usb_exchange.h>
-#else
-#include <kernel_exchange.h>
-#endif
+#include <ca821x-posix.h>
 #include <string.h>
 #include <mac_messages.h>
 #include "posix-platform.h"
@@ -86,15 +82,15 @@ static bool sRadioInitialised = false;
 
 //CASCODA API CALLBACKS
 static int handleDataIndication(struct MCPS_DATA_indication_pset *params,
-                                void *pDeviceRef);
+                                struct ca821x_dev *pDeviceRef);
 static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params,
-                             void *pDeviceRef);
+                             struct ca821x_dev *pDeviceRef);
 static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params,
-                              void *pDeviceRef);
+                              struct ca821x_dev *pDeviceRef);
 static int handleScanConfirm(struct MLME_SCAN_confirm_pset *params,
-                             void *pDeviceRef);
+                             struct ca821x_dev *pDeviceRef);
 static int handleGenericDispatchFrame(const uint8_t *buf, size_t len,
-                                      void *pDeviceRef);
+                                      struct ca821x_dev *pDeviceRef);
 //END CASCODA API CALLBACKS
 
 //OPENTHREAD API CALLBACKS
@@ -208,7 +204,8 @@ static uint32_t sEnergyScanMask = 0;
 //END SCAN DATA
 
 //For cascoda API
-static void *pDeviceRef = NULL;
+static struct ca821x_dev s_pDeviceRef;
+static struct ca821x_dev *pDeviceRef = &s_pDeviceRef;
 
 static uint8_t sChannel = 0;
 
@@ -573,7 +570,7 @@ static int driverErrorCallback(int error_number)
 
 	otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_HARDMAC, "Attempting restart...\n\r", error_number);
 
-	if(ca8210_test_int_reset(5) == 0){
+	if(ca821x_util_reset(pDeviceRef) == 0){
 		otThreadSetAutoStart(OT_INSTANCE, true);
 		otInstanceReset(OT_INSTANCE);
 	}
@@ -588,11 +585,7 @@ void PlatformRadioStop(void)
 		//Reset the MAC to a default state
 		otPlatLog(OT_LOG_LEVEL_INFO, OT_LOG_REGION_HARDMAC, "Resetting & Stopping Radio...\n\r");
 		MLME_RESET_request_sync(1, pDeviceRef);
-#ifdef USE_USB_EXCHANGE
-		usb_exchange_deinit();
-#else
-		kernel_exchange_deinit();
-#endif
+		ca821x_util_deinit(pDeviceRef);
 		sRadioInitialised = false;
 	}
 }
@@ -646,11 +639,7 @@ void PlatformRadioInit(void)
 	atexit(&PlatformRadioStop);
 
 	selfpipe_init();
-#ifdef USE_USB_EXCHANGE
-	status = usb_exchange_init_withhandler(driverErrorCallback);
-#else
-	status = kernel_exchange_init_withhandler(driverErrorCallback);
-#endif
+	status = ca821x_util_init(pDeviceRef, driverErrorCallback);
 	if(status == -1)
 		exit(EXIT_FAILURE);
 
@@ -660,7 +649,7 @@ void PlatformRadioInit(void)
 	callbacks.MLME_BEACON_NOTIFY_indication = &handleBeaconNotify;
 	callbacks.MLME_SCAN_confirm = &handleScanConfirm;
 	callbacks.generic_dispatch = &handleGenericDispatchFrame;
-	ca821x_register_callbacks(&callbacks);
+	ca821x_register_callbacks(&callbacks, pDeviceRef);
 
 	//Reset the MAC to a default state
 	MLME_RESET_request_sync(1, pDeviceRef);
@@ -1470,7 +1459,7 @@ void otPlatRadioPurge(otInstance *aInstance, void * aSender){
 	intransit_purge(aSender);
 }
 
-static int handleDataIndication(struct MCPS_DATA_indication_pset *params, void *pDeviceRef)   //Async
+static int handleDataIndication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef)   //Async
 {
 	static otRadioFrame sReceiveFrame;
 	static uint8_t sReceivePsdu[IEEE802154_MAX_LENGTH];
@@ -1620,7 +1609,7 @@ static int handleDataIndication(struct MCPS_DATA_indication_pset *params, void *
 	return 1;
 }
 
-static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params, void *pDeviceRef)   //Async
+static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef)   //Async
 {
 
 	/*
@@ -1680,7 +1669,7 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params, void *pDevic
 	return 1;
 }
 
-static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params, void *pDeviceRef) //Async
+static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params, struct ca821x_dev *pDeviceRef) //Async
 {
 
 	/*
@@ -1730,7 +1719,7 @@ exit:
 	return rval;
 }
 
-static int handleScanConfirm(struct MLME_SCAN_confirm_pset *params, void *pDeviceRef)   //Async
+static int handleScanConfirm(struct MLME_SCAN_confirm_pset *params, struct ca821x_dev *pDeviceRef)   //Async
 {
 	int8_t rval = 0;
 
@@ -1788,7 +1777,7 @@ exit:
 	return rval;
 }
 
-static int handleGenericDispatchFrame(const uint8_t *buf, size_t len, void *pDeviceRef)   //Async
+static int handleGenericDispatchFrame(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)   //Async
 {
 
 	/*

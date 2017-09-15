@@ -1,8 +1,7 @@
-SUBDIRS = ca8210-kernel-exchange ca8210-usb-exchange openthread platform
+SUBDIRS = ca821x-posix openthread platform
 CLEANSUBDIRS := $(addsuffix .clean,$(SUBDIRS)) example.clean
 CFLAGS = -g
 LDFLAGS = -pthread
-EXCHANGE = kernel
 
 .PHONY: subdirs $(SUBDIRS) clean $(SUBCLEAN) full-lib example default
 
@@ -11,14 +10,14 @@ default: example
 subdirs: $(SUBDIRS)
 
 $(SUBDIRS):
-	$(MAKE) -C $@ EXCHANGE=$(EXCHANGE)
+	$(MAKE) -C $@
 
 example: full-lib
-	$(MAKE) -C $@ EXCHANGE=$(EXCHANGE)
+	$(MAKE) -C $@
 
 clean: $(CLEANSUBDIRS)
 
-full-lib: ca8210-kernel-exchange ca8210-usb-exchange openthread platform
+full-lib: ca821x-posix openthread platform
 	$(AR) -M < libscript.mri
 
 $(CLEANSUBDIRS):

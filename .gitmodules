@@ -2,9 +2,6 @@
 	path = openthread
 	url = https://github.com/Cascoda/openthread.git
 	branch = hardmac
-[submodule "ca8210-kernel-exchange"]
-	path = ca8210-kernel-exchange
-	url = https://github.com/Cascoda/ca8210-kernel-exchange.git
-[submodule "ca8210-usb-exchange"]
-	path = ca8210-usb-exchange
-	url = https://github.com/Cascoda/ca8210-usb-exchange.git
+[submodule "ca821x-posix"]
+	path = ca821x-posix
+	url = https://github.com/Cascoda/ca821x-posix.git
