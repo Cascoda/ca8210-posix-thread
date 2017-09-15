@@ -40,6 +40,8 @@ int main(int argc, char *argv[])
 {
     otInstance * OT_INSTANCE;
 
+    if(argc > 1) NODE_ID = atoi(argv[1]);
+
     posixPlatformSetOrigArgs(argc, argv);
     posixPlatformInit();
     OT_INSTANCE = otInstanceInitSingle();

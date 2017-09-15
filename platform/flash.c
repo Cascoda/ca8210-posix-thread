@@ -72,7 +72,7 @@ otError utilsFlashInit(void)
     {
         mkdir(FLASH_FOLDER, 0777);
     }
-    snprintf(fileName, sizeof(fileName), FLASH_FILE);
+    snprintf(fileName, sizeof(fileName), "%s.%02d", FLASH_FILE, NODE_ID);
 
     if (access(fileName, 0))
     {
