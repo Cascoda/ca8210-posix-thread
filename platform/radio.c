@@ -599,7 +599,6 @@ void initIeeeEui64(){
 	int file;
 	uint8_t ret = 0;
 	uint8_t create = false;
-	uint8_t fileCount = 0;
 	size_t fileNameLen = strlen(IEEEEUI_FILE) + 4; //"filename.00\0"
 	char fileName[fileNameLen];
 
