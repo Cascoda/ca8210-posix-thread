@@ -597,12 +597,17 @@ void otPlatRadioDumpPib(void){
 
 void initIeeeEui64(){
 	int file;
-	uint8_t create = false;
 	uint8_t ret = 0;
+	uint8_t create = false;
+	size_t fileNameLen = strlen(IEEEEUI_FILE) + 4; //"filename.00\0"
+	char fileName[fileNameLen];
 
-	if (!access(IEEEEUI_FILE, R_OK))
+	//TODO: This isn't instanceable
+	snprintf(fileName, fileNameLen, "%s.%02d", IEEEEUI_FILE, NODE_ID);
+
+	if (!access(fileName, R_OK))
 	{
-		file = open(IEEEEUI_FILE, O_RDONLY);
+		file = open(fileName, O_RDONLY);
 		ret = read(file, sIeeeEui64, 8);
 		if(ret != 8)
 		{
@@ -617,7 +622,7 @@ void initIeeeEui64(){
 
 	if(create)
 	{
-		file = open(IEEEEUI_FILE, O_RDWR | O_CREAT, 0666);
+		file = open(fileName, O_RDWR | O_CREAT, 0666);
 		for (int i = 0; i < 4; i += 1)
 		{
 			uint16_t random = otPlatRandomGet();
