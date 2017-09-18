@@ -59,7 +59,7 @@ enum
 otError utilsFlashInit(void)
 {
     otError error = OT_ERROR_NONE;
-    char fileName[20];
+    char fileName[30];
     struct stat st;
     bool create = false;
     struct timeval tv;
