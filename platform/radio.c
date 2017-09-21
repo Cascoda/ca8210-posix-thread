@@ -556,7 +556,6 @@ void initIeeeEui64(){
 	size_t fileNameLen = strlen(IEEEEUI_FILE) + 4; //"filename.00\0"
 	char fileName[fileNameLen];
 
-	//TODO: This isn't instanceable
 	snprintf(fileName, fileNameLen, "%s.%02d", IEEEEUI_FILE, NODE_ID);
 
 	if (!access(fileName, R_OK))
