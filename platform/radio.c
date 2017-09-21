@@ -188,7 +188,6 @@ otRadioFrame IntransitPackets[MAX_INTRANSITS];
 
 //FRAME DATA
 static otRadioFrame sTransmitFrame;
-static otError sTransmitError;
 static uint8_t sTransmitPsdu[IEEE802154_MAX_LENGTH];
 //END FRAME DATA
 
@@ -246,51 +245,6 @@ static void setChannel(uint8_t channel)
 		    pDeviceRef);
 		sChannel = channel;
 	}
-}
-
-void otPlatRadioEnableSrcMatch(otInstance *aInstance, bool aEnable)
-{
-	(void) aInstance;
-	(void) aEnable;
-}
-
-otError otPlatRadioAddSrcMatchShortEntry(otInstance *aInstance, const uint16_t aShortAddress)
-{
-	(void) aInstance;
-	(void) aShortAddress;
-	false;
-	return OT_ERROR_NONE;
-}
-
-otError otPlatRadioAddSrcMatchExtEntry(otInstance *aInstance, const otExtAddress *aExtAddress)
-{
-	(void) aInstance;
-	(void) aExtAddress;
-	return OT_ERROR_NONE;
-}
-
-otError otPlatRadioClearSrcMatchShortEntry(otInstance *aInstance, const uint16_t aShortAddress)
-{
-	(void) aInstance;
-	(void) aShortAddress;
-	return OT_ERROR_NONE;
-}
-
-otError otPlatRadioClearSrcMatchExtEntry(otInstance *aInstance, const otExtAddress *aExtAddress)
-{
-	(void) aInstance;
-	(void) aExtAddress;
-	return OT_ERROR_NONE;
-}
-
-void otPlatRadioClearSrcMatchShortEntries(otInstance *aInstance)
-{
-	(void) aInstance;
-}
-
-void otPlatRadioClearSrcMatchExtEntries(otInstance *aInstance)
-{
-	(void) aInstance;
 }
 
 //Platform independent integer log2 implementation
@@ -1246,7 +1200,6 @@ otError otPlatRadioTransmit(otInstance *aInstance, otRadioFrame *aPacket, void *
 	             otPlatLog(OT_LOG_LEVEL_WARN, OT_LOG_REGION_HARDMAC, "Unexpected frame type %#x\n\r", (frameControl & MAC_FC_FT_MASK)););
 
 	sState = OT_RADIO_STATE_TRANSMIT;
-	sTransmitError = OT_ERROR_NONE;
 
 	setChannel(aPacket->mChannel);
 
@@ -1621,20 +1574,19 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params, struct ca821
 	 * This Function processes the MCPS_DATA_CONFIRM and passes the success or
 	 * error to openthread as appropriate.
 	 */
+	int rval = 0;
+	otRadioFrame *sentFrame;
+	otInstance *aInstance;
+	otError error;
+
 	barrier_worker_waitForMain();
 
-	otRadioFrame *sentFrame = intransit_getFrame(params->MsduHandle);
-	otInstance *aInstance = sentFrame->mTransmitInstance;
+	sentFrame = intransit_getFrame(params->MsduHandle);
+	VerifyOrExit(sentFrame != NULL, rval = 0);
 
-	if (aInstance == NULL || sentFrame == NULL || !otIp6IsEnabled(aInstance))
-	{
-		barrier_worker_endWork();
-		return 0;
-	}
-
-	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_HARDMAC, "Data confirm received!");
-
-	assert(sentFrame != NULL);
+	aInstance = sentFrame->mTransmitInstance;
+	VerifyOrExit(aInstance != NULL, rval = 0);
+	VerifyOrExit(otIp6IsEnabled(aInstance), rval = 0);
 
 	if (sKekInUse && params->MsduHandle == sKekMessageHandle)
 	{
@@ -1650,28 +1602,27 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params, struct ca821
 
 	case MAC_CHANNEL_ACCESS_FAILURE:
 	case MAC_TRANSACTION_OVERFLOW:
-		sTransmitError = OT_ERROR_CHANNEL_ACCESS_FAILURE;
+		error = OT_ERROR_CHANNEL_ACCESS_FAILURE;
 		break;
 
 	default:
-		sTransmitError = OT_ERROR_NO_ACK;
+		error = OT_ERROR_NO_ACK;
 		break;
 	}
 
-	otPlatRadioTxDone(aInstance, sentFrame, NULL, sentFrame->mTransmitContext, sTransmitError);
+	otPlatRadioTxDone(aInstance, sentFrame, NULL, sentFrame->mTransmitContext, error);
 
-	if(sTransmitError != OT_ERROR_NONE)
+	if(error != OT_ERROR_NONE)
 	{
 		otPlatLog(OT_LOG_LEVEL_WARN, OT_LOG_REGION_HARDMAC, "MCPS_DATA_confirm error: %#x \r\n", params->Status);
 	}
-
-	sState = OT_RADIO_STATE_RECEIVE;
-	sTransmitError = OT_ERROR_NONE;
-
 	intransit_rmFrame(params->MsduHandle);
 
+	sState = OT_RADIO_STATE_RECEIVE;
+	rval = 1;
+exit:
 	barrier_worker_endWork();
-	return 1;
+	return rval;
 }
 
 static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params, struct ca821x_dev *pDeviceRef) //Async
