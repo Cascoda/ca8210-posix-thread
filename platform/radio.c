@@ -1576,7 +1576,7 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params, struct ca821
 	int rval = 0;
 	otRadioFrame *sentFrame;
 	otInstance *aInstance;
-	otError error;
+	otError error = OT_ERROR_NONE;
 
 	barrier_worker_waitForMain();
 
