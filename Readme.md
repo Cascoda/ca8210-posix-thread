@@ -58,13 +58,9 @@ and prepare openthread for compilation
 ./prepare_openthread.sh
 ```
 
-And finally, build everything (specifying the exchange method if desired - default is kernel)
+And finally, build everything
 ```bash
 make
-#OR
-make EXCHANGE=kernel
-#OR
-make EXCHANGE=usb
 #If using the usb exchange, then the hidusb shared library needs to be installed, as specified in ca8210-usb-exchange/hidapi/README.txt
 ```
 
