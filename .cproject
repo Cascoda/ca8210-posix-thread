@@ -18,10 +18,10 @@
 					<folderInfo id="cdt.managedbuild.toolchain.gnu.cross.base.1778921236.1182208912" name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.base.2030823904" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.base">
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.GNU_ELF" id="cdt.managedbuild.target.gnu.platform.base.1465632238" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
-							<builder id="cdt.managedbuild.target.gnu.builder.base.1643822601" managedBuildOn="false" name="Gnu Make Builder.Default" superClass="cdt.managedbuild.target.gnu.builder.base"/>
+							<builder id="cdt.managedbuild.target.gnu.builder.base.1643822601" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.archiver.base.2127889414" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.1119769758" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base">
-								<option id="gnu.cpp.compiler.option.preprocessor.def.53056944" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
+								<option id="gnu.cpp.compiler.option.preprocessor.def.53056944" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_JOINER=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_COMMISSIONER=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_DTLS=1"/>
@@ -34,7 +34,7 @@
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1062504756" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.1284950591" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base">
-								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1437035592" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
+								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1437035592" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_JOINER=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_COMMISSIONER=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_DHCP6_SERVER=1"/>
@@ -60,12 +60,13 @@
 					</folderInfo>
 					<folderInfo id="cdt.managedbuild.toolchain.gnu.cross.base.1778921236.370790971" name="/" resourcePath="openthread">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.base.329058100" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.base">
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.GNU_ELF" id="cdt.managedbuild.target.gnu.platform.base" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.archiver.base.1085525779" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.1104388389" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base">
-								<option id="gnu.cpp.compiler.option.include.paths.1567482551" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
+								<option id="gnu.cpp.compiler.option.include.paths.1567482551" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cascoda-thread/openthread/include/openthread}&quot;"/>
 								</option>
-								<option id="gnu.cpp.compiler.option.preprocessor.def.923073849" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
+								<option id="gnu.cpp.compiler.option.preprocessor.def.923073849" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_JOINER=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_COMMISSIONER=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_DTLS=1"/>
@@ -78,7 +79,7 @@
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.805776065" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.1510048110" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base">
-								<option id="gnu.c.compiler.option.preprocessor.def.symbols.352994284" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
+								<option id="gnu.c.compiler.option.preprocessor.def.symbols.352994284" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_JOINER=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_COMMISSIONER=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_DHCP6_SERVER=1"/>
@@ -97,6 +98,9 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
+					<sourceEntries>
+						<entry excluding="openthread/tests/unit" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
