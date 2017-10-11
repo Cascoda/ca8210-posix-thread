@@ -112,7 +112,7 @@ otError otPlatMlmeGet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 	if(aAttr == OT_PIB_MAC_KEY_TABLE)
 	{
 		struct M_KeyDescriptor_thread caKeyDesc;
-		otKeyTableEntry *otKeyDesc = aBuf;
+		otKeyTableEntry *otKeyDesc = (otKeyTableEntry*) aBuf;
 		uint8_t flagOffset = 0;
 
 		error = MLME_GET_request_sync(aAttr,
@@ -131,7 +131,8 @@ otError otPlatMlmeGet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 		VerifyOrExit(otKeyDesc->mKeyUsageListEntries <= ARRAY_LENGTH(otKeyDesc->mKeyUsageDesc), otErr = OT_ERROR_GENERIC);
 
 		memcpy(otKeyDesc->mKey, caKeyDesc.Fixed.Key, sizeof(otKeyDesc->mKey));
-		otKeyDesc->mKeyIdLookupDesc[0] = caKeyDesc.KeyIdLookupList[0];
+		otKeyDesc->mKeyIdLookupDesc[0] =
+				*((struct otKeyIdLookupDesc*) &(caKeyDesc.KeyIdLookupList[0]));
 
 		for(int i = 0; i < otKeyDesc->mKeyDeviceListEntries; i++, flagOffset++)
 		{
@@ -190,7 +191,7 @@ otError otPlatMlmeSet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 	if(aAttr == OT_PIB_MAC_KEY_TABLE)
 	{
 		struct M_KeyDescriptor_thread caKeyDesc;
-		otKeyTableEntry *otKeyDesc = aBuf;
+		otKeyTableEntry *otKeyDesc = (otKeyTableEntry*) aBuf;
 		uint8_t flagOffset = 0;
 
 		caKeyDesc.Fixed.KeyIdLookupListEntries = otKeyDesc->mKeyIdLookupListEntries;
@@ -198,7 +199,8 @@ otError otPlatMlmeSet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 		caKeyDesc.Fixed.KeyUsageListEntries = otKeyDesc->mKeyUsageListEntries;
 
 		memcpy(caKeyDesc.Fixed.Key, otKeyDesc->mKey, sizeof(otKeyDesc->mKey));
-		caKeyDesc.KeyIdLookupList[0] = otKeyDesc->mKeyIdLookupDesc[0];
+		caKeyDesc.KeyIdLookupList[0] =
+				*((struct M_KeyIdLookupDesc*) &(otKeyDesc->mKeyIdLookupDesc[0]));
 
 		for(int i = 0; i < otKeyDesc->mKeyDeviceListEntries; i++, flagOffset++)
 		{
@@ -227,14 +229,16 @@ otError otPlatMlmeSet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 		error = MLME_SET_request_sync(aAttr,
 		                              aIndex,
 		                              aLen,
-		                              (uint8_t*)(&caKeyDesc));
+		                              (uint8_t*)(&caKeyDesc),
+		                              pDeviceRef);
 	}
 	else
 	{
 		error = MLME_SET_request_sync(aAttr,
 		                              aIndex,
 		                              aLen,
-		                              aBuf);
+		                              aBuf,
+		                              pDeviceRef);
 	}
 
 	switch ( error )
@@ -257,7 +261,6 @@ otError otPlatMlmeSet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 		otErr = OT_ERROR_GENERIC;
 	}
 
-exit:
 	return otErr;
 }
 
@@ -282,8 +285,8 @@ otError otPlatMlmeStart(otInstance *aInstance, otStartRequest *aStartReq)
 	                                aStartReq->mPanCoordinator,
 	                                aStartReq->mBatteryLifeExtension,
 	                                aStartReq->mCoordRealignment,
-	                                &(aStartReq->mCoordRealignSecurity),
-	                                &(aStartReq->mBeaconSecurity),
+	             (struct SecSpec*)  &(aStartReq->mCoordRealignSecurity),
+	             (struct SecSpec*)  &(aStartReq->mBeaconSecurity),
 	                                pDeviceRef);
 
 	switch ( error )
@@ -316,7 +319,7 @@ otError otPlatMlmeScan(otInstance *aInstance, otScanRequest *aScanRequest)
 	error = MLME_SCAN_request(aScanRequest->mScanType,
 	                          aScanRequest->mScanChannelMask,
 	                          aScanRequest->mScanDuration,
-	                          &(aScanRequest->mSecSpec),
+	       (struct SecSpec*)  &(aScanRequest->mSecSpec),
 	                          pDeviceRef);
 
 	return error == MAC_SUCCESS ? OT_ERROR_NONE : OT_ERROR_FAILED;
@@ -327,9 +330,10 @@ otError otPlatMlmePollRequest(otInstance *aInstance, otPollRequest *aPollRequest
 	uint8_t error;
 	uint8_t pollInterval[2] = {0};
 
-	error = MLME_POLL_request_sync(aPollRequest->mCoordAddress,
+	error = MLME_POLL_request_sync(
+	         *((struct FullAddr*)  &(aPollRequest->mCoordAddress)),
 	                               pollInterval,
-	                               &(aPollRequest->mSecurity),
+	            (struct SecSpec*)  &(aPollRequest->mSecurity),
 	                               pDeviceRef);
 
 	return (error == MAC_SUCCESS) ? OT_ERROR_NONE : OT_ERROR_INVALID_STATE;
@@ -339,16 +343,15 @@ otError otPlatMcpsDataRequest(otInstance *aInstance, otDataRequest *aDataRequest
 {
 	uint8_t error;
 
-
 	error = MCPS_DATA_request(aDataRequest->mSrcAddrMode,
 	                          aDataRequest->mDst.mAddressMode,
 	                          GETLE16(aDataRequest->mDst.mPanId),
-	                          aDataRequest->mDst.mAddress,
+	        (union MacAddr*)  aDataRequest->mDst.mAddress,
 	                          aDataRequest->mMsduLength,
 	                          aDataRequest->mMsdu,
 	                          aDataRequest->mMsduHandle,
 	                          aDataRequest->mTxOptions,
-	                          &(aDataRequest->mSecurity),
+	       (struct SecSpec*)  &(aDataRequest->mSecurity),
 	                          pDeviceRef);
 
 	return (error == MAC_SUCCESS) ? OT_ERROR_NONE : OT_ERROR_INVALID_STATE;
@@ -368,13 +371,13 @@ static int handleDataIndication(struct MCPS_DATA_indication_pset *params, struct
 	//TODO: Move this off the stack
 	otDataIndication dataInd = {0};
 
-	dataInd.mSrc = params->Src;
-	dataInd.mDst = params->Dst;
+	dataInd.mSrc = *((struct otFullAddr*) &(params->Src));
+	dataInd.mDst = *((struct otFullAddr*) &(params->Dst));
 	dataInd.mMsduLength = params->MsduLength;
 	dataInd.mMpduLinkQuality = params->MpduLinkQuality;
 	dataInd.mDSN = params->DSN;
 	memcpy(dataInd.mMsdu, params->Msdu, dataInd.mMsduLength);
-	memcpy(dataInd.mSecurity, params->Msdu + params->MsduLength, sizeof(dataInd.mSecurity));
+	memcpy(&(dataInd.mSecurity), params->Msdu + params->MsduLength, sizeof(dataInd.mSecurity));
 
 	barrier_worker_waitForMain();
 	otPlatMcpsDataIndication(OT_INSTANCE, &dataInd);
@@ -406,12 +409,12 @@ static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params,
 	}
 
 	beaconNotify.BSN = params->BSN;
-	beaconNotify.mPanDescriptor = params->PanDescriptor;
+	beaconNotify.mPanDescriptor = *((struct otPanDescriptor*) &(params->PanDescriptor));
 	beaconNotify.mSduLength = ((uint8_t *)params)[sduLenOffset];
 	memcpy(beaconNotify.mSdu, &(((uint8_t *)params)[sduLenOffset + 1]), beaconNotify.mSduLength);
 
 	barrier_worker_waitForMain();
-	otPlatMlmeBeaconNotifyIndication(OT_INSTANCE, beaconNotify);
+	otPlatMlmeBeaconNotifyIndication(OT_INSTANCE, &beaconNotify);
 	barrier_worker_endWork();
 
 	return 1;
