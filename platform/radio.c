@@ -58,6 +58,8 @@
 
 #include "selfpipe.h"
 
+#define ARRAY_LENGTH(array) (sizeof((array))/sizeof((array)[0]))
+
 //BARRIER
 /*
  * The following functions create a thread safe system for allowing the worker
@@ -92,18 +94,74 @@ static int8_t sNoiseFloor = 127;
 static otInstance *OT_INSTANCE = NULL;
 static uint8_t sRadioInitialised = 0;
 
+struct M_KeyDescriptor_thread
+{
+	struct M_KeyTableEntryFixed    Fixed;
+	struct M_KeyIdLookupDesc       KeyIdLookupList[1];
+	uint8_t                        flags[];
+	//struct M_KeyDeviceDesc         KeyDeviceList[count];
+	//struct M_KeyUsageDesc          KeyUsageList[2];
+};
+
 otError otPlatMlmeGet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, uint8_t *aLen, uint8_t *aBuf)
 {
 	uint8_t error;
 	otError otErr;
 
-	error = MLME_GET_request_sync(aAttr,
-	                              aIndex,
-	                              aLen,
-	                              aBuf,
-	                              pDeviceRef);
+	//Adaption for security table
+	if(aAttr == OT_PIB_MAC_KEY_TABLE)
+	{
+		struct M_KeyDescriptor_thread caKeyDesc;
+		otKeyTableEntry *otKeyDesc = aBuf;
+		uint8_t flagOffset = 0;
 
-	//TODO: Adaption for security table
+		error = MLME_GET_request_sync(aAttr,
+		                              aIndex,
+		                              aLen,
+		                              (uint8_t*)(&caKeyDesc),
+		                              pDeviceRef);
+
+		//Convert to ot format
+		otKeyDesc->mKeyIdLookupListEntries = caKeyDesc.Fixed.KeyIdLookupListEntries;
+		otKeyDesc->mKeyDeviceListEntries   = caKeyDesc.Fixed.KeyDeviceListEntries;
+		otKeyDesc->mKeyUsageListEntries    = caKeyDesc.Fixed.KeyUsageListEntries;
+
+		VerifyOrExit(otKeyDesc->mKeyIdLookupListEntries <= ARRAY_LENGTH(otKeyDesc->mKeyIdLookupDesc), otErr = OT_ERROR_GENERIC);
+		VerifyOrExit(otKeyDesc->mKeyDeviceListEntries <= ARRAY_LENGTH(otKeyDesc->mKeyDeviceDesc), otErr = OT_ERROR_GENERIC);
+		VerifyOrExit(otKeyDesc->mKeyUsageListEntries <= ARRAY_LENGTH(otKeyDesc->mKeyUsageDesc), otErr = OT_ERROR_GENERIC);
+
+		memcpy(otKeyDesc->mKey, caKeyDesc.Fixed.Key, sizeof(otKeyDesc->mKey));
+		otKeyDesc->mKeyIdLookupDesc[0] = caKeyDesc.KeyIdLookupList[0];
+
+		for(int i = 0; i < otKeyDesc->mKeyDeviceListEntries; i++, flagOffset++)
+		{
+			otKeyDesc->mKeyDeviceDesc[i].mDeviceDescriptorHandle =
+					caKeyDesc.flags[flagOffset] & KDD_DeviceDescHandleMask;
+			otKeyDesc->mKeyDeviceDesc[i].mUniqueDevice =
+					!!(caKeyDesc.flags[flagOffset] & KDD_UniqueDeviceMask);
+			otKeyDesc->mKeyDeviceDesc[i].mBlacklisted =
+					!!(caKeyDesc.flags[flagOffset] & KDD_BlacklistedMask);
+		}
+
+		for(int i = 0; i < otKeyDesc->mKeyUsageListEntries; i++, flagOffset++)
+		{
+			uint8_t flag = caKeyDesc.flags[flagOffset];
+			otKeyDesc->mKeyUsageDesc[i].mFrameType =
+					flag & KUD_FrameTypeMask;
+			otKeyDesc->mKeyUsageDesc[i].mCommandFrameId =
+					(flag & KUD_CommandFrameIdentifierMask) >> KUD_CommandFrameIdentifierShift;
+		}
+
+		*aLen = sizeof(otKeyTableEntry);
+	}
+	else
+	{
+		error = MLME_GET_request_sync(aAttr,
+		                              aIndex,
+		                              aLen,
+		                              aBuf,
+		                              pDeviceRef);
+	}
 
 	switch ( error )
 	{
@@ -120,6 +178,7 @@ otError otPlatMlmeGet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 		otErr = OT_ERROR_GENERIC;
 	}
 
+exit:
 	return otErr;
 }
 
@@ -127,12 +186,56 @@ otError otPlatMlmeSet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 	uint8_t error;
 	otError otErr;
 
-	//TODO: Adaption for security table
+	//Adaption for security table
+	if(aAttr == OT_PIB_MAC_KEY_TABLE)
+	{
+		struct M_KeyDescriptor_thread caKeyDesc;
+		otKeyTableEntry *otKeyDesc = aBuf;
+		uint8_t flagOffset = 0;
 
-	error = MLME_SET_request_sync(aAttr,
-	                              aIndex,
-	                              aLen,
-	                              aBuf);
+		caKeyDesc.Fixed.KeyIdLookupListEntries = otKeyDesc->mKeyIdLookupListEntries;
+		caKeyDesc.Fixed.KeyDeviceListEntries = otKeyDesc->mKeyDeviceListEntries;
+		caKeyDesc.Fixed.KeyUsageListEntries = otKeyDesc->mKeyUsageListEntries;
+
+		memcpy(caKeyDesc.Fixed.Key, otKeyDesc->mKey, sizeof(otKeyDesc->mKey));
+		caKeyDesc.KeyIdLookupList[0] = otKeyDesc->mKeyIdLookupDesc[0];
+
+		for(int i = 0; i < otKeyDesc->mKeyDeviceListEntries; i++, flagOffset++)
+		{
+			otKeyDeviceDesc *devDesc = &(otKeyDesc->mKeyDeviceDesc[i]);
+			caKeyDesc.flags[flagOffset] =
+					devDesc->mDeviceDescriptorHandle & KDD_DeviceDescHandleMask;
+			caKeyDesc.flags[flagOffset] |=
+					devDesc->mUniqueDevice ? KDD_UniqueDeviceMask : 0;
+			caKeyDesc.flags[flagOffset] |=
+					devDesc->mBlacklisted ? KDD_BlacklistedMask : 0;
+		}
+
+		for(int i = 0; i < otKeyDesc->mKeyUsageListEntries; i++, flagOffset++)
+		{
+			otKeyUsageDesc * useDesc = &(otKeyDesc->mKeyUsageDesc[i]);
+			uint8_t flag;
+
+			flag = useDesc->mFrameType & KUD_FrameTypeMask;
+			flag |= ((useDesc->mCommandFrameId & KUD_CommandFrameIdentifierMask)
+					>> KUD_CommandFrameIdentifierShift);
+
+			caKeyDesc.flags[flagOffset] = flag;
+		}
+
+		aLen = sizeof(caKeyDesc) + flagOffset;
+		error = MLME_SET_request_sync(aAttr,
+		                              aIndex,
+		                              aLen,
+		                              (uint8_t*)(&caKeyDesc));
+	}
+	else
+	{
+		error = MLME_SET_request_sync(aAttr,
+		                              aIndex,
+		                              aLen,
+		                              aBuf);
+	}
 
 	switch ( error )
 	{
@@ -154,6 +257,7 @@ otError otPlatMlmeSet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 		otErr = OT_ERROR_GENERIC;
 	}
 
+exit:
 	return otErr;
 }
 
@@ -235,12 +339,17 @@ otError otPlatMcpsDataRequest(otInstance *aInstance, otDataRequest *aDataRequest
 {
 	uint8_t error;
 
-	/*
+
 	error = MCPS_DATA_request(aDataRequest->mSrcAddrMode,
 	                          aDataRequest->mDst.mAddressMode,
-	                          aDataRequest->mDst.mPanId,
-	                          )*/
-	//TODO: Under construction
+	                          GETLE16(aDataRequest->mDst.mPanId),
+	                          aDataRequest->mDst.mAddress,
+	                          aDataRequest->mMsduLength,
+	                          aDataRequest->mMsdu,
+	                          aDataRequest->mMsduHandle,
+	                          aDataRequest->mTxOptions,
+	                          &(aDataRequest->mSecurity),
+	                          pDeviceRef);
 
 	return (error == MAC_SUCCESS) ? OT_ERROR_NONE : OT_ERROR_INVALID_STATE;
 }
@@ -254,6 +363,69 @@ otError otPlatMcpsPurge(otInstance *aInstance, uint8_t aMsduHandle)
 	return (error == MAC_SUCCESS) ? OT_ERROR_NONE : OT_ERROR_ALREADY;
 }
 
+static int handleDataIndication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef)
+{
+	//TODO: Move this off the stack
+	otDataIndication dataInd = {0};
+
+	dataInd.mSrc = params->Src;
+	dataInd.mDst = params->Dst;
+	dataInd.mMsduLength = params->MsduLength;
+	dataInd.mMpduLinkQuality = params->MpduLinkQuality;
+	dataInd.mDSN = params->DSN;
+	memcpy(dataInd.mMsdu, params->Msdu, dataInd.mMsduLength);
+	memcpy(dataInd.mSecurity, params->Msdu + params->MsduLength, sizeof(dataInd.mSecurity));
+
+	barrier_worker_waitForMain();
+	otPlatMcpsDataIndication(OT_INSTANCE, &dataInd);
+	barrier_worker_endWork();
+
+	return 1;
+}
+
+static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef)   //Async
+{
+	barrier_worker_waitForMain();
+	otPlatMcpsDataConfirm(OT_INSTANCE, params->MsduHandle, params->Status);
+	barrier_worker_endWork();
+
+	return 1;
+}
+
+static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params, struct ca821x_dev *pDeviceRef) //Async
+{
+	//TODO: Move this off the stack
+	otBeaconNotify beaconNotify = {0};
+	uint8_t sduLenOffset;
+
+	{
+		uint8_t addrField = ((uint8_t *)params)[23];
+		uint8_t shortaddrs  = addrField & 0x07;
+		uint8_t extaddrs = (addrField >> 4) & 0x07;
+		sduLenOffset = (24 + (2 * shortaddrs) + (8 * extaddrs));
+	}
+
+	beaconNotify.BSN = params->BSN;
+	beaconNotify.mPanDescriptor = params->PanDescriptor;
+	beaconNotify.mSduLength = ((uint8_t *)params)[sduLenOffset];
+	memcpy(beaconNotify.mSdu, &(((uint8_t *)params)[sduLenOffset + 1]), beaconNotify.mSduLength);
+
+	barrier_worker_waitForMain();
+	otPlatMlmeBeaconNotifyIndication(OT_INSTANCE, beaconNotify);
+	barrier_worker_endWork();
+
+	return 1;
+}
+
+static int handleScanConfirm(struct MLME_SCAN_confirm_pset *params, struct ca821x_dev *pDeviceRef)   //Async
+{
+	barrier_worker_waitForMain();
+	otPlatMlmeScanConfirm(OT_INSTANCE, (otScanConfirm *)params);
+	barrier_worker_endWork();
+
+	return 1;
+}
+
 void otPlatRadioGetIeeeEui64(otInstance *aInstance, uint8_t *aIeeeEui64)
 {
 	memcpy(aIeeeEui64, sIeeeEui64, sizeof(sIeeeEui64));
@@ -263,13 +435,6 @@ void otPlatRadioGetIeeeEui64(otInstance *aInstance, uint8_t *aIeeeEui64)
 
 int8_t otPlatRadioGetReceiveSensitivity(otInstance *aInstance){
 	return -105;
-}
-
-void otPlatRadioSetDefaultTxPower(otInstance *aInstance, int8_t aPower)
-{
-	// TODO: Create a proper implementation for this driver.
-	(void)aInstance;
-	(void)aPower;
 }
 
 static int driverErrorCallback(int error_number)
@@ -356,7 +521,6 @@ void PlatformRadioInit(void)
 	callbacks.MCPS_DATA_confirm = &handleDataConfirm;
 	callbacks.MLME_BEACON_NOTIFY_indication = &handleBeaconNotify;
 	callbacks.MLME_SCAN_confirm = &handleScanConfirm;
-	callbacks.generic_dispatch = &handleGenericDispatchFrame;
 	ca821x_register_callbacks(&callbacks, pDeviceRef);
 
 	//Reset the MAC to a default state
@@ -392,7 +556,7 @@ int8_t otPlatRadioGetRssi(otInstance *aInstance)
 	return sNoiseFloor;
 }
 
-otError otPlatRadioEnable(otInstance *aInstance)    //TODO:(lowpriority) port
+otError otPlatRadioEnable(otInstance *aInstance)
 {
 	otError error = OT_ERROR_NONE;
 	OT_INSTANCE = aInstance;
@@ -403,6 +567,12 @@ otError otPlatRadioEnable(otInstance *aInstance)    //TODO:(lowpriority) port
 bool otPlatRadioIsEnabled(otInstance *aInstance)
 {
 	return (OT_INSTANCE != NULL);
+}
+
+int PlatformRadioProcess(void)
+{
+	barrier_main_letWorkerWork();
+	return 0;
 }
 
 //Lets the worker thread work synchronously if there is synchronous work to do
