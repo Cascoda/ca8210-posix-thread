@@ -1,6 +1,6 @@
-cd ./openthread/third_party/nlbuild-autotools/repo/tools/packages/
-./build
+cd ./openthread/third_party/nlbuild-autotools/repo/
+make tools
 cd ../../../../../../
-cd ./openthread/third_party/mbedtls/repo/
+cd ./openthread/third_party/mbedtls/repo.patched/
 make
 cd ../../../../
