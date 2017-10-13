@@ -98,7 +98,7 @@ struct M_KeyDescriptor_thread
 {
 	struct M_KeyTableEntryFixed    Fixed;
 	struct M_KeyIdLookupDesc       KeyIdLookupList[1];
-	uint8_t                        flags[];
+	uint8_t                        flags[20]; //TODO: Provisional length
 	//struct M_KeyDeviceDesc         KeyDeviceList[count];
 	//struct M_KeyUsageDesc          KeyUsageList[2];
 };
@@ -225,7 +225,7 @@ otError otPlatMlmeSet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 			caKeyDesc.flags[flagOffset] = flag;
 		}
 
-		aLen = sizeof(caKeyDesc) + flagOffset;
+		aLen = sizeof(caKeyDesc) + flagOffset - sizeof(caKeyDesc.flags);
 		error = MLME_SET_request_sync(aAttr,
 		                              aIndex,
 		                              aLen,
