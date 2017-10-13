@@ -379,6 +379,11 @@ static int handleDataIndication(struct MCPS_DATA_indication_pset *params, struct
 	memcpy(dataInd.mMsdu, params->Msdu, dataInd.mMsduLength);
 	memcpy(&(dataInd.mSecurity), params->Msdu + params->MsduLength, sizeof(dataInd.mSecurity));
 
+	if(dataInd.mSecurity.mSecurityLevel == 0)
+	{
+		memset(&(dataInd.mSecurity), 0, sizeof(dataInd.mSecurity));
+	}
+
 	barrier_worker_waitForMain();
 	otPlatMcpsDataIndication(OT_INSTANCE, &dataInd);
 	barrier_worker_endWork();
