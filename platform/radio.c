@@ -336,7 +336,7 @@ otError otPlatMlmePollRequest(otInstance *aInstance, otPollRequest *aPollRequest
 	            (struct SecSpec*)  &(aPollRequest->mSecurity),
 	                               pDeviceRef);
 
-	return (error == MAC_SUCCESS) ? OT_ERROR_NONE : OT_ERROR_INVALID_STATE;
+	return (error == MAC_SUCCESS || error == MAC_NO_DATA) ? OT_ERROR_NONE : OT_ERROR_INVALID_STATE;
 }
 
 otError otPlatMcpsDataRequest(otInstance *aInstance, otDataRequest *aDataRequest)
