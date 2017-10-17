@@ -219,8 +219,8 @@ otError otPlatMlmeSet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 			uint8_t flag;
 
 			flag = useDesc->mFrameType & KUD_FrameTypeMask;
-			flag |= ((useDesc->mCommandFrameId & KUD_CommandFrameIdentifierMask)
-					>> KUD_CommandFrameIdentifierShift);
+			flag |= ((useDesc->mCommandFrameId << KUD_CommandFrameIdentifierShift)
+					& KUD_CommandFrameIdentifierMask );
 
 			caKeyDesc.flags[flagOffset] = flag;
 		}
