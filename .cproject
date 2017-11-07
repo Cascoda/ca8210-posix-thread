@@ -30,6 +30,7 @@
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_APPLICATION_COAP=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_FTD=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_CONFIG_LOG_LEVEL=OT_LOG_LEVEL_DEBG"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_MAC_FILTER=1"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1062504756" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
@@ -43,6 +44,7 @@
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_APPLICATION_COAP=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_FTD=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_CONFIG_LOG_LEVEL=OT_LOG_LEVEL_DEBG"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_MAC_FILTER=1"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.525590296" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
@@ -75,6 +77,7 @@
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_APPLICATION_COAP=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_FTD=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_CONFIG_LOG_LEVEL=OT_LOG_LEVEL_DEBG"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_MAC_FILTER=1"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.805776065" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
@@ -88,6 +91,7 @@
 									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_APPLICATION_COAP=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_FTD=1"/>
 									<listOptionValue builtIn="false" value="OPENTHREAD_CONFIG_LOG_LEVEL=OT_LOG_LEVEL_DEBG"/>
+									<listOptionValue builtIn="false" value="OPENTHREAD_ENABLE_MAC_FILTER=1"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.429303667" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
@@ -115,9 +119,16 @@
 			<resource resourceType="PROJECT" workspacePath="/cascoda-thread"/>
 		</configuration>
 	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 	<storageModule moduleId="scannerConfiguration">
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.cross.base.1778921236;cdt.managedbuild.toolchain.gnu.cross.base.1778921236.1182208912;cdt.managedbuild.tool.gnu.cpp.compiler.base.1119769758;cdt.managedbuild.tool.gnu.cpp.compiler.input.1062504756">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.cross.base.1778921236;cdt.managedbuild.toolchain.gnu.cross.base.1778921236.1182208912;cdt.managedbuild.tool.gnu.cross.cpp.compiler.373553390;cdt.managedbuild.tool.gnu.cpp.compiler.input.1448218497">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.cross.base.1778921236;cdt.managedbuild.toolchain.gnu.cross.base.1778921236.1182208912;cdt.managedbuild.tool.gnu.c.compiler.base.1284950591;cdt.managedbuild.tool.gnu.c.compiler.input.525590296">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.805033312;cdt.managedbuild.toolchain.gnu.base.805033312.1162395035;cdt.managedbuild.tool.gnu.c.compiler.base.2031628540;cdt.managedbuild.tool.gnu.c.compiler.input.912242058">
@@ -130,5 +141,4 @@
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 	</storageModule>
-	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 </cproject>

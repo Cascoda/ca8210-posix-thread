@@ -270,6 +270,17 @@ otError otPlatMlmeReset(otInstance *aInstance, bool setDefaultPib)
 
 	error = MLME_RESET_request_sync(setDefaultPib, pDeviceRef);
 
+	if(setDefaultPib)
+	{
+		//Disable low LQI rejection @ MAC Layer
+		uint8_t disable = 0;
+		HWME_SET_request_sync(0x11, 1, &disable, pDeviceRef);
+
+		//LQI values should be derived from receive energy
+		uint8_t LQImode = HWME_LQIMODE_ED;
+		HWME_SET_request_sync(HWME_LQIMODE, 1, &LQImode, pDeviceRef);
+	}
+
 	return error == MAC_SUCCESS ? OT_ERROR_NONE : OT_ERROR_FAILED;
 }
 
@@ -336,7 +347,7 @@ otError otPlatMlmePollRequest(otInstance *aInstance, otPollRequest *aPollRequest
 	            (struct SecSpec*)  &(aPollRequest->mSecurity),
 	                               pDeviceRef);
 
-	return (error == MAC_SUCCESS || error == MAC_NO_DATA) ? OT_ERROR_NONE : OT_ERROR_INVALID_STATE;
+	return (error == MAC_SUCCESS || error == MAC_NO_DATA) ? OT_ERROR_NONE : OT_ERROR_NO_ACK;
 }
 
 otError otPlatMcpsDataRequest(otInstance *aInstance, otDataRequest *aDataRequest)
@@ -507,6 +518,7 @@ void initIeeeEui64(){
 			sIeeeEui64[2 * i] = random & 0xFF;
 			sIeeeEui64[2 * i + 1] = (random >> 4) & 0xFF;
 		}
+		sIeeeEui64[0] &= ~1; //Unset Group bit
 		sIeeeEui64[0] |= 2; //Set local bit
 		write(file, sIeeeEui64, 8);
 	}
@@ -532,28 +544,7 @@ void PlatformRadioInit(void)
 	ca821x_register_callbacks(&callbacks, pDeviceRef);
 
 	//Reset the MAC to a default state
-	MLME_RESET_request_sync(1, pDeviceRef);
-
-	uint8_t disable = 0; //Disable low LQI rejection @ MAC Layer
-	HWME_SET_request_sync(0x11, 1, &disable, pDeviceRef);
-
-	//LQI values should be derived from receive energy
-	uint8_t LQImode = HWME_LQIMODE_ED;
-	HWME_SET_request_sync(
-	    HWME_LQIMODE,
-	    1,
-	    &LQImode,
-	    pDeviceRef);
-
-	//Indirect transmissions should wait 90 seconds before timing out
-	uint8_t persistanceTime[2];
-	PUTLE16(0x16e3, persistanceTime); //=(90seconds * 10^6)/(aBaseSuperframeDuration * aSymbolPeriod_us)
-	MLME_SET_request_sync(
-	    macTransactionPersistenceTime,
-	    0,
-	    2,
-	    persistanceTime,
-	    pDeviceRef);
+	otPlatMlmeReset(NULL, true);
 
 	initIeeeEui64();
 	sRadioInitialised = 1;
