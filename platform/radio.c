@@ -183,7 +183,7 @@ exit:
 	return otErr;
 }
 
-otError otPlatMlmeSet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, uint8_t aLen, uint8_t *aBuf){
+otError otPlatMlmeSet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, uint8_t aLen, const uint8_t *aBuf){
 	uint8_t error;
 	otError otErr;
 
@@ -191,7 +191,7 @@ otError otPlatMlmeSet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 	if(aAttr == OT_PIB_MAC_KEY_TABLE)
 	{
 		struct M_KeyDescriptor_thread caKeyDesc;
-		otKeyTableEntry *otKeyDesc = (otKeyTableEntry*) aBuf;
+		const otKeyTableEntry *otKeyDesc = (otKeyTableEntry*) aBuf;
 		uint8_t flagOffset = 0;
 
 		caKeyDesc.Fixed.KeyIdLookupListEntries = otKeyDesc->mKeyIdLookupListEntries;
