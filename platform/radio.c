@@ -379,13 +379,15 @@ otError otPlatMcpsPurge(otInstance *aInstance, uint8_t aMsduHandle)
 
 static int handleDataIndication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
+	int16_t rssi;
 	//TODO: Move this off the stack
 	otDataIndication dataInd = {0};
 
 	dataInd.mSrc = *((struct otFullAddr*) &(params->Src));
 	dataInd.mDst = *((struct otFullAddr*) &(params->Dst));
 	dataInd.mMsduLength = params->MsduLength;
-	dataInd.mMpduLinkQuality = params->MpduLinkQuality;
+	rssi = ((int16_t) params->MpduLinkQuality - 256)/2; //convert to rssi
+	dataInd.mMpduLinkQuality = rssi;
 	dataInd.mDSN = params->DSN;
 	memcpy(dataInd.mMsdu, params->Msdu, dataInd.mMsduLength);
 	memcpy(&(dataInd.mSecurity), params->Msdu + params->MsduLength, sizeof(dataInd.mSecurity));
