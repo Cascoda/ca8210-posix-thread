@@ -13,6 +13,7 @@ $(SUBDIRS):
 	$(MAKE) -C $@
 
 example: full-lib
+	$(MAKE) -C $@ clean
 	$(MAKE) -C $@
 
 clean: $(CLEANSUBDIRS)
