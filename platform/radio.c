@@ -179,7 +179,6 @@ otError otPlatMlmeGet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 		otErr = OT_ERROR_GENERIC;
 	}
 
-exit:
 	return otErr;
 }
 
@@ -489,15 +488,16 @@ void PlatformRadioStop(void)
 
 void initIeeeEui64(){
 	int file;
-	uint8_t ret = 0;
 	uint8_t create = false;
 	size_t fileNameLen = strlen(IEEEEUI_FILE) + 4; //"filename.00\0"
 	char fileName[fileNameLen];
 
-	snprintf(fileName, fileNameLen, "%s.%02d", IEEEEUI_FILE, NODE_ID);
+	snprintf(fileName, fileNameLen, "%s.%02u", IEEEEUI_FILE, NODE_ID);
 
 	if (!access(fileName, R_OK))
 	{
+		uint8_t ret = 0;
+
 		file = open(fileName, O_RDONLY);
 		ret = read(file, sIeeeEui64, 8);
 		if(ret != 8)
