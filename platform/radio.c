@@ -179,6 +179,7 @@ otError otPlatMlmeGet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 		otErr = OT_ERROR_GENERIC;
 	}
 
+exit:
 	return otErr;
 }
 
