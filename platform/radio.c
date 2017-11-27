@@ -528,8 +528,10 @@ void initIeeeEui64(){
 	close(file);
 }
 
-int PlatformRadioInitWithDev(struct ca821x_dev *pDeviceRef)
+int PlatformRadioInitWithDev(struct ca821x_dev *apDeviceRef)
 {
+	pDeviceRef = apDeviceRef;
+
 	atexit(&PlatformRadioStop);
 	selfpipe_init();
 
@@ -557,9 +559,7 @@ int PlatformRadioInit(void)
 	if(status < 0)
 		return status;
 
-	pDeviceRef = &s_pDeviceRef;
-
-	return PlatformRadioInitWithDev(pDeviceRef);
+	return PlatformRadioInitWithDev(&s_pDeviceRef);
 }
 
 int8_t otPlatRadioGetRssi(otInstance *aInstance)
