@@ -5,6 +5,7 @@ INCLUDEDIRS := ./\
 	../openthread/include/openthread/\
 	../openthread/include/\
 	../ca821x-posix/ca821x-api/include/\
+	../ca821x-posix/include\
 	../ca821x-posix/\
 	../openthread/src/core/\
 	../openthread/src/core/common/
