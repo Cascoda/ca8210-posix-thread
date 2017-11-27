@@ -41,6 +41,7 @@
 #include <types.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <ca821x_api.h>
 
 #ifdef __cplusplus
 extern "C" {
