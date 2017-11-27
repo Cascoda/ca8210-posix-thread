@@ -117,7 +117,15 @@ void posixPlatformAlarmProcess(otInstance *aInstance);
  * This method initializes the radio service used by OpenThread.
  *
  */
-void PlatformRadioInit(void);
+int PlatformRadioInit(void);
+
+/**
+ * This method initializes the radio service used by OpenThread using a pDeviceRef
+ * that has already been fully initialised by the caller. Callbacks will be
+ * overridden and PIB will be reset.
+ *
+ */
+int PlatformRadioInitWithDev(struct ca821x_dev *pDeviceRef);
 
 /**
  * This method performs radio driver processing.

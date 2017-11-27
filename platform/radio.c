@@ -87,7 +87,7 @@ static uint8_t sIeeeEui64[8];
 
 //For cascoda API
 static struct ca821x_dev s_pDeviceRef;
-static struct ca821x_dev *pDeviceRef = &s_pDeviceRef;
+static struct ca821x_dev *pDeviceRef = NULL;
 
 static int8_t sNoiseFloor = 127;
 
@@ -528,16 +528,10 @@ void initIeeeEui64(){
 	close(file);
 }
 
-void PlatformRadioInit(void)
+int PlatformRadioInitWithDev(struct ca821x_dev *pDeviceRef)
 {
-	int status;
-
 	atexit(&PlatformRadioStop);
-
 	selfpipe_init();
-	status = ca821x_util_init(pDeviceRef, driverErrorCallback);
-	if(status == -1)
-		exit(EXIT_FAILURE);
 
 	struct ca821x_api_callbacks callbacks = {0};
 	callbacks.MCPS_DATA_indication = &handleDataIndication;
@@ -551,6 +545,21 @@ void PlatformRadioInit(void)
 
 	initIeeeEui64();
 	sRadioInitialised = 1;
+
+	return 0;
+}
+
+int PlatformRadioInit(void)
+{
+	int status;
+
+	status = ca821x_util_init(&s_pDeviceRef, driverErrorCallback);
+	if(status < 0)
+		return status;
+
+	pDeviceRef = &s_pDeviceRef;
+
+	return PlatformRadioInitWithDev(pDeviceRef);
 }
 
 int8_t otPlatRadioGetRssi(otInstance *aInstance)
