@@ -204,7 +204,7 @@ otError otPlatMlmeSet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 
 		for(int i = 0; i < otKeyDesc->mKeyDeviceListEntries; i++, flagOffset++)
 		{
-			otKeyDeviceDesc *devDesc = &(otKeyDesc->mKeyDeviceDesc[i]);
+			const otKeyDeviceDesc *devDesc = &(otKeyDesc->mKeyDeviceDesc[i]);
 			caKeyDesc.flags[flagOffset] =
 					devDesc->mDeviceDescriptorHandle & KDD_DeviceDescHandleMask;
 			caKeyDesc.flags[flagOffset] |=
@@ -215,7 +215,7 @@ otError otPlatMlmeSet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 
 		for(int i = 0; i < otKeyDesc->mKeyUsageListEntries; i++, flagOffset++)
 		{
-			otKeyUsageDesc * useDesc = &(otKeyDesc->mKeyUsageDesc[i]);
+			const otKeyUsageDesc * useDesc = &(otKeyDesc->mKeyUsageDesc[i]);
 			uint8_t flag;
 
 			flag = useDesc->mFrameType & KUD_FrameTypeMask;
@@ -404,6 +404,32 @@ static int handleDataIndication(struct MCPS_DATA_indication_pset *params, struct
 	return 1;
 }
 
+static int handleCommStatusIndication(struct MLME_COMM_STATUS_indication_pset *params, struct ca821x_dev *pDeviceRef)
+{
+	//TODO: Move this off the stack
+	otCommStatusIndication commInd = {0};
+
+	memcpy(commInd.mPanId, params->PANId, sizeof(commInd.mPanId));
+	commInd.mDstAddrMode = params->DstAddrMode;
+	commInd.mSrcAddrMode = params->SrcAddrMode;
+	memcpy(commInd.mDstAddr, params->DstAddr, sizeof(commInd.mDstAddr));
+	memcpy(commInd.mSrcAddr, params->SrcAddr, sizeof(commInd.mSrcAddr));
+	memcpy(&commInd.mSecurity, &params->Security, sizeof(commInd.mSecurity));
+
+	commInd.mStatus = params->Status;
+
+	if(commInd.mSecurity.mSecurityLevel == 0)
+	{
+		memset(&(commInd.mSecurity), 0, sizeof(commInd.mSecurity));
+	}
+
+	barrier_worker_waitForMain();
+	otPlatMlmeCommStatusIndication(OT_INSTANCE, &commInd);
+	barrier_worker_endWork();
+
+	return 1;
+}
+
 static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef)   //Async
 {
 	barrier_worker_waitForMain();
@@ -537,6 +563,7 @@ int PlatformRadioInitWithDev(struct ca821x_dev *apDeviceRef)
 
 	struct ca821x_api_callbacks callbacks = {0};
 	callbacks.MCPS_DATA_indication = &handleDataIndication;
+	callbacks.MLME_COMM_STATUS_indication = &handleCommStatusIndication;
 	callbacks.MCPS_DATA_confirm = &handleDataConfirm;
 	callbacks.MLME_BEACON_NOTIFY_indication = &handleBeaconNotify;
 	callbacks.MLME_SCAN_confirm = &handleScanConfirm;
