@@ -1,3 +1,6 @@
+#!/bin/bash
+dir=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
+
 make CC=arm-linux-gcc \
 LD=arm-linux-ld \
 CXX=arm-linux-g++ \
