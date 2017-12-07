@@ -51,7 +51,7 @@ static pthread_mutex_t ot_mutex = PTHREAD_MUTEX_INITIALIZER;
  * ot_mutex. The sleep function is used while the stack is idle,
  * which allows application code to access the stack.
  */
-static void otWorker(void * aContext){
+static void *otWorker(void * aContext){
 	struct timeval timeout;
 	otInstance * aInstance = (otInstance *) aContext;
 
@@ -64,6 +64,8 @@ static void otWorker(void * aContext){
 
 		posixPlatformSleep(aInstance, &timeout); //Must run immediately after posixPlatformProcessGetTimeout
 	}
+
+	return NULL;
 }
 
 int main(int argc, char *argv[])
