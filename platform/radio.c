@@ -554,6 +554,12 @@ void initIeeeEui64(){
 	close(file);
 }
 
+int handleWakeupIndication(struct HWME_WAKEUP_indication_pset *params, struct ca821x_dev *pDeviceRef)
+{
+	fprintf(stderr, "Woke Up with status %02x\n", params->WakeUpCondition);
+	return 1;
+}
+
 int PlatformRadioInitWithDev(struct ca821x_dev *apDeviceRef)
 {
 	pDeviceRef = apDeviceRef;
@@ -567,6 +573,7 @@ int PlatformRadioInitWithDev(struct ca821x_dev *apDeviceRef)
 	callbacks.MCPS_DATA_confirm = &handleDataConfirm;
 	callbacks.MLME_BEACON_NOTIFY_indication = &handleBeaconNotify;
 	callbacks.MLME_SCAN_confirm = &handleScanConfirm;
+	callbacks.HWME_WAKEUP_indication = &handleWakeupIndication;
 	ca821x_register_callbacks(&callbacks, pDeviceRef);
 
 	//Reset the MAC to a default state
