@@ -29,6 +29,8 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
+#include <signal.h>
 
 #include <openthread.h>
 #include <cli.h>
@@ -36,14 +38,23 @@
 
 #include <tasklet.h>
 
+static int isRunning;
+
+static void quit(int sig)
+{
+	isRunning = 0;
+}
+
 int main(int argc, char *argv[])
 {
     otInstance * OT_INSTANCE;
 
     if(argc > 1) NODE_ID = atoi(argv[1]);
+    isRunning = 1;
+    signal(SIGINT, quit);
 
     posixPlatformSetOrigArgs(argc, argv);
-    posixPlatformInit();
+    while (posixPlatformInit() < 0) sleep(1);
     OT_INSTANCE = otInstanceInitSingle();
     otCliUartInit(OT_INSTANCE);
 
@@ -56,7 +67,7 @@ int main(int argc, char *argv[])
     otSetChannel(OT_INSTANCE, 20);
 #endif
 
-	while(1){
+	while(isRunning){
 		otTaskletsProcess(OT_INSTANCE);
 		posixPlatformProcessDrivers(OT_INSTANCE);
 		/* Simple application code can go here*/

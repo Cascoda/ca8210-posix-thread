@@ -60,12 +60,17 @@ void posixPlatformSetOrigArgs(int argc, char *argv[]){
 	gArguments = argv;
 }
 
-void posixPlatformInit(void)
+int posixPlatformInit(void)
 {
     posixPlatformAlarmInit();
     otPlatUartEnable();
-    PlatformRadioInit();
+    if(PlatformRadioInit() < 0)
+    {
+    	return -1;
+    }
     posixPlatformRandomInit();
+
+    return 0;
 }
 
 void otTaskletsSignalPending(otInstance *aInstance){
@@ -88,7 +93,6 @@ void posixPlatformSleep(otInstance *aInstance, struct timeval *timeout){
     {
         rval = select(max_fd + 1, &read_fds, &write_fds, NULL, timeout);
         selfpipe_pop();
-        assert(rval >= 0 && errno != ETIME);
     }
 }
 

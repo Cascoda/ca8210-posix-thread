@@ -72,7 +72,10 @@ int main(int argc, char *argv[])
 {
     otInstance * OT_INSTANCE;
 
-    posixPlatformInit();
+    while (posixPlatformInit() < 0)
+    {
+    	sleep(1);
+    }
     OT_INSTANCE = otInstanceInitSingle();
     otCliUartInit(OT_INSTANCE);
 

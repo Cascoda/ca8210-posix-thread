@@ -63,7 +63,7 @@ extern uint32_t WELLKNOWN_NODE_ID;
  * This method performs all platform-specific initialization.
  *
  */
-void posixPlatformInit(void);
+int posixPlatformInit(void);
 
 /**
  * This method stores the original arguments given to the program

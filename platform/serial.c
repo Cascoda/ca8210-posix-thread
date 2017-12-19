@@ -123,6 +123,9 @@ otError otPlatUartEnable(void)
         // Set up our cflags for local use. Turn on hangup-on-close.
         termios.c_cflag |= HUPCL | CREAD | CLOCAL;
 
+        //enable terminal interrupts
+        termios.c_lflag |= (ISIG);
+
         // "Minimum number of characters for noncanonical read"
         termios.c_cc[VMIN]  = 1;
 
@@ -147,6 +150,9 @@ otError otPlatUartEnable(void)
 
         // Absolutely obliterate all output processing.
         termios.c_oflag = 0;
+
+        //enable terminal interrupts
+        termios.c_lflag |= (ISIG);
 
         // Set up our cflags for local use. Turn on hangup-on-close.
         termios.c_cflag |= HUPCL | CREAD | CLOCAL;
