@@ -1,0 +1,14 @@
+create libotposixca8210-ftd.a
+addlib openthread/src/core/libopenthread-ftd.a
+addlib ca821x-posix/libca821x.a
+addlib platform/libotplatposixca8210.a
+addlib openthread/third_party/mbedtls/libmbedcrypto.a
+save
+
+create libotposixca8210-mtd.a
+addlib openthread/src/core/libopenthread-mtd.a
+addlib ca821x-posix/libca821x.a
+addlib platform/libotplatposixca8210.a
+addlib openthread/third_party/mbedtls/libmbedcrypto.a
+save
+end

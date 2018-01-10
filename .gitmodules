@@ -1,0 +1,7 @@
+[submodule "openthread"]
+	path = openthread
+	url = https://github.com/Cascoda/openthread.git
+	branch = hardmac
+[submodule "ca821x-posix"]
+	path = ca821x-posix
+	url = https://github.com/Cascoda/ca821x-posix.git
