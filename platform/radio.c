@@ -270,6 +270,9 @@ otError otPlatMlmeReset(otInstance *aInstance, bool setDefaultPib)
 
 	error = MLME_RESET_request_sync(setDefaultPib, pDeviceRef);
 
+	uint8_t txPow = 8;
+	MLME_SET_request_sync(phyTransmitPower, 0, 1, &txPow, pDeviceRef);
+
 	if(setDefaultPib)
 	{
 		//Disable low LQI rejection @ MAC Layer
@@ -484,7 +487,7 @@ int8_t otPlatRadioGetReceiveSensitivity(otInstance *aInstance){
 	return -105;
 }
 
-static int driverErrorCallback(int error_number)
+static int driverErrorCallback(int error_number, struct ca821x_dev *pDeviceRef)
 {
 	otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_HARDMAC, "DRIVER FAILED WITH ERROR %d\n\r", error_number);
 
