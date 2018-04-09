@@ -142,6 +142,8 @@ otError otPlatMlmeGet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 					!!(caKeyDesc.flags[flagOffset] & KDD_UniqueDeviceMask);
 			otKeyDesc->mKeyDeviceDesc[i].mBlacklisted =
 					!!(caKeyDesc.flags[flagOffset] & KDD_BlacklistedMask);
+			otKeyDesc->mKeyDeviceDesc[i].mNew =
+					!!(caKeyDesc.flags[flagOffset] & KDD_NewMask);
 		}
 
 		for(int i = 0; i < otKeyDesc->mKeyUsageListEntries; i++, flagOffset++)
@@ -211,6 +213,8 @@ otError otPlatMlmeSet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 					devDesc->mUniqueDevice ? KDD_UniqueDeviceMask : 0;
 			caKeyDesc.flags[flagOffset] |=
 					devDesc->mBlacklisted ? KDD_BlacklistedMask : 0;
+			caKeyDesc.flags[flagOffset] |=
+					devDesc->mNew ? KDD_NewMask : 0;
 		}
 
 		for(int i = 0; i < otKeyDesc->mKeyUsageListEntries; i++, flagOffset++)
