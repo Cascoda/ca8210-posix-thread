@@ -35,10 +35,11 @@
 #ifndef POSIX_PLATFORM_H_
 #define POSIX_PLATFORM_H_
 
+#include <instance.h> 
+
 #include <stdint.h>
 #include <sys/select.h>
 #include <sys/time.h>
-#include <types.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <ca821x_api.h>

@@ -32,7 +32,7 @@
 #include <unistd.h>
 #include <signal.h>
 
-#include <openthread.h>
+#include <instance.h>
 #include <cli.h>
 #include <posix-platform.h>
 
