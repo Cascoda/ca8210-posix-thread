@@ -1,7 +1,6 @@
 TARGET = libotplatposixca8210.a
 LIBS = -lm
 INCLUDEDIRS := ./\
-	../openthread/include/openthread/platform/\
 	../openthread/include/openthread/\
 	../openthread/include/\
 	../ca821x-posix/ca821x-api/include/\

@@ -31,7 +31,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include <openthread.h>
+#include <instance.h>
 #include <thread_ftd.h>
 #include <cli.h>
 #include <posix-platform.h>

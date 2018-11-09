@@ -35,7 +35,6 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include <openthread.h>
 #include <platform/logging.h>
 #include <common/code_utils.hpp>
 #include <openthread-core-config.h>
@@ -142,10 +141,6 @@ void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat
     case OT_LOG_REGION_CLI:
         LOG_PRINTF("CLI  ");
         break;
-
-    case OT_LOG_REGION_HARDMAC:
-    	LOG_PRINTF("HMAC ");
-    	break;
 
     case OT_LOG_REGION_PLATFORM:
 		LOG_PRINTF("PLAT ");

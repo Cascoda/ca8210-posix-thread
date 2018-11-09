@@ -38,7 +38,6 @@
 #include <stdint.h>
 #include <sys/time.h>
 
-#include <openthread.h>
 #include <tasklet.h>
 #include <platform/alarm-milli.h>
 #include <platform/uart.h>

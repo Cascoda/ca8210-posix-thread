@@ -33,8 +33,6 @@
  *
  */
 
-#include <types.h>
-#include <openthread.h>
 #include <thread_ftd.h>
 
 #include <unistd.h>
@@ -43,7 +41,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <common/code_utils.hpp>
-#include <platform/radio.h>
+#include <platform/radio-mac.h>
 #include <platform/random.h>
 #include <platform/logging.h>
 #include <ca821x_api.h>
@@ -346,11 +344,9 @@ otError otPlatMlmeScan(otInstance *aInstance, otScanRequest *aScanRequest)
 otError otPlatMlmePollRequest(otInstance *aInstance, otPollRequest *aPollRequest)
 {
 	uint8_t error;
-	uint8_t pollInterval[2] = {0};
 
 	error = MLME_POLL_request_sync(
 	         *((struct FullAddr*)  &(aPollRequest->mCoordAddress)),
-	                               pollInterval,
 	            (struct SecSpec*)  &(aPollRequest->mSecurity),
 	                               pDeviceRef);
 
@@ -362,15 +358,13 @@ otError otPlatMcpsDataRequest(otInstance *aInstance, otDataRequest *aDataRequest
 	uint8_t error;
 
 	error = MCPS_DATA_request(aDataRequest->mSrcAddrMode,
-	                          aDataRequest->mDst.mAddressMode,
-	                          GETLE16(aDataRequest->mDst.mPanId),
-	        (union MacAddr*)  aDataRequest->mDst.mAddress,
-	                          aDataRequest->mMsduLength,
-	                          aDataRequest->mMsdu,
-	                          aDataRequest->mMsduHandle,
-	                          aDataRequest->mTxOptions,
-	       (struct SecSpec*)  &(aDataRequest->mSecurity),
-	                          pDeviceRef);
+               *(struct FullAddr*) &aDataRequest->mDst,
+                                   aDataRequest->mMsduLength,
+                                   aDataRequest->mMsdu,
+                                   aDataRequest->mMsduHandle,
+                                   aDataRequest->mTxOptions,
+                (struct SecSpec*)  &(aDataRequest->mSecurity),
+                                   pDeviceRef);
 
 	return (error == MAC_SUCCESS) ? OT_ERROR_NONE : OT_ERROR_INVALID_STATE;
 }
@@ -493,12 +487,12 @@ int8_t otPlatRadioGetReceiveSensitivity(otInstance *aInstance){
 
 static int driverErrorCallback(int error_number, struct ca821x_dev *pDeviceRef)
 {
-	otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_HARDMAC, "DRIVER FAILED WITH ERROR %d\n\r", error_number);
+	otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_MAC, "DRIVER FAILED WITH ERROR %d\n\r", error_number);
 
 	if(!sRadioInitialised)
 		exit(EXIT_FAILURE);
 
-	otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_HARDMAC, "Attempting restart...\n\r", error_number);
+	otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_MAC, "Attempting restart...\n\r", error_number);
 
 	if(ca821x_util_reset(pDeviceRef) == 0){
 		otThreadSetAutoStart(OT_INSTANCE, true);
@@ -513,7 +507,7 @@ void PlatformRadioStop(void)
 {
 	if(sRadioInitialised){
 		//Reset the MAC to a default state
-		otPlatLog(OT_LOG_LEVEL_INFO, OT_LOG_REGION_HARDMAC, "Resetting & Stopping Radio...\n\r");
+		otPlatLog(OT_LOG_LEVEL_INFO, OT_LOG_REGION_MAC, "Resetting & Stopping Radio...\n\r");
 		MLME_RESET_request_sync(1, pDeviceRef);
 		ca821x_util_deinit(pDeviceRef);
 		sRadioInitialised = false;
