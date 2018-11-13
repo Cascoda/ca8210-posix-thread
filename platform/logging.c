@@ -35,9 +35,9 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include <platform/logging.h>
-#include <common/code_utils.hpp>
-#include <openthread-core-config.h>
+#include "openthread/platform/logging.h"
+#include "code_utils.h"
+#include "openthread-core-config.h"
 
 // Macro to append content to end of the log string.
 

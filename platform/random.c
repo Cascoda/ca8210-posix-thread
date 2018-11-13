@@ -34,18 +34,18 @@
  *   This implementation is not a true random number generator and does @em satisfy the Thread requirements.
  */
 
-#include <platform/random.h>
-#include <posix-platform.h>
-#include <ca821x_api.h>
-#include <hwme_tdme.h>
-#include <assert.h>
-#include <common/code_utils.hpp>
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <assert.h>
+
+#include "openthread/platform/random.h"
+#include "posix-platform.h"
+#include "code_utils.h"
+#include "ca821x_api.h"
+#include "hwme_tdme.h"
 
 void posixPlatformRandomInit(void)
 {

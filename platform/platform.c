@@ -38,11 +38,11 @@
 #include <stdint.h>
 #include <sys/time.h>
 
-#include <tasklet.h>
-#include <platform/alarm-milli.h>
-#include <platform/uart.h>
-#include <posix-platform.h>
-#include <selfpipe.h>
+#include "openthread/platform/tasklet.h"
+#include "openthread/platform/alarm-milli.h"
+#include "openthread/platform/uart.h"
+#include "posix-platform.h"
+#include "selfpipe.h"
 
 uint32_t NODE_ID = 1;
 uint32_t WELLKNOWN_NODE_ID = 34;

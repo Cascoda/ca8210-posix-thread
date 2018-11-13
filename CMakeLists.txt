@@ -98,6 +98,7 @@ target_link_libraries(ca821x-openthread-posix-plat ca821x-posix m)
 target_include_directories( ca821x-openthread-posix-plat
 	PRIVATE
 		${PROJECT_SOURCE_DIR}/platform
+		${openthread_SOURCE_DIR}/src/core
 	PUBLIC
 		${openthread_SOURCE_DIR}/include
 	)

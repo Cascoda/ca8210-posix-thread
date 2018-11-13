@@ -38,10 +38,9 @@
 #include <sys/stat.h>
 #include <string.h>
 
-#include <openthread-core-config.h>
+#include "openthread-core-config.h"
 #include "flash.h"
-
-#include <common/code_utils.hpp>
+#include "code_utils.h"
 
 #define FLASH_FOLDER "/usr/local/etc/"
 #define FLASH_FILE FLASH_FOLDER ".otConfig"

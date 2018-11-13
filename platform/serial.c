@@ -26,8 +26,6 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "posix-platform.h"
-
 #include <assert.h>
 #include <fcntl.h>
 #include <poll.h>
@@ -38,8 +36,9 @@
 #include <errno.h>
 #include <signal.h>
 
-#include <common/code_utils.hpp>
-#include <platform/uart.h>
+#include "openthread/platform/uart.h"
+#include "code_utils.h"
+#include "posix-platform.h"
 
 #ifdef OPENTHREAD_TARGET_LINUX
 #include <sys/prctl.h>
