@@ -42,8 +42,8 @@ include(FetchContent)
 
 FetchContent_Declare(
   ca821x-posix
-  GIT_REPOSITORY CASCODA_CA821X_POSIX_GIT_REPO
-  GIT_TAG        CASCODA_CA821X_POSIX_GIT_TAG
+  GIT_REPOSITORY ${CASCODA_CA821X_POSIX_GIT_REPO}
+  GIT_TAG        ${CASCODA_CA821X_POSIX_GIT_TAG}
 )
 
 FetchContent_GetProperties(ca821x-posix)
@@ -54,11 +54,11 @@ endif()
 
 FetchContent_Declare(
   openthread
-  GIT_REPOSITORY CASCODA_OPENTHREAD_GIT_REPO
-  GIT_TAG        CASCODA_OPENTHREAD_GIT_TAG
+  GIT_REPOSITORY ${CASCODA_OPENTHREAD_GIT_REPO}
+  GIT_TAG        ${CASCODA_OPENTHREAD_GIT_TAG}
   GIT_SHALLOW    1
-  CONFIGURE_COMMAND make distclean -C $(openthread_BINARY_DIR); $(openthread_SOURCE_DIR)/bootstrap
-            COMMAND cd $(openthread_BINARY_DIR) && $(openthread_SOURCE_DIR)/configure $(CASCODA_OPENTHREAD_CONFIGURE_OPTS)
+  CONFIGURE_COMMAND make distclean -C ${openthread_BINARY_DIR}; ${openthread_SOURCE_DIR}/bootstrap
+            COMMAND cd ${openthread_BINARY_DIR} && ${openthread_SOURCE_DIR}/configure ${CASCODA_OPENTHREAD_CONFIGURE_OPTS}
   BUILD_COMMAND ${CASCODA_OPENTHREAD_MAKE} ${CASCODA_OPENTHREAD_MAKE_ARGS}
   INSTALL_COMMAND   ""
   TEST_COMMAND      ""
@@ -69,12 +69,12 @@ if(NOT openthread_POPULATED)
   FetchContent_Populate(openthread)
 endif()
 
-find_library(OPENTHREAD_FTD_LIB openthread-ftd HINTS $(openthread_BINARY_DIR)/src/core)
-find_library(OPENTHREAD_MTD_LIB openthread-mtd HINTS $(openthread_BINARY_DIR)/src/core)
-find_library(OPENTHREAD_CLI_FTD_LIB openthread-cli-ftd HINTS $(openthread_BINARY_DIR)/src/cli)
-find_library(OPENTHREAD_CLI_MTD_LIB openthread-cli-mtd HINTS $(openthread_BINARY_DIR)/src/cli)
-find_library(OPENTHREAD_NCP_FTD_LIB openthread-ncp-ftd HINTS $(openthread_BINARY_DIR)/src/ncp)
-find_library(OPENTHREAD_NCP_MTD_LIB openthread-ncp-mtd HINTS $(openthread_BINARY_DIR)/src/ncp)
+find_library(OPENTHREAD_FTD_LIB openthread-ftd HINTS ${openthread_BINARY_DIR}/src/core)
+find_library(OPENTHREAD_MTD_LIB openthread-mtd HINTS ${openthread_BINARY_DIR}/src/core)
+find_library(OPENTHREAD_CLI_FTD_LIB openthread-cli-ftd HINTS ${openthread_BINARY_DIR}/src/cli)
+find_library(OPENTHREAD_CLI_MTD_LIB openthread-cli-mtd HINTS ${openthread_BINARY_DIR}/src/cli)
+find_library(OPENTHREAD_NCP_FTD_LIB openthread-ncp-ftd HINTS ${openthread_BINARY_DIR}/src/ncp)
+find_library(OPENTHREAD_NCP_MTD_LIB openthread-ncp-mtd HINTS ${openthread_BINARY_DIR}/src/ncp)
 
 # Main library config ---------------------------------------------------------
 add_library(ca821x-openthread-posix-plat
