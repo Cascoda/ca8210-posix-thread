@@ -33,28 +33,28 @@
  *
  */
 
-#include <thread_ftd.h>
-
 #include <unistd.h>
 #include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
 #include <assert.h>
-#include <common/code_utils.hpp>
-#include <platform/radio-mac.h>
-#include <platform/random.h>
-#include <platform/logging.h>
-#include <ca821x_api.h>
-#include <ca821x-posix.h>
-#include <string.h>
-#include <mac_messages.h>
-#include "posix-platform.h"
-#include <ieee_802_15_4.h>
 #include <pthread.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <string.h>
 
+#include "openthread/thread_ftd.h"
+#include "openthread/platform/radio-mac.h"
+#include "openthread/platform/random.h"
+#include "openthread/platform/logging.h"
+
+#include "code_utils.h"
+#include "ca821x_api.h"
+#include "ca821x-posix.h"
+#include "mac_messages.h"
+#include "ieee_802_15_4.h"
 #include "selfpipe.h"
+#include "posix-platform.h"
 
 #define ARRAY_LENGTH(array) (sizeof((array))/sizeof((array)[0]))
 

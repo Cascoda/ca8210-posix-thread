@@ -1,4 +1,4 @@
-#include <platform/radio-mac.h>
+#include "openthread/platform/radio-mac.h"
 
 void otPlatRadioEnableSrcMatch(otInstance *aInstance, bool aEnable)
 {

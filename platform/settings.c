@@ -37,11 +37,11 @@
 #include <string.h>
 #include <assert.h>
 
-#include <openthread-core-config.h>
+#include "openthread-core-config.h"
 
-#include <common/code_utils.hpp>
-#include <platform/settings.h>
+#include "openthread/platform/settings.h"
 
+#include "code_utils.h"
 #include "flash.h"
 
 enum

@@ -35,14 +35,14 @@
 #ifndef POSIX_PLATFORM_H_
 #define POSIX_PLATFORM_H_
 
-#include <instance.h> 
-
 #include <stdint.h>
 #include <sys/select.h>
 #include <sys/time.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <ca821x_api.h>
+
+#include "openthread/instance.h"
+#include "ca821x_api.h"
 
 #ifdef __cplusplus
 extern "C" {

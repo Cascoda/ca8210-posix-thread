@@ -34,8 +34,8 @@
 #include <string.h>
 #include <sys/time.h>
 
-#include <platform/alarm-milli.h>
-#include <posix-platform.h>
+#include "openthread/platform/alarm-milli.h"
+#include "posix-platform.h"
 
 static bool s_is_running = false;
 static uint32_t s_alarm = 0;

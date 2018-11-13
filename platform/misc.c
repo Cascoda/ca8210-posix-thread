@@ -26,10 +26,10 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <platform/misc.h>
-#include "posix-platform.h"
-
 #include <unistd.h>
+
+#include "openthread/platform/misc.h"
+#include "posix-platform.h"
 
 extern int      gArgumentsCount;
 extern char   **gArguments;
