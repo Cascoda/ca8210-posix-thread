@@ -32,11 +32,11 @@
 #include <unistd.h>
 #include <signal.h>
 
-#include <instance.h>
-#include <cli.h>
-#include <posix-platform.h>
+#include "openthread/instance.h"
+#include "openthread/cli.h"
+#include "openthread/tasklet.h"
 
-#include <tasklet.h>
+#include "ca8210-posix-thread/posix-platform.h"
 
 static int isRunning;
 

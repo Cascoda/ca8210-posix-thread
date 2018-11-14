@@ -11,21 +11,21 @@ find_package(Threads REQUIRED)
 set(CASCODA_OPENTHREAD_MAKE make CACHE STRING "The 'make' program to be used to build openthread")
 set(CASCODA_OPENTHREAD_MAKE_ARGS -j10 CACHE STRING "The arguments to be passed to the 'make' program when building openthread")
 set(CASCODA_OPENTHREAD_CONFIGURE_OPTS
-      "--enable-cli-app=all\
-       --enable-application-coap\
-       --enable-joiner\
-       --enable-commissioner\
-       --enable-tmf-proxy\
-       --enable-mac-filter\
-       --enable-cert-log\
-       --enable-dhcp6-client\
-       --enable-dhcp6-server\
-       --enable-border-router\
-       --with-mac=external\
-       --enable-ftd\
-       --enable-mtd\
-       --enable-cli\
-       --disable-docs"
+       --enable-cli
+       --enable-application-coap
+       --enable-joiner
+       --enable-commissioner
+       --enable-tmf-proxy
+       --enable-mac-filter
+       --enable-cert-log
+       --enable-dhcp6-client
+       --enable-dhcp6-server
+       --enable-border-router
+       --with-mac=external
+       --enable-ftd
+       --enable-mtd
+       --enable-cli
+       --disable-docs
      CACHE STRING
        "The arguments to be passed to configure when configuring openthread"
 )
@@ -39,6 +39,7 @@ set(CASCODA_CA821X_POSIX_GIT_REPO "https://github.com/Cascoda/ca821x-posix.git" 
 
 # Sub-project configuration ---------------------------------------------------
 include(FetchContent)
+include(ExternalProject)
 
 FetchContent_Declare(
   ca821x-posix
@@ -52,29 +53,47 @@ if(NOT ca821x-posix_POPULATED)
   add_subdirectory(${ca821x-posix_SOURCE_DIR} ${ca821x-posix_BINARY_DIR})
 endif()
 
-FetchContent_Declare(
+ExternalProject_Add(
   openthread
   GIT_REPOSITORY ${CASCODA_OPENTHREAD_GIT_REPO}
   GIT_TAG        ${CASCODA_OPENTHREAD_GIT_TAG}
   GIT_SHALLOW    1
-  CONFIGURE_COMMAND make distclean -C ${openthread_BINARY_DIR}; ${openthread_SOURCE_DIR}/bootstrap
-            COMMAND cd ${openthread_BINARY_DIR} && ${openthread_SOURCE_DIR}/configure ${CASCODA_OPENTHREAD_CONFIGURE_OPTS}
+  CONFIGURE_COMMAND cd <SOURCE_DIR> && ./bootstrap && cd <SOURCE_DIR>
+	    COMMAND <SOURCE_DIR>/configure ${CASCODA_OPENTHREAD_CONFIGURE_OPTS}
   BUILD_COMMAND ${CASCODA_OPENTHREAD_MAKE} ${CASCODA_OPENTHREAD_MAKE_ARGS}
   INSTALL_COMMAND   ""
   TEST_COMMAND      ""
 )
 
-FetchContent_GetProperties(openthread)
-if(NOT openthread_POPULATED)
-  FetchContent_Populate(openthread)
-endif()
+ExternalProject_Get_Property(openthread SOURCE_DIR)
+ExternalProject_Get_Property(openthread BINARY_DIR)
+set(openthread_SOURCE_DIR ${SOURCE_DIR})
+set(openthread_BINARY_DIR ${BINARY_DIR})
 
-find_library(OPENTHREAD_FTD_LIB openthread-ftd HINTS ${openthread_BINARY_DIR}/src/core)
-find_library(OPENTHREAD_MTD_LIB openthread-mtd HINTS ${openthread_BINARY_DIR}/src/core)
-find_library(OPENTHREAD_CLI_FTD_LIB openthread-cli-ftd HINTS ${openthread_BINARY_DIR}/src/cli)
-find_library(OPENTHREAD_CLI_MTD_LIB openthread-cli-mtd HINTS ${openthread_BINARY_DIR}/src/cli)
-find_library(OPENTHREAD_NCP_FTD_LIB openthread-ncp-ftd HINTS ${openthread_BINARY_DIR}/src/ncp)
-find_library(OPENTHREAD_NCP_MTD_LIB openthread-ncp-mtd HINTS ${openthread_BINARY_DIR}/src/ncp)
+add_library(openthread-ftd STATIC IMPORTED)
+add_library(openthread-mtd STATIC IMPORTED)
+add_library(openthread-cli-ftd STATIC IMPORTED)
+add_library(openthread-cli-mtd STATIC IMPORTED)
+add_library(openthread-ncp-ftd STATIC IMPORTED)
+add_library(openthread-ncp-mtd STATIC IMPORTED)
+add_library(openthread-mbedtls STATIC IMPORTED)
+set_property(TARGET openthread-ftd
+             PROPERTY IMPORTED_LOCATION ${openthread_BINARY_DIR}/src/core/${CMAKE_STATIC_LIBRARY_PREFIX}openthread-ftd${CMAKE_STATIC_LIBRARY_SUFFIX})
+set_property(TARGET openthread-mtd
+             PROPERTY IMPORTED_LOCATION ${openthread_BINARY_DIR}/src/core/${CMAKE_STATIC_LIBRARY_PREFIX}openthread-mtd${CMAKE_STATIC_LIBRARY_SUFFIX})
+set_property(TARGET openthread-cli-ftd
+             PROPERTY IMPORTED_LOCATION ${openthread_BINARY_DIR}/src/cli/${CMAKE_STATIC_LIBRARY_PREFIX}openthread-cli-ftd${CMAKE_STATIC_LIBRARY_SUFFIX})
+set_property(TARGET openthread-cli-mtd 
+             PROPERTY IMPORTED_LOCATION ${openthread_BINARY_DIR}/src/cli/${CMAKE_STATIC_LIBRARY_PREFIX}openthread-cli-mtd${CMAKE_STATIC_LIBRARY_SUFFIX})
+set_property(TARGET openthread-ncp-ftd 
+             PROPERTY IMPORTED_LOCATION ${openthread_BINARY_DIR}/src/ncp/${CMAKE_STATIC_LIBRARY_PREFIX}openthread-ncp-ftd${CMAKE_STATIC_LIBRARY_SUFFIX})
+set_property(TARGET openthread-ncp-mtd 
+             PROPERTY IMPORTED_LOCATION ${openthread_BINARY_DIR}/src/ncp/${CMAKE_STATIC_LIBRARY_PREFIX}openthread-ncp-mtd${CMAKE_STATIC_LIBRARY_SUFFIX})
+set_property(TARGET openthread-mbedtls 
+             PROPERTY IMPORTED_LOCATION ${openthread_BINARY_DIR}/third_party/mbedtls/${CMAKE_STATIC_LIBRARY_PREFIX}mbedcrypto${CMAKE_STATIC_LIBRARY_SUFFIX})
+
+target_link_libraries(openthread-ftd INTERFACE openthread-mbedtls)
+target_link_libraries(openthread-mtd INTERFACE openthread-mbedtls)
 
 # Main library config ---------------------------------------------------------
 add_library(ca821x-openthread-posix-plat
@@ -83,7 +102,6 @@ add_library(ca821x-openthread-posix-plat
 	${PROJECT_SOURCE_DIR}/platform/logging.c
 	${PROJECT_SOURCE_DIR}/platform/misc.c
 	${PROJECT_SOURCE_DIR}/platform/platform.c
-	${PROJECT_SOURCE_DIR}/platform/posix-platform.c
 	${PROJECT_SOURCE_DIR}/platform/radio.c
 	${PROJECT_SOURCE_DIR}/platform/radio-stubs.c
 	${PROJECT_SOURCE_DIR}/platform/random.c
@@ -95,12 +113,17 @@ add_library(ca821x-openthread-posix-plat
 
 target_link_libraries(ca821x-openthread-posix-plat ca821x-posix m)
 
+target_link_libraries(openthread-ftd INTERFACE ca821x-openthread-posix-plat) 
+target_link_libraries(openthread-mtd INTERFACE ca821x-openthread-posix-plat) 
+
 target_include_directories( ca821x-openthread-posix-plat
 	PRIVATE
 		${PROJECT_SOURCE_DIR}/platform
 		${openthread_SOURCE_DIR}/src/core
+		${openthread_BINARY_DIR}/include
 	PUBLIC
 		${openthread_SOURCE_DIR}/include
+		${PROJECT_SOURCE_DIR}/platform/include
 	)
 
 # Test app config -------------------------------------------------------------
@@ -112,8 +135,8 @@ add_executable(mt_example
 	${PROJECT_SOURCE_DIR}/example/mainMultithread.c
 	)
 
-target_link_libraries(cliapp ca821x-openthread-posix-plat OPENTHREAD_CLI_FTD_LIB OPENTHREAD_FTD_LIB)
-target_link_libraries(mt_example ca821x-openthread-posix-plat OPENTHREAD_FTD_LIB Threads::Threads)
+target_link_libraries(cliapp ca821x-openthread-posix-plat openthread-cli-ftd openthread-ftd)
+target_link_libraries(mt_example ca821x-openthread-posix-plat openthread-cli-ftd openthread-ftd Threads::Threads)
 
 # Run tests -------------------------------------------------------------------
 include(CTest)

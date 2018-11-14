@@ -30,14 +30,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
-
-#include <instance.h>
-#include <thread_ftd.h>
-#include <cli.h>
-#include <posix-platform.h>
-
-#include <tasklet.h>
 #include <pthread.h>
+
+#include "openthread/instance.h"
+#include "openthread/thread_ftd.h"
+#include "openthread/cli.h"
+#include "openthread/tasklet.h"
+#include "ca8210-posix-thread/posix-platform.h"
 
 static pthread_t work_thread;
 

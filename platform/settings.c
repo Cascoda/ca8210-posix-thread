@@ -143,7 +143,7 @@ static uint32_t swapSettingsBlock(otInstance *aInstance)
 
     (void)aInstance;
 
-    VerifyOrExit(pageNum > 1, ;);
+    otEXPECT_ACTION(pageNum > 1, ;);
 
     sSettingsBaseAddress = (swapAddress == SETTINGS_CONFIG_BASE_ADDRESS) ?
                            (swapAddress + settingsSize) :
@@ -238,7 +238,7 @@ static otError addSetting(otInstance *aInstance, uint16_t aKey, bool aIndex0, co
     if ((sSettingsUsedSize + getAlignLength(addBlock.block.length) + sizeof(struct settingsBlock)) >=
         settingsSize)
     {
-        VerifyOrExit(swapSettingsBlock(aInstance) >= (getAlignLength(addBlock.block.length) + sizeof(struct settingsBlock)),
+        otEXPECT_ACTION(swapSettingsBlock(aInstance) >= (getAlignLength(addBlock.block.length) + sizeof(struct settingsBlock)),
                      error = OT_ERROR_NO_BUFS);
     }
 

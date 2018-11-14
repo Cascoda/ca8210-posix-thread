@@ -43,9 +43,9 @@
 
 #define LOG_PRINTF(...)                                                                     \
     charsWritten = snprintf(&logString[offset], sizeof(logString) - offset , __VA_ARGS__);    \
-    VerifyOrExit(charsWritten >= 0, logString[offset] = 0);                                  \
+    otEXPECT_ACTION(charsWritten >= 0, logString[offset] = 0);                                  \
     offset += (unsigned int)charsWritten;                                    \
-    VerifyOrExit(offset < sizeof(logString), logString[sizeof(logString) -1 ] = 0)
+    otEXPECT_ACTION(offset < sizeof(logString), logString[sizeof(logString) -1 ] = 0)
 
 void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat, ...)
 {
@@ -152,7 +152,7 @@ void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat
     charsWritten = vsnprintf(&logString[offset], sizeof(logString) - offset, aFormat, args);
     va_end(args);
 
-    VerifyOrExit(charsWritten >= 0, logString[offset] = 0);
+    otEXPECT_ACTION(charsWritten >= 0, logString[offset] = 0);
 
 exit:
     fprintf(stderr, "%s\r\n", logString);

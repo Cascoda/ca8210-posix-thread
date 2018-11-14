@@ -32,7 +32,7 @@
 #include "openthread/platform/uart.h"
 #include "openthread/platform/spi-slave.h"
 
-#include "posix-platform.h"
+#include "ca8210-posix-thread/posix-platform.h"
 
 // Spi-slave stubs
 
