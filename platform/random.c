@@ -42,7 +42,7 @@
 #include <assert.h>
 
 #include "openthread/platform/random.h"
-#include "posix-platform.h"
+#include "ca8210-posix-thread/posix-platform.h"
 #include "code_utils.h"
 #include "ca821x_api.h"
 #include "hwme_tdme.h"
@@ -99,7 +99,7 @@ uint32_t otPlatRandomGet(void)
 otError otPlatRandomGetTrue(uint8_t *aOutput, uint16_t aOutputLength){
 	otError error = OT_ERROR_NONE;
 
-	VerifyOrExit(aOutput != NULL, error = OT_ERROR_INVALID_ARGS);
+	otEXPECT_ACTION(aOutput != NULL, error = OT_ERROR_INVALID_ARGS);
 
 	int fd = open("/dev/random", O_RDONLY);
 	if (fd != -1)

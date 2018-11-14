@@ -35,7 +35,7 @@
 #include <sys/time.h>
 
 #include "openthread/platform/alarm-milli.h"
-#include "posix-platform.h"
+#include "ca8210-posix-thread/posix-platform.h"
 
 static bool s_is_running = false;
 static uint32_t s_alarm = 0;

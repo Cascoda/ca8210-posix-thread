@@ -50,11 +50,11 @@
 
 #include "code_utils.h"
 #include "ca821x_api.h"
-#include "ca821x-posix.h"
+#include "ca821x-posix/ca821x-posix.h"
 #include "mac_messages.h"
 #include "ieee_802_15_4.h"
 #include "selfpipe.h"
-#include "posix-platform.h"
+#include "ca8210-posix-thread/posix-platform.h"
 
 #define ARRAY_LENGTH(array) (sizeof((array))/sizeof((array)[0]))
 
@@ -124,9 +124,9 @@ otError otPlatMlmeGet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 		otKeyDesc->mKeyDeviceListEntries   = caKeyDesc.Fixed.KeyDeviceListEntries;
 		otKeyDesc->mKeyUsageListEntries    = caKeyDesc.Fixed.KeyUsageListEntries;
 
-		VerifyOrExit(otKeyDesc->mKeyIdLookupListEntries <= ARRAY_LENGTH(otKeyDesc->mKeyIdLookupDesc), otErr = OT_ERROR_GENERIC);
-		VerifyOrExit(otKeyDesc->mKeyDeviceListEntries <= ARRAY_LENGTH(otKeyDesc->mKeyDeviceDesc), otErr = OT_ERROR_GENERIC);
-		VerifyOrExit(otKeyDesc->mKeyUsageListEntries <= ARRAY_LENGTH(otKeyDesc->mKeyUsageDesc), otErr = OT_ERROR_GENERIC);
+		otEXPECT_ACTION(otKeyDesc->mKeyIdLookupListEntries <= ARRAY_LENGTH(otKeyDesc->mKeyIdLookupDesc), otErr = OT_ERROR_GENERIC);
+		otEXPECT_ACTION(otKeyDesc->mKeyDeviceListEntries <= ARRAY_LENGTH(otKeyDesc->mKeyDeviceDesc), otErr = OT_ERROR_GENERIC);
+		otEXPECT_ACTION(otKeyDesc->mKeyUsageListEntries <= ARRAY_LENGTH(otKeyDesc->mKeyUsageDesc), otErr = OT_ERROR_GENERIC);
 
 		memcpy(otKeyDesc->mKey, caKeyDesc.Fixed.Key, sizeof(otKeyDesc->mKey));
 		otKeyDesc->mKeyIdLookupDesc[0] =
@@ -140,8 +140,10 @@ otError otPlatMlmeGet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 					!!(caKeyDesc.flags[flagOffset] & KDD_UniqueDeviceMask);
 			otKeyDesc->mKeyDeviceDesc[i].mBlacklisted =
 					!!(caKeyDesc.flags[flagOffset] & KDD_BlacklistedMask);
+#if OPENTHREAD_CONFIG_EXTERNAL_MAC_SHARED_DD
 			otKeyDesc->mKeyDeviceDesc[i].mNew =
 					!!(caKeyDesc.flags[flagOffset] & KDD_NewMask);
+#endif
 		}
 
 		for(int i = 0; i < otKeyDesc->mKeyUsageListEntries; i++, flagOffset++)
@@ -211,8 +213,10 @@ otError otPlatMlmeSet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 					devDesc->mUniqueDevice ? KDD_UniqueDeviceMask : 0;
 			caKeyDesc.flags[flagOffset] |=
 					devDesc->mBlacklisted ? KDD_BlacklistedMask : 0;
+#if OPENTHREAD_CONFIG_EXTERNAL_MAC_SHARED_DD
 			caKeyDesc.flags[flagOffset] |=
 					devDesc->mNew ? KDD_NewMask : 0;
+#endif
 		}
 
 		for(int i = 0; i < otKeyDesc->mKeyUsageListEntries; i++, flagOffset++)

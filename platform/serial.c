@@ -38,7 +38,7 @@
 
 #include "openthread/platform/uart.h"
 #include "code_utils.h"
-#include "posix-platform.h"
+#include "ca8210-posix-thread/posix-platform.h"
 
 #ifdef OPENTHREAD_TARGET_LINUX
 #include <sys/prctl.h>
@@ -113,7 +113,7 @@ otError otPlatUartEnable(void)
     if (isatty(s_in_fd))
     {
         // get current configuration
-        VerifyOrExit(tcgetattr(s_in_fd, &termios) == 0, perror("tcgetattr"); error = OT_ERROR_FAILED);
+        otEXPECT_ACTION(tcgetattr(s_in_fd, &termios) == 0, perror("tcgetattr"); error = OT_ERROR_FAILED);
 
         // Set up the termios settings for raw mode. This turns
         // off input/output processing, line processing, and character processing.
@@ -132,16 +132,16 @@ otError otPlatUartEnable(void)
         termios.c_cc[VTIME] = 0;
 
         // configure baud rate
-        VerifyOrExit(cfsetispeed(&termios, B115200) == 0, perror("cfsetispeed"); error = OT_ERROR_FAILED);
+        otEXPECT_ACTION(cfsetispeed(&termios, B115200) == 0, perror("cfsetispeed"); error = OT_ERROR_FAILED);
 
         // set configuration
-        VerifyOrExit(tcsetattr(s_in_fd, TCSANOW, &termios) == 0, perror("tcsetattr"); error = OT_ERROR_FAILED);
+        otEXPECT_ACTION(tcsetattr(s_in_fd, TCSANOW, &termios) == 0, perror("tcsetattr"); error = OT_ERROR_FAILED);
     }
 
     if (isatty(s_out_fd))
     {
         // get current configuration
-        VerifyOrExit(tcgetattr(s_out_fd, &termios) == 0, perror("tcgetattr"); error = OT_ERROR_FAILED);
+        otEXPECT_ACTION(tcgetattr(s_out_fd, &termios) == 0, perror("tcgetattr"); error = OT_ERROR_FAILED);
 
         // Set up the termios settings for raw mode. This turns
         // off input/output processing, line processing, and character processing.
@@ -157,10 +157,10 @@ otError otPlatUartEnable(void)
         termios.c_cflag |= HUPCL | CREAD | CLOCAL;
 
         // configure baud rate
-        VerifyOrExit(cfsetospeed(&termios, B115200) == 0, perror("cfsetospeed"); error = OT_ERROR_FAILED);
+        otEXPECT_ACTION(cfsetospeed(&termios, B115200) == 0, perror("cfsetospeed"); error = OT_ERROR_FAILED);
 
         // set configuration
-        VerifyOrExit(tcsetattr(s_out_fd, TCSANOW, &termios) == 0, perror("tcsetattr"); error = OT_ERROR_FAILED);
+        otEXPECT_ACTION(tcsetattr(s_out_fd, TCSANOW, &termios) == 0, perror("tcsetattr"); error = OT_ERROR_FAILED);
     }
 
     if(error == OT_ERROR_NONE) s_enabled = true;
@@ -188,7 +188,7 @@ otError otPlatUartSend(const uint8_t *aBuf, uint16_t aBufLength)
 {
 	otError error = OT_ERROR_NONE;
 
-    VerifyOrExit(s_write_length == 0, error = OT_ERROR_BUSY);
+    otEXPECT_ACTION(s_write_length == 0, error = OT_ERROR_BUSY);
 
     s_write_buffer = aBuf;
     s_write_length = aBufLength;

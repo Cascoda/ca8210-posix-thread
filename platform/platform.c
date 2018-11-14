@@ -38,10 +38,10 @@
 #include <stdint.h>
 #include <sys/time.h>
 
-#include "openthread/platform/tasklet.h"
 #include "openthread/platform/alarm-milli.h"
 #include "openthread/platform/uart.h"
-#include "posix-platform.h"
+#include "openthread/tasklet.h"
+#include "ca8210-posix-thread/posix-platform.h"
 #include "selfpipe.h"
 
 uint32_t NODE_ID = 1;
