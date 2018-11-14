@@ -32,9 +32,6 @@ set(CASCODA_OPENTHREAD_CONFIGURE_OPTS
 set(CASCODA_OPENTHREAD_GIT_TAG "origin/ext-mac" CACHE STRING "The tag to clone from the openthread git repo")
 set(CASCODA_OPENTHREAD_GIT_REPO "https://github.com/Cascoda/openthread.git" CACHE STRING "The address of the repo to be cloned")
 
-set(CASCODA_CA821X_POSIX_GIT_TAG "origin/master" CACHE STRING "The tag to clone from the ca821x-posix git repo")
-set(CASCODA_CA821X_POSIX_GIT_REPO "https://github.com/Cascoda/ca821x-posix.git" CACHE STRING "The address of the repo to be cloned")
-
 # Config file generation ------------------------------------------------------
 
 # Sub-project configuration ---------------------------------------------------
@@ -43,8 +40,8 @@ include(ExternalProject)
 
 FetchContent_Declare(
   ca821x-posix
-  GIT_REPOSITORY ${CASCODA_CA821X_POSIX_GIT_REPO}
-  GIT_TAG        ${CASCODA_CA821X_POSIX_GIT_TAG}
+  GIT_REPOSITORY https://github.com/Cascoda/ca821x-posix.git
+  GIT_TAG        origin/master
 )
 
 FetchContent_GetProperties(ca821x-posix)
