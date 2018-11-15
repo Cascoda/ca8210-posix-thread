@@ -1,73 +1,35 @@
-# ca8210-posix-thread
+# ca821x-posix-thread
 
-A modified version of openthread to work on posix based systems using the cascoda ca8210 radio.
+A modified version of openthread to work on posix based systems using a Cascoda CA-821x radio.
 
-in the examples folder is an example program which presents a command line interface to test the thread interface. For more documentation on how to use this, and also information on the openthread API, see the main openthread repo:
+In the examples folder is an example program which presents a command line interface to test the thread interface. For more documentation on how to use this, and also information on the openthread API, see the main openthread repo:
 
 <https://github.com/openthread/openthread>
 
-For usage with a custom program, see the example makefile provided. To summarise, the otposixca8210 library (which is built to the root repo folder) should be linked into the custom program. The directories for useful header files are:
+## Building
+This project must be configured with cmake before building. It is recommended to use the cmake gui, ccmake or cmake interactive mode, as there are user-configurable options. This will generate the required config files and setup whatever build system/projects you need. Cmake can also be used to configure project files for eclipse, codeblocks, xcode, etc. The system is designed for out-of-source builds, so the source directories do not get touched at all when building. This has many benefits:
+- Works nicely with version control systems like git, as no clutter ever appears, and a .gitignore is uneccesary
+- You can have several different 'configurations' of the same project open in your IDE at the same time
+- You can keep your source on a different partition to your build dir, even across a network
 
-```
-	../openthread/include/
-	../openthread/src/core/
-	./include/
-	../platform/
-	../ca8210-kernel-exchange/cascoda-api/include/
-	../ca8210-kernel-exchange/
-	../ca8210-usb-exchange/cascoda-api/include/
-	../ca8210-usb-exchange/
-```
-
-## Build instructions for debian-like systems:
-
-Set the permissions for the cloned repo, you can use the included fix_permissions.sh script to do this, just change pi:pi in the first line to be your own username in the form:
-
-```
-chown <username>:<group> -R .
-```
-
+For example, on a posix system:
 ```bash
-sudo ./fix_permissions.sh
+# Make a directory to work in
+mkdir ca821x-posix-thread && cd ca821x-posix-thread
+# clone this repo
+git clone https://github.com/Cascoda/ca8210-posix-thread.git
+# make a build directory
+mkdir build && cd build
+# configure the build & download dependancies
+ccmake ../ca8210-posix-thread
+# build
+make -j8
 ```
 
-Retreive all of the git submodules required
-```bash
-./update_submodules.sh
-```
+For more information, consult https://cmake.org/runningcmake/
 
-Now the tools required to build the tools required to build openthread must be installed
-```bash
-sudo apt-get install autoconf -y
-sudo apt-get install m4 -y
-```
+### If using the usb exchange, then the hidusb shared library needs to be installed - look at the readme in the hidapi src, which is at _deps/hidapi-src by default - this is a WIP and the aim is to do this automatically eventually
 
-and for testing, the following is useful:
-```bash
-sudo apt-get install python-pexpect -y
-```
-
-Now to build the required tools to build openthread (this takes a while)
-```bash
-sudo ./fix_permissions.sh
-./build_buildtools.sh
-```
-
-and prepare openthread for compilation
-```bash
-./prepare_openthread.sh
-```
-
-And finally, build everything
-```bash
-make
-#If using the usb exchange, then the hidusb shared library needs to be installed, as specified in ca8210-usb-exchange/hidapi/README.txt
-```
-
-Or for the nuc970:
-```bash
-./build_nuc970.sh
-```
 ## Using wpantund to enable as linux network interface
 
 On a posix system, a thread node can act as a linux network interface using the wpantund tool available from https://github.com/openthread/wpantund/
