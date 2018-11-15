@@ -349,10 +349,19 @@ otError otPlatMlmePollRequest(otInstance *aInstance, otPollRequest *aPollRequest
 {
 	uint8_t error;
 
+#if CASCODA_CA_VER == 8210
+	uint8_t interval[2] = {0,0};
+	error = MLME_POLL_request_sync(
+	         *((struct FullAddr*)  &(aPollRequest->mCoordAddress)),
+		                       interval,
+	            (struct SecSpec*)  &(aPollRequest->mSecurity),
+	                               pDeviceRef);
+#else
 	error = MLME_POLL_request_sync(
 	         *((struct FullAddr*)  &(aPollRequest->mCoordAddress)),
 	            (struct SecSpec*)  &(aPollRequest->mSecurity),
 	                               pDeviceRef);
+#endif
 
 	return (error == MAC_SUCCESS || error == MAC_NO_DATA) ? OT_ERROR_NONE : OT_ERROR_NO_ACK;
 }
