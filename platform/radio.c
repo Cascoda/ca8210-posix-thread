@@ -43,7 +43,7 @@
 #include <sys/stat.h>
 #include <string.h>
 
-#include "openthread/thread_ftd.h"
+#include "openthread/thread.h"
 #include "openthread/platform/radio-mac.h"
 #include "openthread/platform/random.h"
 #include "openthread/platform/logging.h"
