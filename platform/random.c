@@ -42,7 +42,7 @@
 #include <assert.h>
 
 #include "openthread/platform/random.h"
-#include "ca8210-posix-thread/posix-platform.h"
+#include "ca821x-posix-thread/posix-platform.h"
 #include "code_utils.h"
 #include "ca821x_api.h"
 #include "hwme_tdme.h"
