@@ -29,25 +29,6 @@ set(CASCODA_OPENTHREAD_CONFIGURE_OPTS
      CACHE STRING
        "The arguments to be passed to configure when configuring openthread"
 )
-set(CASCODA_OPENTHREAD_GIT_TAG "origin/ext-mac" CACHE STRING "The tag to clone from the openthread git repo")
-set(CASCODA_OPENTHREAD_GIT_REPO "https://github.com/Cascoda/openthread.git" CACHE STRING "The address of the repo to be cloned")
-
-# Config file generation ------------------------------------------------------
-if(${CASCODA_CA_VER} == 8210)
-	MESSAGE( WARNING "CA-${CASCODA_CA_VER} is not fully supported for thread, please upgrade")
-	set(CASCODA_DEVICE_TABLE_SIZE 10)
-elseif(${CASCODA_CA_VER} == 8211)
-	set(CASCODA_DEVICE_TABLE_SIZE 32)
-else()
-	MESSAGE( ERROR "CA-${CASCODA_CA_VER} is not supported with this version")
-endif()
-
-configure_file(
-	"${PROJECT_SOURCE_DIR}/platform/include/ca821x-posix-thread/ca821x-openthread-config.h.in"
-	"${PROJECT_BINARY_DIR}/platform/include/ca821x-posix-thread/ca821x-openthread-config.h"
-	)
-
-set(OPENTHREAD_INCLUDE_ARG "-DOPENTHREAD_PROJECT_CORE_CONFIG_FILE=\"ca821x-openthread-config.h\" -I${PROJECT_BINARY_DIR}/platform/include/ca821x-posix-thread/"
 
 # Sub-project configuration ---------------------------------------------------
 include(FetchContent)
@@ -65,25 +46,33 @@ if(NOT ca821x-posix_POPULATED)
   add_subdirectory(${ca821x-posix_SOURCE_DIR} ${ca821x-posix_BINARY_DIR})
 endif()
 
-ExternalProject_Add(
+FetchContent_Declare(
   openthread
-  GIT_REPOSITORY ${CASCODA_OPENTHREAD_GIT_REPO}
-  GIT_TAG        ${CASCODA_OPENTHREAD_GIT_TAG}
+  GIT_REPOSITORY https://github.com/Cascoda/openthread.git
+  GIT_TAG        origin/ext-mac
   GIT_SHALLOW    1
-  CONFIGURE_COMMAND cd <SOURCE_DIR> && ./bootstrap && cd <SOURCE_DIR>
-	    COMMAND <SOURCE_DIR>/configure ${CASCODA_OPENTHREAD_CONFIGURE_OPTS}
+)
+
+FetchContent_GetProperties(openthread)
+if(NOT openthread_POPULATED)
+  FetchContent_Populate(openthread)
+endif()
+
+set(OPENTHREAD_INCLUDE_ARG "-DOPENTHREAD_PROJECT_CORE_CONFIG_FILE=\\\"ca821x-openthread-config.h\\\" -I${PROJECT_BINARY_DIR}/platform/include/ca821x-posix-thread")
+ExternalProject_Add(
+  openthread-build
+  SOURCE_DIR ${openthread_SOURCE_DIR}
+  BINARY_DIR ${openthread_BINARY_DIR}
+  CONFIGURE_COMMAND cd ${openthread_SOURCE_DIR} && ./bootstrap && cd ${openthread_SOURCE_DIR}
+	    COMMAND ${openthread_SOURCE_DIR}/configure ${CASCODA_OPENTHREAD_CONFIGURE_OPTS}
 	    "CFLAGS=${OPENTHREAD_INCLUDE_ARG}"
 	    "CPPFLAGS=${OPENTHREAD_INCLUDE_ARG}"
 	    "CXXFLAGS=${OPENTHREAD_INCLUDE_ARG}"
   BUILD_COMMAND ${CASCODA_OPENTHREAD_MAKE} ${CASCODA_OPENTHREAD_MAKE_ARGS}
+  DOWNLOAD_COMMAND  ""
   INSTALL_COMMAND   ""
   TEST_COMMAND      ""
 )
-
-ExternalProject_Get_Property(openthread SOURCE_DIR)
-ExternalProject_Get_Property(openthread BINARY_DIR)
-set(openthread_SOURCE_DIR ${SOURCE_DIR})
-set(openthread_BINARY_DIR ${BINARY_DIR})
 
 add_library(openthread-ftd STATIC IMPORTED)
 add_library(openthread-mtd STATIC IMPORTED)
@@ -113,6 +102,21 @@ target_link_libraries(openthread-cli-ftd INTERFACE openthread-ftd)
 target_link_libraries(openthread-cli-mtd INTERFACE openthread-mtd)
 target_link_libraries(openthread-ncp-ftd INTERFACE openthread-ftd)
 target_link_libraries(openthread-ncp-mtd INTERFACE openthread-mtd)
+
+# Config file generation ------------------------------------------------------
+if(${CASCODA_CA_VER} EQUAL 8210)
+	MESSAGE( WARNING "CA-${CASCODA_CA_VER} is not fully supported for thread, please upgrade")
+	set(CASCODA_DEVICE_TABLE_SIZE 10)
+elseif(${CASCODA_CA_VER} EQUAL 8211)
+	set(CASCODA_DEVICE_TABLE_SIZE 32)
+else()
+	MESSAGE( ERROR "CA-${CASCODA_CA_VER} is not supported with this version")
+endif()
+
+configure_file(
+	"${PROJECT_SOURCE_DIR}/platform/include/ca821x-posix-thread/ca821x-openthread-config.h.in"
+	"${PROJECT_BINARY_DIR}/platform/include/ca821x-posix-thread/ca821x-openthread-config.h"
+	)
 
 # Main library config ---------------------------------------------------------
 add_library(ca821x-openthread-posix-plat

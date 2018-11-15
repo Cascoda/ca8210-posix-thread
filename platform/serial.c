@@ -38,7 +38,7 @@
 
 #include "openthread/platform/uart.h"
 #include "code_utils.h"
-#include "ca8210-posix-thread/posix-platform.h"
+#include "ca821x-posix-thread/posix-platform.h"
 
 #ifdef OPENTHREAD_TARGET_LINUX
 #include <sys/prctl.h>

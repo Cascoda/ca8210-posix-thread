@@ -54,7 +54,7 @@
 #include "mac_messages.h"
 #include "ieee_802_15_4.h"
 #include "selfpipe.h"
-#include "ca8210-posix-thread/posix-platform.h"
+#include "ca821x-posix-thread/posix-platform.h"
 
 #define ARRAY_LENGTH(array) (sizeof((array))/sizeof((array)[0]))
 

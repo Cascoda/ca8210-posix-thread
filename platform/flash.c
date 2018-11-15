@@ -26,7 +26,7 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "ca8210-posix-thread/posix-platform.h"
+#include "ca821x-posix-thread/posix-platform.h"
 
 //This define enables pread and pwrite
 #define _XOPEN_SOURCE 500

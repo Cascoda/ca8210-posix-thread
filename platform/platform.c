@@ -41,7 +41,7 @@
 #include "openthread/platform/alarm-milli.h"
 #include "openthread/platform/uart.h"
 #include "openthread/tasklet.h"
-#include "ca8210-posix-thread/posix-platform.h"
+#include "ca821x-posix-thread/posix-platform.h"
 #include "selfpipe.h"
 
 uint32_t NODE_ID = 1;

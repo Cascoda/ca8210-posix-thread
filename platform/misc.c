@@ -29,7 +29,7 @@
 #include <unistd.h>
 
 #include "openthread/platform/misc.h"
-#include "ca8210-posix-thread/posix-platform.h"
+#include "ca821x-posix-thread/posix-platform.h"
 
 extern int      gArgumentsCount;
 extern char   **gArguments;
