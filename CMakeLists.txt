@@ -58,6 +58,10 @@ if(NOT openthread_POPULATED)
   FetchContent_Populate(openthread)
 endif()
 
+if (WIN32)
+	message(WARNING "Building Openthread on windows is a challenge. Contributions welcome but it's probably easier to switch to Linux.")
+endif()
+
 set(OPENTHREAD_INCLUDE_ARG "-DOPENTHREAD_PROJECT_CORE_CONFIG_FILE=\\\"ca821x-openthread-config.h\\\" -I${PROJECT_BINARY_DIR}/platform/include/ca821x-posix-thread")
 ExternalProject_Add(
   openthread-build
@@ -75,12 +79,19 @@ ExternalProject_Add(
 )
 
 add_library(openthread-ftd STATIC IMPORTED)
+add_dependencies(openthread-ftd openthread-build)
 add_library(openthread-mtd STATIC IMPORTED)
+add_dependencies(openthread-mtd openthread-build)
 add_library(openthread-cli-ftd STATIC IMPORTED)
+add_dependencies(openthread-cli-ftd openthread-build)
 add_library(openthread-cli-mtd STATIC IMPORTED)
+add_dependencies(openthread-cli-mtd openthread-build)
 add_library(openthread-ncp-ftd STATIC IMPORTED)
+add_dependencies(openthread-ncp-ftd openthread-build)
 add_library(openthread-ncp-mtd STATIC IMPORTED)
+add_dependencies(openthread-ncp-mtd openthread-build)
 add_library(openthread-mbedtls STATIC IMPORTED)
+add_dependencies(openthread-mbedtls openthread-build)
 set_property(TARGET openthread-ftd
              PROPERTY IMPORTED_LOCATION ${openthread_BINARY_DIR}/src/core/${CMAKE_STATIC_LIBRARY_PREFIX}openthread-ftd${CMAKE_STATIC_LIBRARY_SUFFIX})
 set_property(TARGET openthread-mtd
@@ -147,6 +158,7 @@ target_include_directories( ca821x-openthread-posix-plat
 	PUBLIC
 		${openthread_SOURCE_DIR}/include
 		${PROJECT_SOURCE_DIR}/platform/include
+		${PROJECT_BINARY_DIR}/platform/include
 	)
 
 # Test app config -------------------------------------------------------------
