@@ -145,6 +145,8 @@ add_library(ca821x-openthread-posix-plat
 	${PROJECT_SOURCE_DIR}/platform/spi-stubs.c
 	)
 
+add_dependencies(ca821x-openthread-posix-plat openthread-build)
+
 target_link_libraries(ca821x-openthread-posix-plat ca821x-posix m)
 
 target_link_libraries(openthread-ftd INTERFACE ca821x-openthread-posix-plat)
