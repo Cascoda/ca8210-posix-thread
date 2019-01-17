@@ -96,7 +96,7 @@ struct M_KeyDescriptor_thread
 {
 	struct M_KeyTableEntryFixed    Fixed;
 	struct M_KeyIdLookupDesc       KeyIdLookupList[1];
-	uint8_t                        flags[20]; //TODO: Provisional length
+	uint8_t                        flags[40]; //TODO: Provisional length
 	//struct M_KeyDeviceDesc         KeyDeviceList[count];
 	//struct M_KeyUsageDesc          KeyUsageList[2];
 };
@@ -109,7 +109,7 @@ otError otPlatMlmeGet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 	//Adaption for security table
 	if(aAttr == OT_PIB_MAC_KEY_TABLE)
 	{
-		struct M_KeyDescriptor_thread caKeyDesc;
+		struct M_KeyDescriptor_thread caKeyDesc = {0};
 		otKeyTableEntry *otKeyDesc = (otKeyTableEntry*) aBuf;
 		uint8_t flagOffset = 0;
 
@@ -192,7 +192,7 @@ otError otPlatMlmeSet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 	//Adaption for security table
 	if(aAttr == OT_PIB_MAC_KEY_TABLE)
 	{
-		struct M_KeyDescriptor_thread caKeyDesc;
+		struct M_KeyDescriptor_thread caKeyDesc = {0};
 		const otKeyTableEntry *otKeyDesc = (otKeyTableEntry*) aBuf;
 		uint8_t flagOffset = 0;
 
