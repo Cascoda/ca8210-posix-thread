@@ -30,6 +30,14 @@ set(CASCODA_OPENTHREAD_CONFIGURE_OPTS
        "The arguments to be passed to configure when configuring openthread"
 )
 
+set(CASCODA_LOG_LEVELS NONE CRIT WARN NOTE INFO DEBG)
+set(CASCODA_LOG_LEVEL CRIT CACHE STRING "The minimum log level to print messages for. eg. NONE, CRIT, WARN, NOTE, INFO, DEBG")
+set_property(CACHE CASCODA_LOG_LEVEL PROPERTY STRINGS ${CASCODA_LOG_LEVELS})
+
+if(NOT CASCODA_LOG_LEVEL IN_LIST CASCODA_LOG_LEVELS)
+	message(FATAL_ERROR "CASCODA_LOG_LEVEL must be one of ${CASCODA_LOG_LEVELS}")
+endif()
+
 # Sub-project configuration ---------------------------------------------------
 include(FetchContent)
 include(ExternalProject)
@@ -62,6 +70,7 @@ if (WIN32)
 	message(WARNING "Building Openthread on windows is a challenge. Contributions welcome but it's probably easier to switch to Linux.")
 endif()
 
+set(OPENTHREAD_CONFIG_DEFINE OPENTHREAD_PROJECT_CORE_CONFIG_FILE="ca821x-posix-thread/ca821x-openthread-config.h")
 set(OPENTHREAD_INCLUDE_ARG "-DOPENTHREAD_PROJECT_CORE_CONFIG_FILE=\\\"ca821x-openthread-config.h\\\" -I${PROJECT_BINARY_DIR}/platform/include/ca821x-posix-thread")
 ExternalProject_Add(
   openthread-build
@@ -148,6 +157,8 @@ add_library(ca821x-openthread-posix-plat
 add_dependencies(ca821x-openthread-posix-plat openthread-build)
 
 target_link_libraries(ca821x-openthread-posix-plat ca821x-posix m)
+
+target_compile_definitions(ca821x-openthread-posix-plat PRIVATE ${OPENTHREAD_CONFIG_DEFINE})
 
 target_link_libraries(openthread-ftd INTERFACE ca821x-openthread-posix-plat)
 target_link_libraries(openthread-mtd INTERFACE ca821x-openthread-posix-plat)

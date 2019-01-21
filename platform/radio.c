@@ -140,7 +140,7 @@ otError otPlatMlmeGet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 					!!(caKeyDesc.flags[flagOffset] & KDD_UniqueDeviceMask);
 			otKeyDesc->mKeyDeviceDesc[i].mBlacklisted =
 					!!(caKeyDesc.flags[flagOffset] & KDD_BlacklistedMask);
-#if OPENTHREAD_CONFIG_EXTERNAL_MAC_SHARED_DD
+#if OPENTHREAD_CONFIG_EXTERNAL_MAC_SHARED_DD && (CASCODA_CA_VER != 8210)
 			otKeyDesc->mKeyDeviceDesc[i].mNew =
 					!!(caKeyDesc.flags[flagOffset] & KDD_NewMask);
 #endif
@@ -213,7 +213,7 @@ otError otPlatMlmeSet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 					devDesc->mUniqueDevice ? KDD_UniqueDeviceMask : 0;
 			caKeyDesc.flags[flagOffset] |=
 					devDesc->mBlacklisted ? KDD_BlacklistedMask : 0;
-#if OPENTHREAD_CONFIG_EXTERNAL_MAC_SHARED_DD
+#if OPENTHREAD_CONFIG_EXTERNAL_MAC_SHARED_DD && (CASCODA_CA_VER != 8210)
 			caKeyDesc.flags[flagOffset] |=
 					devDesc->mNew ? KDD_NewMask : 0;
 #endif
